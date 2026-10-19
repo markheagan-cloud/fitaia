@@ -9,7 +9,7 @@ import { CUR_NAMES, TITLES, fmt, todayLabel } from '@/data/content';
 import { useBody, useEconomy, useGame } from '@/store/useGame';
 import { Press } from './Press';
 import { Txt, Display } from './Txt';
-import { CoinIcon, GoldIcon } from './Icons';
+import { CoinIcon } from './Icons';
 import { CoachAvatar } from './CoachAvatar';
 
 export const HEADER_CONTENT_H = 48; // 40px avatar + padding 8 bas
@@ -23,12 +23,12 @@ function LiveDot({ bg }: { bg: string }) {
   return <Animated.View style={[styles.dot, { borderColor: bg }, st]} />;
 }
 
-/** En-tête commun : coach + titre d'écran + deux monnaies. Fidèle au <header> de la maquette. */
+/** En-tête commun : coach + titre d'écran + FIT Crédits. Fidèle au <header> de la maquette. */
 export function Header({ screen }: { screen: keyof typeof TITLES }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { earn, prem, openCoach, say } = useGame();
+  const { earn, openCoach, say } = useGame();
   const eco = useEconomy();
   const body = useBody();
   const [title, baseSub] = TITLES[screen];
@@ -64,17 +64,6 @@ export function Header({ screen }: { screen: keyof typeof TITLES }) {
         >
           <CoinIcon size={15} />
           <Txt size={14} weight="bold" num color={t.strongInk}>{fmt(earn)}</Txt>
-        </Press>
-        <Press
-          accessibilityLabel={CUR_NAMES[1] + ' : recharger'}
-          onPress={() => {
-            router.navigate('/(tabs)/boutique');
-            say('Les ' + CUR_NAMES[1] + ' se rechargent en bas de la boutique', 'ok');
-          }}
-          style={[styles.pill, { backgroundColor: t.surf, borderWidth: 1, borderColor: t.line }, shadow.sm]}
-        >
-          <GoldIcon size={16} />
-          <Txt size={14} weight="bold" num>{fmt(prem)}</Txt>
         </Press>
       </View>
     </View>

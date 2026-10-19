@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CUR_NAMES, MEALS, Meal, OTHER_DEFIS, PASS_PRICE, RARITY, SKINS, Skin, fmt, fmtKg } from '@/data/content';
+import { CUR_NAMES, MEALS, Meal, OTHER_DEFIS, RARITY, SKINS, Skin, fmt, fmtKg } from '@/data/content';
 import { DayStats, LedgerEntry, RULES, activeDaysThisWeek, dayKey, mealReward, streak, streakBonus, weekKey } from './economy';
 import { CharacterSheet, DEFAULT_SHEET } from '@/data/character';
 import { coachAnswer } from '@/coach/brain';
@@ -17,10 +17,8 @@ export type ChatMsg = { from: 'me' | 'coach'; text: string };
 
 type Persisted = {
   earn: number;
-  prem: number;
   owned: string[];
   equipped: string;
-  pass: boolean;
   goal: number;
   burned: number;
   eaten: number;
@@ -39,10 +37,7 @@ type Persisted = {
   characterReady: boolean; // le perso FITAIA Studio (vectoriel) remplace l'image par défaut
   profile: Profile; // sexe, âge, taille, poids de départ, objectif, activité, rythme
   onboarded: boolean; // profil renseigné au premier lancement
-  plus: boolean; // abonnement FITAIA Plus actif (RevenueCat)
-  plusMonth: string; // dernier mois (AAAA-MM) où les FIT Points de Plus ont été versés
-  paywallShownAt: number; // dernière présentation du paywall (règle : jamais deux fois en 3 jours)
-  firstWinAt: number; // premier défi réussi (moment « aha ») — déclenche le paywall une seule fois
+  firstWinAt: number; // premier défi réussi
   weights: WeightEntry[]; // journal de poids (jour → kg)
   pushTotal: number; // pompes validées, cumul
   mealsTotal: number; // repas enregistrés, cumul
@@ -64,7 +59,7 @@ type Transient = {
   toast: string;
   toastKind: ToastKind;
   toastId: number;
-  burst: { id: number; amount: number; cur: 'earn' | 'prem' }; // pluie de crédits (FX) à chaque gain
+  burst: { id: number; amount: number; cur: 'earn' }; // pluie de crédits (FX) à chaque gain
   coachOpen: boolean;
   typing: boolean;
   draft: string;
@@ -86,8 +81,6 @@ type Actions = {
   pushFinish: (rejected: number) => void;
   pushAbort: () => void;
   skinAct: (sk: Skin) => void;
-  buyPack: (n: number, amount: string) => void;
-  buyPass: () => void;
   resetScan: () => void;
   doScan: () => void;
   nextMeal: () => void;
@@ -99,10 +92,6 @@ type Actions = {
   setCharacter: (c: CharacterSheet) => void;
   setProfile: (p: Partial<Profile>) => void;
   finishOnboarding: (p: Profile, kg: number) => void;
-  setPlus: (on: boolean) => void;
-  markPaywallShown: () => void;
-  /** Le paywall doit-il s'ouvrir maintenant ? Valeur avant demande : après le premier défi réussi, jamais pendant l'onboarding, 3 jours de délai après un refus. */
-  shouldShowPaywall: () => boolean;
   addWeight: (kg: number) => void;
   setGoal: (kcal: number) => void;
   setSelfieUri: (u: string | null) => void;
@@ -118,7 +107,6 @@ let selfieT: ReturnType<typeof setTimeout> | undefined;
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
-const PLUS_MONTHLY_POINTS = 550;
 const DEFAULT_FEEDBACK ='Pose ton iPhone au sol, de profil, à environ 1,5 m.';
 
 function answer(S: GameState, q: string): string {
@@ -132,7 +120,6 @@ function answer(S: GameState, q: string): string {
       g: S.g,
       l: S.l,
       earn: S.earn,
-      prem: S.prem,
       streak: streak(S.history),
       activeDays: activeDaysThisWeek(S.history),
       pushDone: S.pushDone,
@@ -152,19 +139,18 @@ export const useGame = create<GameState>()(
   persist(
     (set, get) => {
       /** Enregistre une transaction et met à jour les soldes + le jour. */
-      const credit = (amount: number, cur: 'earn' | 'prem', reason: string, dayStats?: Partial<DayStats>) => {
+      const credit = (amount: number, cur: 'earn', reason: string, dayStats?: Partial<DayStats>) => {
         const S = get();
         const k = dayKey();
         const prev = S.history[k] ?? { challenges: 0, meals: 0, earned: 0 };
         const next: DayStats = {
           challenges: prev.challenges + (dayStats?.challenges ?? 0),
           meals: prev.meals + (dayStats?.meals ?? 0),
-          earned: prev.earned + (cur === 'earn' && amount > 0 ? amount : 0),
+          earned: prev.earned + (amount > 0 ? amount : 0),
         };
         const entry: LedgerEntry = { id: uid(), ts: Date.now(), amount, cur, reason };
         set({
-          earn: cur === 'earn' ? S.earn + amount : S.earn,
-          prem: cur === 'prem' ? S.prem + amount : S.prem,
+          earn: S.earn + amount,
           history: { ...S.history, [k]: next },
           ledger: amount !== 0 ? [entry, ...S.ledger].slice(0, 200) : S.ledger,
           burst: amount > 0 ? { id: S.burst.id + 1, amount, cur } : S.burst,
@@ -184,22 +170,11 @@ export const useGame = create<GameState>()(
         setTimeout(() => get().say('Coffre de la semaine : +' + fmt(RULES.chestReward) + ' ' + CUR_NAMES[0] + (gift ? ', tenue rare « ' + gift.name + ' » débloquée' : ''), 'ok'), 3000);
       };
 
-      /** FITAIA Plus : FIT Points versés une fois par mois tant que l'abonnement est actif. */
-      const grantPlus = () => {
-        const S = get();
-        const m = dayKey().slice(0, 7);
-        if (!S.plus || S.plusMonth === m) return;
-        set({ plusMonth: m });
-        credit(PLUS_MONTHLY_POINTS, 'prem', 'FITAIA Plus : ' + PLUS_MONTHLY_POINTS + ' ' + CUR_NAMES[1] + ' du mois');
-      };
-
       return {
         // --- persistant ---
         earn: 0,
-        prem: 0,
         owned: ['origine'],
         equipped: 'origine',
-        pass: false,
         goal: 2100,
         burned: 0,
         eaten: 0,
@@ -218,9 +193,6 @@ export const useGame = create<GameState>()(
         characterReady: false,
         profile: DEFAULT_PROFILE,
         onboarded: false,
-        plus: false,
-        plusMonth: '',
-        paywallShownAt: 0,
         firstWinAt: 0,
         weights: [],
         pushTotal: 0,
@@ -248,7 +220,6 @@ export const useGame = create<GameState>()(
         hydrated: false,
 
         rollover: () => {
-          grantPlus();
           const S = get();
           const k = dayKey();
           if (S.day === k) return;
@@ -355,42 +326,18 @@ export const useGame = create<GameState>()(
             S.say(sk.name + ' équipée', 'ok');
             return;
           }
-          if (S.plus && sk.rarity === 'legendaire') {
-            // avantage FITAIA Plus : tenues légendaires incluses
-            set({ owned: S.owned.concat([sk.id]), equipped: sk.id });
-            S.say(sk.name + ' débloquée avec FITAIA Plus', 'ok');
+          if (sk.cur === 'store') {
+            // cosmétique vendu par achat intégré Apple : jamais débloqué sans paiement vérifié
+            S.say(sk.name + ' arrive avec les achats App Store', 'bad');
             return;
           }
-          const bal = sk.cur === 'earn' ? S.earn : S.prem;
-          if (bal < sk.price) {
-            S.say(
-              sk.cur === 'earn'
-                ? 'Il te manque ' + fmt(sk.price - bal) + ' ' + names[0] + '. Fais tes défis du jour.'
-                : 'Il te manque ' + fmt(sk.price - bal) + ' ' + names[1] + '. Recharge plus bas.',
-              'bad',
-            );
+          if (S.earn < sk.price) {
+            S.say('Il te manque ' + fmt(sk.price - S.earn) + ' ' + names[0] + '. Fais tes défis du jour.', 'bad');
             return;
           }
           set({ owned: S.owned.concat([sk.id]), equipped: sk.id });
-          credit(-sk.price, sk.cur, 'Tenue ' + sk.name + ' (' + RARITY[sk.rarity].label + ')');
+          credit(-sk.price, 'earn', 'Tenue ' + sk.name + ' (' + RARITY[sk.rarity].label + ')');
           S.say(sk.name + ' débloquée et équipée', 'ok');
-        },
-
-        buyPack: (_n, amount) => {
-          // aucun crédit sans paiement réel : les packs passeront par RevenueCat (produits consommables)
-          get().say('Achat de ' + amount + ' ' + CUR_NAMES[1] + ' bientôt disponible', 'bad');
-        },
-
-        buyPass: () => {
-          const S = get();
-          if (S.pass) return;
-          if (S.prem < PASS_PRICE) {
-            S.say('Il te manque ' + fmt(PASS_PRICE - S.prem) + ' ' + CUR_NAMES[1] + '. Recharge plus bas.', 'bad');
-            return;
-          }
-          set({ pass: true });
-          credit(-PASS_PRICE, 'prem', 'Pass Élite, saison 1');
-          S.say('Pass Élite activé', 'ok');
         },
 
         resetScan: () => set({ scanned: false, customMeal: null }),
@@ -448,16 +395,6 @@ export const useGame = create<GameState>()(
           const goal = profile.autoGoal ? dailyGoal(profile, currentWeight(profile, S.weights)) : S.goal;
           set({ profile, goal });
         },
-        setPlus: (on) => {
-          set({ plus: on });
-          grantPlus();
-        },
-        markPaywallShown: () => set({ paywallShownAt: Date.now() }),
-        shouldShowPaywall: () => {
-          const S = get();
-          if (S.plus || !S.onboarded || !S.firstWinAt) return false;
-          return Date.now() - S.paywallShownAt > 3 * 86_400_000;
-        },
         finishOnboarding: (p, kg) => {
           const weights = logWeight([], dayKey(), kg);
           const profile = { ...p, startKg: weights[0].kg, autoGoal: true };
@@ -497,8 +434,8 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 8,
-      // v2 : FIT Crédits à l'échelle des centaines (×10) ; FIT Points inchangés.
+      version: 9,
+      // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         const s = (persisted ?? {}) as Partial<Persisted>;
         if (version < 2) {
@@ -521,22 +458,22 @@ export const useGame = create<GameState>()(
           s.mealsTotal = s.mealsTotal ?? 0;
         }
         if (version < 6) s.onboarded = s.onboarded ?? true; // les installations existantes gardent leurs données
-        if (version < 7) {
-          s.plus = s.plus ?? false;
-          s.paywallShownAt = s.paywallShownAt ?? 0;
-          s.firstWinAt = s.firstWinAt ?? 0;
-        }
-        if (version < 8) s.plusMonth = s.plusMonth ?? '';
+        if (version < 7) s.firstWinAt = s.firstWinAt ?? 0;
         if (version < 6 && s.profile && s.profile.autoGoal) s.goal = dailyGoal(s.profile, currentWeight(s.profile, s.weights ?? []));
+        if (version < 9) {
+          // v9 : retrait de l'offre payante, du pass et de la monnaie premium (gameplay gratuit, cosmétiques App Store seuls). [ancien-modèle]
+          // Les tenues déjà débloquées restent acquises ; les anciennes lignes de monnaie premium sortent du journal.
+          const legacy = s as Partial<Persisted> & Record<string, unknown>;
+          for (const k of ['prem', 'pass', 'plus', 'plusMonth', 'paywallShownAt']) delete legacy[k]; // [ancien-modèle]
+          s.ledger = (s.ledger ?? []).filter((e) => e.cur === 'earn');
+        }
         return s as Persisted;
       },
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({
         earn: s.earn,
-        prem: s.prem,
         owned: s.owned,
         equipped: s.equipped,
-        pass: s.pass,
         goal: s.goal,
         burned: s.burned,
         eaten: s.eaten,
@@ -555,9 +492,6 @@ export const useGame = create<GameState>()(
         characterReady: s.characterReady,
         profile: s.profile,
         onboarded: s.onboarded,
-        plus: s.plus,
-        plusMonth: s.plusMonth,
-        paywallShownAt: s.paywallShownAt,
         firstWinAt: s.firstWinAt,
         weights: s.weights,
         pushTotal: s.pushTotal,

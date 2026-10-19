@@ -1,6 +1,6 @@
 /**
  * Règles de l'économie FITAIA — pures, testables, sans dépendance React.
- * Monnaie gagnée : FIT Crédits (earn). Monnaie premium : FIT Points (prem).
+ * Monnaie gagnée en jouant : FIT Crédits (earn). Aucune monnaie payante : seuls des cosmétiques se vendent (App Store).
  */
 
 export const RULES = {
@@ -20,7 +20,7 @@ export const RULES = {
 } as const;
 
 export type DayStats = { challenges: number; meals: number; earned: number };
-export type LedgerEntry = { id: string; ts: number; amount: number; cur: 'earn' | 'prem'; reason: string };
+export type LedgerEntry = { id: string; ts: number; amount: number; cur: 'earn'; reason: string };
 
 /** Clé de jour locale YYYY-MM-DD. */
 export function dayKey(d = new Date()): string {

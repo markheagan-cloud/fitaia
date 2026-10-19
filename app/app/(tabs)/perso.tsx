@@ -12,7 +12,7 @@ import { fmt, fmtKg } from '@/data/content';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { Txt } from '@/components/Txt';
-import { CoinIcon, GoldIcon } from '@/components/Icons';
+import { CoinIcon } from '@/components/Icons';
 import { previewImage } from '@/data/character';
 
 export default function Perso() {
@@ -112,7 +112,7 @@ export default function Perso() {
                   <Txt size={13} weight="semibold" numberOfLines={1}>{e.reason}</Txt>
                   <Txt size={11} color={t.ink2}>{when}</Txt>
                 </View>
-                {e.cur === 'earn' ? <CoinIcon size={12} /> : <GoldIcon size={13} />}
+                <CoinIcon size={12} />
                 <Txt size={14} weight="bold" num color={e.amount < 0 ? t.ink2 : t.ink}>{e.amount > 0 ? '+' : ''}{fmt(e.amount)}</Txt>
               </View>
             );

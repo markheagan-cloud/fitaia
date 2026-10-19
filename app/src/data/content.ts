@@ -11,7 +11,7 @@ export const IMG: Record<string, ImageSourcePropType> = {
 };
 export const COACH_IMG = IMG.p5;
 
-export const CUR_NAMES: [string, string] = ['FIT Crédits', 'FIT Points'];
+export const CUR_NAMES: [string] = ['FIT Crédits'];
 
 export type RarityKey = 'commune' | 'rare' | 'epique' | 'legendaire';
 export const RARITY: Record<RarityKey, { label: string; c: string }> = {
@@ -26,7 +26,8 @@ export type Skin = {
   name: string;
   rarity: RarityKey;
   img: ImageSourcePropType;
-  cur: 'earn' | 'prem';
+  /** earn = gagnée en jouant ; store = cosmétique vendu par achat intégré Apple (prix fixé par l'App Store). */
+  cur: 'earn' | 'store';
   price: number;
 };
 
@@ -34,9 +35,9 @@ export const SKINS: Skin[] = [
   { id: 'origine', name: 'Origine', rarity: 'commune', img: IMG.p1, cur: 'earn', price: 0 },
   { id: 'cargo', name: 'Cargo Urbain', rarity: 'rare', img: IMG.p4, cur: 'earn', price: 4000 },
   { id: 'olive', name: 'Olive Tech', rarity: 'rare', img: IMG.p6, cur: 'earn', price: 6500 },
-  { id: 'creme', name: 'Crème Studio', rarity: 'epique', img: IMG.p2, cur: 'prem', price: 80 },
-  { id: 'titane', name: 'Titane Néon', rarity: 'legendaire', img: IMG.p3, cur: 'prem', price: 150 },
-  { id: 'atelier', name: 'Atelier Noir', rarity: 'legendaire', img: IMG.p4, cur: 'prem', price: 180 },
+  { id: 'creme', name: 'Crème Studio', rarity: 'epique', img: IMG.p2, cur: 'store', price: 0 },
+  { id: 'titane', name: 'Titane Néon', rarity: 'legendaire', img: IMG.p3, cur: 'store', price: 0 },
+  { id: 'atelier', name: 'Atelier Noir', rarity: 'legendaire', img: IMG.p4, cur: 'store', price: 0 },
 ];
 
 export type Meal = { name: string; kcal: number; p: number; g: number; l: number; score: number; items: string[] };
@@ -44,12 +45,6 @@ export const MEALS: Meal[] = [
   { name: 'Bowl poulet, riz, brocolis', kcal: 620, p: 48, g: 70, l: 14, score: 86, items: ['Poulet grillé, 150 g', 'Riz basmati, 120 g', 'Brocolis, 80 g'] },
   { name: 'Burger, frites et soda', kcal: 1080, p: 34, g: 128, l: 46, score: 31, items: ['Burger double', 'Frites, 150 g', 'Soda, 33 cl'] },
   { name: 'Salade saumon avocat', kcal: 450, p: 32, g: 18, l: 27, score: 82, items: ['Saumon, 100 g', 'Avocat, ½', 'Quinoa, 60 g'] },
-];
-
-export const PACKS = [
-  { amount: '100', price: '0,99 €', tag: '', n: 100 },
-  { amount: '550', price: '4,99 €', tag: 'Le plus pris', n: 550 },
-  { amount: '1 200', price: '9,99 €', tag: '+20 % offerts', n: 1200 },
 ];
 
 export type ExtraKind = 'camera' | 'meals' | 'steps';
@@ -66,8 +61,6 @@ export const Q_SOIR = 'Que manger ce soir ?';
 export const Q_STAG = 'Pourquoi mon poids stagne ?';
 export const Q_PROT = 'Il me manque combien de protéines ?';
 export const SUGGESTIONS = [Q_SOIR, Q_PROT, Q_STAG, Q_LIP];
-
-export const PASS_PRICE = 950;
 
 /** Format FR : espace fine insécable pour les milliers, comme toLocaleString('fr-FR'). */
 /** Poids : une décimale, virgule française (92,0). */

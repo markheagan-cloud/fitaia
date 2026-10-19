@@ -15,7 +15,6 @@ export type CoachContext = {
   g: number;
   l: number;
   earn: number;
-  prem: number;
   streak: number;
   activeDays: number;
   pushDone: boolean;
@@ -66,7 +65,7 @@ function poids(c: CoachContext): string {
 
 function credits(c: CoachContext): string {
   return (
-    `Tu as ${fmt(c.earn)} ${CUR_NAMES[0]} et ${fmt(c.prem)} ${CUR_NAMES[1]}.\n\n` +
+    `Tu as ${fmt(c.earn)} ${CUR_NAMES[0]}.\n\n` +
     `Série : ${c.streak} jour${c.streak > 1 ? 's' : ''}. Cette semaine : ${c.activeDays} jour${c.activeDays > 1 ? 's' : ''} actif${c.activeDays > 1 ? 's' : ''} sur ${RULES.chestActiveDays} pour le coffre (${fmt(RULES.chestReward)} ${CUR_NAMES[0]}).\n\n` +
     `Chaque jour : le défi rapporte ${RULES.challengeReward} (+${RULES.streakBonus3} dès 3 jours de série, +${RULES.streakBonus7} dès 7), et jusqu’à ${RULES.mealsRewardedPerDay} repas rapportent ${RULES.mealRewardGood} ou ${RULES.mealRewardBasic} selon leur score.`
   );

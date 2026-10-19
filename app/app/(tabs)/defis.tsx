@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Line, Circle, G } from 'react-native-svg';
@@ -24,16 +24,6 @@ export default function Defis() {
   const { width } = useWindowDimensions();
   const panelW = Math.max(0, width - 32 - 16); // carte 8px de padding de chaque côté
   const { reps, running, pushDone, feedback, fbKind, phase, startPush } = useGame();
-  const firstWinAt = useGame((s) => s.firstWinAt);
-  // Paywall « valeur avant demande » : 3 s après le premier défi réussi, une seule fois, jamais si déjà abonné.
-  const shownFor = useRef(0);
-  useEffect(() => {
-    if (!firstWinAt || shownFor.current === firstWinAt || Date.now() - firstWinAt > 60_000) return;
-    if (!useGame.getState().shouldShowPaywall()) return;
-    shownFor.current = firstWinAt;
-    const t = setTimeout(() => router.push('/paywall'), 3200);
-    return () => clearTimeout(t);
-  }, [firstWinAt, router]);
   const eco = useEconomy();
   const days = weekDays();
   const todayK = dayKey();

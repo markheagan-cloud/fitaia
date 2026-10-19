@@ -2,7 +2,7 @@ import { coachAnswer, weeklyAverage, CoachContext } from '../src/coach/brain';
 import { fmt } from '../src/data/content';
 let n = 0;
 const ok = (c: boolean, m: string) => { n++; if (!c) throw new Error('FAIL ' + m); console.log('ok', m); };
-const base: CoachContext = { goal: 2400, eaten: 1500, burned: 0, p: 80, g: 150, l: 50, earn: 12400, prem: 35, streak: 2, activeDays: 2, pushDone: false, mealsToday: 2, weights: [], startKg: 92, targetKg: 78, tier: { current: 1, toNext: 2.8, remaining: 14, reached: false }, autoGoal: true, hour: 19 };
+const base: CoachContext = { goal: 2400, eaten: 1500, burned: 0, p: 80, g: 150, l: 50, earn: 12400, streak: 2, activeDays: 2, pushDone: false, mealsToday: 2, weights: [], startKg: 92, targetKg: 78, tier: { current: 1, toNext: 2.8, remaining: 14, reached: false }, autoGoal: true, hour: 19 };
 ok(coachAnswer(base, 'Que manger ce soir ?').includes('900 kcal'), 'ce soir : reste 900 kcal');
 ok(coachAnswer({ ...base, eaten: 2600 }, 'je mange quoi ce soir').includes('dépassé de 200'), 'ce soir : dépassé');
 ok(coachAnswer(base, 'Pourquoi mon poids stagne ?').includes('pas encore de pesée'), 'poids sans pesée');
