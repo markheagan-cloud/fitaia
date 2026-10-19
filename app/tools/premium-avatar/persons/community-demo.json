@@ -1,0 +1,359 @@
+{
+ "_doc": "Membres de démonstration de la Communauté (profils fictifs, clairement indiqués « démo » dans l'app). Identités 100 % procédurales : cibles MakeHuman CC0 tirées avec une graine fixe — aucun visage réel. La fiche (sheet) reprend src/community/services/devData.ts.",
+ "persons": [
+  {
+   "key": "demo_demo_sarah",
+   "avatarId": "demo:demo_sarah",
+   "name": "Sarah",
+   "seed": 1101,
+   "sheet": {
+    "appearance": "fem",
+    "body": "rond",
+    "skin": "s2",
+    "hairStyle": "milong",
+    "hairColor": "chatain",
+    "beard": "aucune",
+    "extras": [],
+    "eyes": "noisette"
+   },
+   "outfit": {
+    "top": [
+     0.33,
+     0.37,
+     0.27
+    ],
+    "bottom": [
+     0.075,
+     0.078,
+     0.085
+    ]
+   },
+   "hair": {
+    "style": "cards",
+    "mhclo": "system_assets/hair/long01/long01.mhclo",
+    "cut_below_chin": 1.05,
+    "count": 80000,
+    "wave": 0.035,
+    "wave_period": 0.8
+   },
+   "pose": {
+    "head": [
+     -2.0,
+     -3.0,
+     3.0
+    ]
+   }
+  },
+  {
+   "key": "demo_demo_nassim",
+   "avatarId": "demo:demo_nassim",
+   "name": "Nassim",
+   "seed": 1202,
+   "sheet": {
+    "appearance": "masc",
+    "body": "costaud",
+    "skin": "s5",
+    "hairStyle": "degrade",
+    "hairColor": "noir",
+    "beard": "courte",
+    "extras": [
+     "montre"
+    ],
+    "eyes": "brun"
+   },
+   "outfit": {
+    "top": [
+     0.8,
+     0.78,
+     0.73
+    ],
+    "bottom": [
+     0.075,
+     0.078,
+     0.085
+    ]
+   },
+   "hair": {
+    "style": "crop",
+    "top": 0.34,
+    "side": 0.035,
+    "nape": 0.015,
+    "forward": 0.75,
+    "sweep": 0.0,
+    "mess": 0.32
+   },
+   "pose": {
+    "head": [
+     -1.0,
+     -3.0,
+     -2.0
+    ]
+   }
+  },
+  {
+   "key": "demo_demo_ines",
+   "avatarId": "demo:demo_ines",
+   "name": "Inès",
+   "seed": 1303,
+   "sheet": {
+    "appearance": "fem",
+    "body": "mince",
+    "skin": "s3",
+    "hairStyle": "queue",
+    "hairColor": "brun",
+    "beard": "aucune",
+    "extras": [],
+    "eyes": "brun"
+   },
+   "outfit": {
+    "top": [
+     0.8,
+     0.74,
+     0.64
+    ],
+    "bottom": [
+     0.11,
+     0.115,
+     0.125
+    ]
+   },
+   "hair": {
+    "style": "ponytail",
+    "tail_length": 3.0,
+    "wave": 0.02
+   },
+   "pose": {
+    "head": [
+     -1.5,
+     -3.0,
+     2.0
+    ]
+   }
+  },
+  {
+   "key": "demo_demo_adam",
+   "avatarId": "demo:demo_adam",
+   "name": "Adam",
+   "seed": 1404,
+   "sheet": {
+    "appearance": "masc",
+    "body": "athle",
+    "skin": "s1",
+    "hairStyle": "court",
+    "hairColor": "blond",
+    "beard": "trois",
+    "extras": [],
+    "eyes": "brun"
+   },
+   "outfit": {
+    "top": [
+     0.36,
+     0.38,
+     0.41
+    ],
+    "bottom": [
+     0.06,
+     0.062,
+     0.068
+    ]
+   },
+   "hair": {
+    "style": "crop",
+    "top": 0.3,
+    "side": 0.11,
+    "nape": 0.06,
+    "forward": -0.35,
+    "sweep": 0.55,
+    "mess": 0.25
+   },
+   "pose": {
+    "head": [
+     -2.0,
+     -3.0,
+     -1.5
+    ]
+   }
+  },
+  {
+   "key": "demo_demo_leila",
+   "avatarId": "demo:demo_leila",
+   "name": "Leïla",
+   "seed": 1505,
+   "sheet": {
+    "appearance": "fem",
+    "body": "athle",
+    "skin": "s6",
+    "hairStyle": "boucle",
+    "hairColor": "noir",
+    "beard": "aucune",
+    "extras": [
+     "boucles"
+    ],
+    "eyes": "brun"
+   },
+   "outfit": {
+    "top": [
+     0.5,
+     0.27,
+     0.19
+    ],
+    "bottom": [
+     0.06,
+     0.062,
+     0.068
+    ]
+   },
+   "hair": {
+    "style": "curly",
+    "length": 1.5,
+    "volume": 0.24,
+    "curl_radius": 0.07,
+    "curl_period": 0.3
+   },
+   "pose": {
+    "head": [
+     -1.0,
+     -3.0,
+     2.5
+    ]
+   }
+  },
+  {
+   "key": "demo_demo_karim",
+   "avatarId": "demo:demo_karim",
+   "name": "Karim",
+   "seed": 1606,
+   "sheet": {
+    "appearance": "masc",
+    "body": "rond",
+    "skin": "s4",
+    "hairStyle": "court",
+    "hairColor": "noir",
+    "beard": "pleine",
+    "extras": [],
+    "eyes": "brun"
+   },
+   "outfit": {
+    "top": [
+     0.13,
+     0.135,
+     0.145
+    ],
+    "bottom": [
+     0.05,
+     0.052,
+     0.058
+    ]
+   },
+   "hair": {
+    "style": "crop",
+    "top": 0.2,
+    "side": 0.07,
+    "nape": 0.04,
+    "forward": -0.5,
+    "sweep": -0.2,
+    "mess": 0.3
+   },
+   "pose": {
+    "head": [
+     -2.5,
+     -3.0,
+     -2.0
+    ]
+   },
+   "beard": {
+    "length": 0.095,
+    "lift": 0.35,
+    "puff": 0.1,
+    "curl": 0.012,
+    "count": 32000
+   }
+  },
+  {
+   "key": "demo_demo_julie",
+   "avatarId": "demo:demo_julie",
+   "name": "Julie",
+   "seed": 1707,
+   "sheet": {
+    "appearance": "fem",
+    "body": "mince",
+    "skin": "s1",
+    "hairStyle": "long",
+    "hairColor": "blond",
+    "beard": "aucune",
+    "extras": [],
+    "eyes": "noisette"
+   },
+   "outfit": {
+    "top": [
+     0.58,
+     0.64,
+     0.7
+    ],
+    "bottom": [
+     0.1,
+     0.105,
+     0.115
+    ]
+   },
+   "hair": {
+    "style": "cards",
+    "cut_below_chin": 2.6,
+    "count": 80000
+   },
+   "pose": {
+    "head": [
+     -2.0,
+     -3.0,
+     -2.5
+    ]
+   }
+  },
+  {
+   "key": "demo_demo_thomas",
+   "avatarId": "demo:demo_thomas",
+   "name": "Thomas",
+   "seed": 1808,
+   "sheet": {
+    "appearance": "masc",
+    "body": "mince",
+    "skin": "s2",
+    "hairStyle": "degrade",
+    "hairColor": "chatain",
+    "beard": "aucune",
+    "extras": [
+     "lunettes"
+    ],
+    "eyes": "brun"
+   },
+   "outfit": {
+    "top": [
+     0.12,
+     0.15,
+     0.24
+    ],
+    "bottom": [
+     0.27,
+     0.28,
+     0.3
+    ]
+   },
+   "hair": {
+    "style": "crop",
+    "top": 0.4,
+    "side": 0.04,
+    "nape": 0.02,
+    "forward": -0.15,
+    "sweep": 0.65,
+    "mess": 0.22
+   },
+   "pose": {
+    "head": [
+     -1.0,
+     -3.0,
+     1.5
+    ]
+   }
+  }
+ ]
+}

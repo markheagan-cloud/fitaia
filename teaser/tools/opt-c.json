@@ -1,0 +1,5 @@
+{"samples": 48, "res": [1080, 1620], "exposure": -0.45,
+ "light": {"key": 900, "fill": 45, "rim_lime": 1500, "rim_white": 1100, "top": 120, "world": 0.22},
+ "shots": [
+   {"name": "turnath", "kind": "turn", "n": 24, "state": "athletique", "yaw0": 0}
+ ]}

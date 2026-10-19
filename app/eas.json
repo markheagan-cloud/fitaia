@@ -1,0 +1,22 @@
+{
+  "cli": { "version": ">= 12.0.0", "appVersionSource": "remote" },
+  "build": {
+    "development": { "developmentClient": true, "distribution": "internal" },
+    "preview": { "distribution": "internal" },
+    "production": { "autoIncrement": true }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "_comment": "À REMPLIR après création de l'app dans App Store Connect (jamais inventé)",
+        "ascAppId": "",
+        "appleTeamId": ""
+      },
+      "android": {
+        "_comment": "Clé de service Google Play à fournir — chemin hors du repo",
+        "serviceAccountKeyPath": "../secrets/google-play-service-account.json",
+        "track": "internal"
+      }
+    }
+  }
+}

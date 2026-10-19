@@ -1,0 +1,8 @@
+﻿=== FITAIA avatar setup 10/02/2026 14:25:10 ===
+────────────────────────────────────────────────
+ FITAIA · dessin d'avatar gratuit (Hugging Face + Supabase)
+────────────────────────────────────────────────
+
+ÉTAPE 1/3 · Hugging Face (gratuit)
+  a) Crée un compte : https://huggingface.co/join  (puis confirme l'e-mail)
+  b) Crée un jeton : https://huggingface.co/settings/tokens/new?tokenType=write  → nom "fitaia", type Write → Create → copie-le

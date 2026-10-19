@@ -1,0 +1,13 @@
+import { searchLocal, toMeal, portionPresets } from '../src/services/food';
+let n = 0;
+const ok = (c: boolean, m: string) => { n++; if (!c) throw new Error('FAIL ' + m); console.log('ok', m); };
+const r = searchLocal('yaourt grec');
+ok(r.length === 1 && r[0].name === 'Yaourt grec 0 %', 'recherche locale accents/casse');
+ok(searchLocal('oeuf').length === 0 && searchLocal('œuf').length >= 2, 'recherche œuf');
+ok(searchLocal('').length === 0, 'vide → rien');
+const m = toMeal(r[0], 150);
+ok(m.kcal === 86 && m.p === 15 && m.score >= 70, 'portion 150 g yaourt grec : 86 kcal, 15 g prot, bon score ' + m.score);
+const pz = searchLocal('pizza')[0];
+ok(toMeal(pz, 300).kcal === 795, 'pizza 300 g = 795 kcal');
+ok(portionPresets(pz)[0] === 300 && portionPresets(pz).length <= 4, 'portions : fabricant en premier');
+console.log(n + ' tests aliments OK');

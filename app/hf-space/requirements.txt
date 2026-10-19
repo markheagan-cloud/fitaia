@@ -1,0 +1,8 @@
+torch
+git+https://github.com/huggingface/diffusers
+transformers>=4.51
+accelerate
+peft
+safetensors
+sentencepiece
+Pillow

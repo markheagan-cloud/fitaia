@@ -1,0 +1,78 @@
+{
+  "ios": {
+    "title": "FITAIA",
+    "subtitle": "Défis, repas scannés, perso",
+    "keywords": "pompes,calories,coach,sport,musculation,nutrition,entrainement,squat,maison,poids,objectif,fitness",
+    "promo": "Chaque pompe comptée par la caméra, chaque repas scanné, et un perso à ton image qui évolue avec toi.",
+    "description": "Tu veux perdre du poids ou te remettre au sport sans te mentir sur tes efforts. FITAIA compte pour toi.\n\nDÉFIS COMPTÉS PAR LA CAMÉRA\nPose ton iPhone au sol : une pompe est validée seulement si tu descends à 90° et si ton corps reste gainé. Pas de triche possible, pas de doute sur ton progrès.\n\nREPAS EN 10 SECONDES\nScanne le code-barres ou cherche l’aliment, choisis la portion : calories et protéines s’ajoutent à ton journal. Base Open Food Facts, plus de 3 millions de produits.\n\nTON BUDGET, CALCULÉ POUR TOI\nÂge, taille, poids, objectif, rythme : FITAIA calcule ton budget calorique du jour et l’ajuste avec tes pesées et tes défis.\n\nUN PERSO À TON IMAGE\nCrée ton perso avec ton selfie, 4 milliards de combinaisons, modifications illimitées. Il franchit 5 paliers avec toi et porte les tenues que tu débloques.\n\nFITO, TON COACH\nIl répond avec tes vrais chiffres : quoi manger ce soir, combien de protéines il te manque, pourquoi ton poids stagne.\n\nTOUT RESTE SUR TON TÉLÉPHONE\nTon journal, tes pesées et ton selfie sont stockés sur ton téléphone. Le selfie n’est envoyé que si tu demandes un dessin HD, le temps du dessin.\n\nFITAIA Plus (abonnement optionnel) : tenues légendaires, dessin HD de ton perso et FIT Points chaque mois. Paiement via ton compte App Store, renouvelé automatiquement sauf annulation 24 h avant la fin de période. Conditions : https://A-REMPLIR/terms — Confidentialité : https://A-REMPLIR/privacy"
+  },
+  "play": {
+    "title": "FITAIA : défis fitness et repas",
+    "short": "Pompes comptées par la caméra, repas scannés, budget calorique calculé, perso à ton image.",
+    "description": "Tu veux perdre du poids ou te remettre au sport sans te mentir sur tes efforts. FITAIA compte pour toi.\n\nDÉFIS COMPTÉS PAR LA CAMÉRA\nPose ton téléphone au sol : une pompe est validée seulement si tu descends à 90° et si ton corps reste gainé. Pas de triche possible, pas de doute sur ton progrès.\n\nREPAS EN 10 SECONDES\nScanne le code-barres ou cherche l’aliment, choisis la portion : calories et protéines s’ajoutent à ton journal. Base Open Food Facts, plus de 3 millions de produits.\n\nTON BUDGET, CALCULÉ POUR TOI\nÂge, taille, poids, objectif, rythme : FITAIA calcule ton budget calorique du jour et l’ajuste avec tes pesées et tes défis.\n\nUN PERSO À TON IMAGE\nCrée ton perso avec ton selfie, 4 milliards de combinaisons, modifications illimitées. Il franchit 5 paliers avec toi et porte les tenues que tu débloques.\n\nFITO, TON COACH\nIl répond avec tes vrais chiffres : quoi manger ce soir, combien de protéines il te manque, pourquoi ton poids stagne.\n\nTOUT RESTE SUR TON TÉLÉPHONE\nTon journal, tes pesées et ton selfie sont stockés sur ton téléphone. Le selfie n’est envoyé que si tu demandes un dessin HD, le temps du dessin.\n\nFITAIA Plus (abonnement optionnel) : tenues légendaires, dessin HD de ton perso et FIT Points chaque mois. Paiement via ton compte Google Play, renouvelé automatiquement sauf annulation 24 h avant la fin de période. Conditions : https://A-REMPLIR/terms — Confidentialité : https://A-REMPLIR/privacy"
+  },
+  "competitors": [
+    {
+      "name": "Freeletics",
+      "positioning": "coach IA, programmes bodyweight"
+    },
+    {
+      "name": "Yazio",
+      "positioning": "scanner calories / nutrition"
+    },
+    {
+      "name": "Zombies, Run!",
+      "positioning": "gamification de l’effort"
+    }
+  ],
+  "checklist": [
+    {
+      "item": "Icône 1024x1024 sans alpha",
+      "done": true
+    },
+    {
+      "item": "Captures 6.7\" (1290x2796) x3 minimum (store/captures/final, CAPTURES-FITAIA.bat)",
+      "done": true
+    },
+    {
+      "item": "Captures 6.5\" (1284x2778) (store/captures/final, CAPTURES-FITAIA.bat)",
+      "done": true
+    },
+    {
+      "item": "Captures Android téléphone + feature graphic 1024x500",
+      "done": false
+    },
+    {
+      "item": "URL politique de confidentialité (texte prêt : store/privacy.md, à publier sur une page web)",
+      "done": false
+    },
+    {
+      "item": "URL support",
+      "done": false
+    },
+    {
+      "item": "Formulaire Nutrition de confidentialité (App Privacy)",
+      "done": false
+    },
+    {
+      "item": "Compte Apple Developer (99 $/an)",
+      "done": false
+    },
+    {
+      "item": "Compte Google Play Console (25 $)",
+      "done": false
+    }
+  ],
+  "screenshots_captions": [
+    "Chaque pompe comptée par la caméra",
+    "Ton repas scanné en 10 secondes",
+    "Ton budget calorique, calculé pour toi",
+    "Un perso à ton image, 5 paliers",
+    "Des tenues gagnées par tes efforts"
+  ],
+  "aso_notes": {
+    "regles": "titre ≤30, sous-titre ≤30, mots-clés ≤100 octets sans répéter titre/sous-titre, description non indexée (conversion), légendes de captures indexées",
+    "kw_bytes": 98,
+    "subtitle_len": 27
+  }
+}

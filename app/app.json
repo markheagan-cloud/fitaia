@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "FITAIA",
+    "slug": "fitaia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "fitaia",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.fitaia.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie. Aucune image n’est conservée.",
+        "NSPhotoLibraryUsageDescription": "FITAIA accède à tes photos uniquement si tu choisis un selfie existant pour dessiner ton perso.",
+        "NSMotionUsageDescription": "FITAIA lit tes pas pour valider le défi « Marcher 6 000 pas »."
+      }
+    },
+    "android": {
+      "package": "com.fitaia.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1C1D1F"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#E6E4DF",
+          "dark": {
+            "backgroundColor": "#121315"
+          }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso.",
+          "photosPermission": "FITAIA accède à tes photos uniquement pour choisir un selfie."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "FITAIA lit tes pas pour valider le défi « Marcher 6 000 pas »."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -1,0 +1,5 @@
+{"samples": 48, "res": [1080, 1620], "exposure": -0.5,
+ "shots": [
+   {"name": "test_actuel", "kind": "still", "state": "actuel", "yaw": 0},
+   {"name": "test_athl", "kind": "still", "state": "athletique", "yaw": 22}
+ ]}

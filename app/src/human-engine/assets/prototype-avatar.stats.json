@@ -1,0 +1,15 @@
+{
+  "fichier": "src/human-engine/assets/prototype-avatar.glb",
+  "octets": 447008,
+  "sommets": 3970,
+  "triangles": 7896,
+  "morphs": [
+    "body_weight",
+    "belly_fat",
+    "muscle"
+  ],
+  "hauteur_m": 1.799,
+  "textures": 0,
+  "materiaux": 1,
+  "primitives": 1
+}

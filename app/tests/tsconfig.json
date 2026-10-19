@@ -1,0 +1,49 @@
+{
+ "compilerOptions": {
+  "strict": true,
+  "noEmit": true,
+  "target": "ES2020",
+  "module": "ESNext",
+  "moduleResolution": "Bundler",
+  "jsx": "react-jsx",
+  "paths": {
+   "@/*": [
+    "../src/*"
+   ]
+  },
+  "types": [],
+  "typeRoots": []
+ },
+ "files": [
+  "stubs/index.d.ts",
+  "../src/store/useGame.ts",
+  "../src/store/economy.ts",
+  "../src/data/content.ts",
+  "../src/theme/tokens.ts",
+  "../src/services/avatar.ts",
+  "../src/data/character.ts",
+  "../src/store/profile.ts",
+  "../src/services/food.ts",
+  "../src/data/foods.ts",
+  "profile.test.ts",
+  "food.test.ts",
+  "../src/coach/brain.ts",
+  "coach.test.ts",
+  "../src/pose/repCounter.ts",
+  "pose2.test.ts",
+  "../src/community/models/types.ts",
+  "../src/social/fitmatch/matching.ts",
+  "../src/community/services/privacy.ts",
+  "../src/social/messages/safety.ts",
+  "../src/community/services/engine.ts",
+  "../src/community/services/inbox.ts",
+  "community.test.ts",
+  "../src/community/models/intentions.ts",
+  "../src/community/models/outfit.ts",
+  "../src/community/services/highlights.ts",
+  "../src/community/services/demoSocial.ts",
+  "../src/community/services/feed.ts",
+  "../src/social/messages/assist.ts",
+  "community-ux.test.ts"
+ ]
+}

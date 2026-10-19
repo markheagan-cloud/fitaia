@@ -1,0 +1,21 @@
+Campaign,Ad Group,Keyword,Match Type
+"FITAIA – Brand","Brand","fitaia",exact
+"FITAIA – Brand","Brand","fitaia app",exact
+"FITAIA – Generic Exact","Generic Exact","défi fitness",exact
+"FITAIA – Generic Exact","Generic Exact","défi pompes",exact
+"FITAIA – Generic Exact","Generic Exact","compteur calories",exact
+"FITAIA – Generic Exact","Generic Exact","musculation maison",exact
+"FITAIA – Generic Exact","Generic Exact","fitness",exact
+"FITAIA – Competitor","Competitor","freeletics",exact
+"FITAIA – Competitor","Competitor","yazio",exact
+"FITAIA – Competitor","Competitor","fitbod",exact
+"FITAIA – Discovery","Discovery","scanner repas calories",broad
+"FITAIA – Discovery","Discovery","coach sportif ia",broad
+"FITAIA – Discovery","Discovery","application fitness gamifiée",broad
+"FITAIA – Discovery","Discovery","app pompes compteur",broad
+"FITAIA – Discovery","Discovery","entraînement sans matériel",broad
+"FITAIA – Discovery","Discovery","défi fitness",broad
+"FITAIA – Discovery","Discovery","défi pompes",broad
+"FITAIA – Discovery","Discovery","compteur calories",broad
+"FITAIA – Discovery","Discovery","musculation maison",broad
+"FITAIA – Discovery","Discovery","fitness",broad

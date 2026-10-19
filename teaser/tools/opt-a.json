@@ -1,0 +1,8 @@
+{"samples": 48, "res": [1080, 1620], "exposure": -0.45,
+ "light": {"key": 900, "fill": 45, "rim_lime": 1500, "rim_white": 1100, "top": 120, "world": 0.22},
+ "shots": [
+   {"name": "portrait_face", "kind": "still", "state": "actuel", "yaw": 0, "frame": "portrait"},
+   {"name": "hero_surpoids", "kind": "still", "state": "surpoids", "yaw": 0},
+   {"name": "hero_athletique", "kind": "still", "state": "athletique", "yaw": 16},
+   {"name": "morph", "kind": "morph", "n": 25, "yaw": 22, "path": ["surpoids", "actuel", "athletique"]}
+ ]}

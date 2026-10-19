@@ -1,0 +1,63 @@
+=== TypeScript === 
+TypeScript : OK 
+ 
+=== Lint === 
+ 
+=== Expo doctor === 
+Running 21 checks on your project...
+20/21 checks passed. 1 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+
+✖ Check for common project setup issues
+The .expo directory is not ignored by Git. It contains machine-specific device history and development server settings and should not be committed.
+Advice:
+Add ".expo/" to your .gitignore to avoid committing local Expo state.
+
+1 check failed, indicating possible issues with the project.
+ 
+=== Preflight === 
+[36m═══ FITAIA PREFLIGHT ═══[0m
+
+[36m── Configuration Expo[0m
+[32mPASS[0m app.json valide
+[32mPASS[0m iOS bundleIdentifier com.fitaia.app
+[32mPASS[0m Android package com.fitaia.app
+[32mPASS[0m version 1.0.0
+[32mPASS[0m deep link scheme "fitaia"
+[32mPASS[0m NSCameraUsageDescription présent
+[32mPASS[0m ITSAppUsesNonExemptEncryption=false (évite la question export)
+[32mPASS[0m adaptive icon déclarée
+[32mPASS[0m asset ./assets/icon.png
+[32mPASS[0m asset ./assets/adaptive-icon.png
+[33mWARN[0m Pas de privacyManifests dans app.json (Expo en génère un par défaut pour ses libs ; à compléter si APIs "required reason")
+[33mWARN[0m EAS projectId absent → `eas init` (compte Expo requis)
+[32mPASS[0m eas.json valide
+[33mWARN[0m ascAppId vide : à remplir après création de l’app sur App Store Connect
+
+[36m── Secrets & environnement[0m
+[32mPASS[0m aucun secret détecté dans 12 fichiers
+[32mPASS[0m .gitignore couvre .env
+[32mPASS[0m .gitignore couvre node_modules
+[32mPASS[0m .gitignore couvre ios/
+[32mPASS[0m .gitignore couvre android/
+[32mPASS[0m .env.example présent
+
+[36m── Code[0m
+[32mPASS[0m aucun console.log
+[32mPASS[0m aucune URL de développement
+[32mPASS[0m typecheck (tsc --noEmit)
+[32mPASS[0m lint (expo lint)
+[33mWARN[0m expo-doctor : ✖ Check for common project setup issues
+
+[36m── Monétisation & notifications[0m
+[32mPASS[0m pas de notifications → pas d’entitlement push nécessaire
+
+[36m── Build natif[0m
+[2mSKIP[0m Info.plist / entitlements / AndroidManifest générés [2m— Expo managed : générés par `eas build` (ou `npx expo prebuild`) — non présents dans le repo[0m
+[2mSKIP[0m build release iOS/Android [2m— nécessite compte Expo + compte Apple Developer (99 $/an) / Google Play (25 $)[0m
+[2mSKIP[0m target SDK Android [2m— défini par le SDK Expo installé lors du build (voir npx expo-doctor)[0m
+
+[32m22 PASS[0m  [31m0 FAIL[0m  [33m4 WARN[0m  [2m3 SKIP[0m
+[32m✓ Aucun bloquant détecté (les SKIP restent à vérifier au build)[0m
+ 
+=== FIN === 

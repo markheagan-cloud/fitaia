@@ -1,0 +1,50 @@
+﻿[36mÔòÉÔòÉÔòÉ FITAIA PREFLIGHT ÔòÉÔòÉÔòÉ[0m
+
+[36mÔöÇÔöÇ Configuration Expo[0m
+[32mPASS[0m app.json valide
+[32mPASS[0m iOS bundleIdentifier com.fitaia.app
+[32mPASS[0m Android package com.fitaia.app
+[32mPASS[0m version 1.0.0
+[32mPASS[0m deep link scheme "fitaia"
+[32mPASS[0m NSCameraUsageDescription pr├®sent
+[32mPASS[0m ITSAppUsesNonExemptEncryption=false (├®vite la question export)
+[32mPASS[0m adaptive icon d├®clar├®e
+[32mPASS[0m asset ./assets/icon.png
+[32mPASS[0m asset ./assets/adaptive-icon.png
+[33mWARN[0m Pas de privacyManifests dans app.json (Expo en g├®n├¿re un par d├®faut pour ses libs ; ├á compl├®ter si APIs "required reason")
+[33mWARN[0m EAS projectId absent ÔåÆ `eas init` (compte Expo requis)
+[32mPASS[0m eas.json valide
+[33mWARN[0m ascAppId vide : ├á remplir apr├¿s cr├®ation de lÔÇÖapp sur App Store Connect
+
+[36mÔöÇÔöÇ Secrets & environnement[0m
+[32mPASS[0m aucun secret d├®tect├® dans 12 fichiers
+[32mPASS[0m .gitignore couvre .env
+[32mPASS[0m .gitignore couvre node_modules
+[32mPASS[0m .gitignore couvre ios/
+[32mPASS[0m .gitignore couvre android/
+[32mPASS[0m .env.example pr├®sent
+
+[36mÔöÇÔöÇ Code[0m
+[32mPASS[0m aucun console.log
+[32mPASS[0m aucune URL de d├®veloppement
+[31mFAIL[0m typecheck :
+src/human-engine/renderer/AvatarLoader.ts(166,35): error TS2345: Argument of type 'Uint8Array<ArrayBufferLike>' is not assignable to parameter of type 'BufferSource | null | undefined'.
+  Type 'Uint8Array<ArrayBufferLike>' is not assignable to type 'ArrayBufferView<ArrayBuffer>'.
+    Types of property 'buffer' are incompatible.
+      Type 'ArrayBufferLike' is not assignable to type 'ArrayBuffer'.
+        Type 'SharedArrayBuffer' is missing the following properties from type 'ArrayBuffer': resizable, resize, detached, transfer, transferToFixedLength
+
+[32mPASS[0m lint (expo lint)
+[33mWARN[0m expo-doctor : Ô£û Check for common project setup issues
+
+[36mÔöÇÔöÇ Mon├®tisation & notifications[0m
+[32mPASS[0m pas de notifications ÔåÆ pas dÔÇÖentitlement push n├®cessaire
+
+[36mÔöÇÔöÇ Build natif[0m
+[2mSKIP[0m Info.plist / entitlements / AndroidManifest g├®n├®r├®s [2mÔÇö Expo managed : g├®n├®r├®s par `eas build` (ou `npx expo prebuild`) ÔÇö non pr├®sents dans le repo[0m
+[2mSKIP[0m build release iOS/Android [2mÔÇö n├®cessite compte Expo + compte Apple Developer (99 $/an) / Google Play (25 $)[0m
+[2mSKIP[0m target SDK Android [2mÔÇö d├®fini par le SDK Expo install├® lors du build (voir npx expo-doctor)[0m
+
+[32m21 PASS[0m  [31m1 FAIL[0m  [33m4 WARN[0m  [2m3 SKIP[0m
+[31mÔ£ù Preflight ├®chou├® : corriger les FAIL avant soumission[0m
+

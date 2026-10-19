@@ -1,0 +1,176 @@
+LANG en
+[0] Hello, everyone.
+[3] Thank you for being here today.
+[5] I'm pretty much excited to have this session with you.
+[8] I know we are almost at the end of the events.
+[11] So thank you for being with us.
+[13] So just to start, let me introduce myself.
+[16] I'm Ivan Nardini.
+[17] I'm a developer advocate at Google Cloud,
+[19] working on building content in partnership with Anthropic.
+[23] And in order to start this presentation today,
+[25] I just want to ask a very simple question.
+[30] So how many of you in the last week
+[32] use any iTool to code or build the application?
+[37] OK, the majority.
+[39] How many of you use the same iTool to build and deploy
+[43] application on Google Cloud?
+[46] Yeah, just a few of them.
+[47] So the goal here today is just try to make it better.
+[51] So in this demo, what I'm going to show you
+[55] is how you can use Cloud on Google Cloud
+[58] to build and deploy application end to end.
+[62] And in order to do that, I'm going to wear five different hats.
+[67] And we will start from, imagine the use case, right?
+[72] Imagine the scenario.
+[73] You are an enterprise context.
+[75] In an enterprise context, you probably
+[77] have a team like the one that we are visualizing here,
+[80] that it's engaged to build a new feature or a new product.
+[86] So starting from the left, you probably
+[88] have a PM, some of you in this room are PMs.
+[91] And the PM might have an idea of how
+[94] to improve a particular product or how to implement a feature.
+[98] And starting from this idea, he shared this idea with a UI,
+[103] UX design, which allows him to design the idea,
+[106] to visualize the idea.
+[108] And after the idea started getting a shape,
+[112] then the idea is sent to a software engineer
+[116] that essentially start developing the core logic
+[119] behind this idea in order to ship and make the application
+[122] accessible or the future feature accessible to everyone.
+[129] But before to ship it, in order
+[131] to be confident on what you are releasing,
+[133] you probably have to pass a security review.
+[136] So that's why you have a role like the security engineer
+[140] that will allow you to be confident in the release.
+[143] And finally, once the application gets released,
+[147] you probably have a data persona, like a grow marketer
+[152] or a data analyst, that analyze the data that
+[156] are collected through the app in order to generate insight
+[159] and produce feedback to the PM in a way that the product
+[164] or the feature itself gets improved.
+[167] So these are kind of all the personas
+[171] that in a simple way we can imagine
+[173] are involved in the software development lifecycle.
+[177] Now with respect to these personas,
+[179] Cloud Code, the Anthropics coding agent,
+[182] augment all of them, providing several components
+[186] that we are going to use today.
+[189] So as I said, for the remaining part
+[192] of this presentation, I'm going to put the hat of all these
+[194] personas and I'm going to show you
+[196] how you can use these Cloud Code components together
+[200] with Cloud on Google Cloud in order to build and ship
+[205] a very simple feedback application
+[207] that at the end of the presentation,
+[209] we are going to use to rate my performance here.
+[214] But before to start building, of course,
+[218] you need to set up the Cloud Code that we are going to use.
+[223] And I'm so excited and so proud that we work together
+[228] with Anthropics to make this process of setting up
+[230] Cloud Code in order to use model on Google Cloud
+[234] in a very simple way, in a very straightforward way.
+[237] So you have multiple methods to use Cloud Models on Google
+[241] Cloud in Cloud Code.
+[243] But the simplest one, the faster one,
+[245] is using the application default credential, which
+[249] automatically finds your credential.
+[252] For example, the user one, and based on the environment
+[256] that you are going to use.
+[257] And as you can see in this representation,
+[259] so recently, Cloud Code also introduced
+[262] this wizard that will simply allows
+[264] you to detect your project and your region where
+[268] the models are served and check which models are
+[273] available in your project, and let
+[276] you pin them in order to start building your application.
+[280] At this point, probably you are familiar with this,
+[284] and you're wondering, OK, but what
+[286] is different to use just Cloud Code with Cloud Models
+[291] while using Cloud on GCP on Google Cloud?
+[294] So there are many reasons why you want to do this.
+[298] So first of all, because you pay for what you use.
+[302] So the usage of a Cloud Models on Google Cloud
+[306] is per token.
+[307] So you don't receive a message cap.
+[310] And also, if you are building an enterprise application that
+[315] needs to go to production, you can always access
+[319] to what is called provisioning throughput, which essentially
+[322] will reserve some throughput for you
+[325] in order to build this kind of application.
+[328] The other important reason why you
+[330] want to consider Cloud on Google Cloud is, as I said,
+[334] the setup is pretty straightforward using the ADC.
+[338] You don't have API to rotate or environment variable
+[343] to set in some sense.
+[345] So it's an epi journey with respect to this aspect.
+[351] You can access model in your project
+[354] with your own policies set.
+[358] And also, the data stays in your project
+[361] while you are interacting with the Cloud Code.
+[364] And model are served in multiple regions.
+[367] So you have global endpoint.
+[369] You have a regional endpoint, depending on the availability
+[372] that you need.
+[373] And as a Google Cloud talking about availability,
+[376] we have very great availability service standards
+[380] that will allow you to use Cloud on one
+[386] of the most performing infrastructure
+[388] that you can find in the market.
+[391] So these are all some of the main reason
+[393] why you want to consider Cloud on Google Cloud,
+[396] especially in an enterprise context.
+[398] So now that you have a few reasons
+[401] of why using Cloud on Google Cloud, we are ready to build.
+[406] And so as I said, I will start wearing the hat of a PM.
+[410] So imagine that you just join the company
+[413] or maybe you are already part of the company.
+[415] You want to improve our services.
+[417] You want to implement a new features with respect
+[421] to a particular product.
+[422] What was happening in the past is that you have the idea
+[426] you go to a UI UX designer, and you ask him to prototype
+[431] and visualize the idea.
+[432] Now with the Cloud and Cloud Code, what you can do
+[437] is just drawing a picture like the one that you see here,
+[442] while you are drinking a coffee maybe in San Francisco.
+[445] And then let Cloud doing implementing the idea for you.
+[451] So let's see this in action.
+[457] So this is the Cloud UI.
+[461] You will probably familiar with that.
+[463] And you are familiar with the Cloud MD, which
+[465] is essentially gives some instruction.
+[467] Here we just say that we are a PM.
+[471] We want to have a starting from the picture.
+[473] We want to render a prototype of the app, the wireframe,
+[480] that we are going to then use and pass to the UX designer.
+[484] And in a few minutes, you can see
+[486] how Cloud was capable of rendering it.
+[489] And just starting from a very simple picture or drawing
+[494] that you did while you were drinking your coffee.
+[498] So pretty straightforward.
+[501] But imagine how much time you save in doing this,
+[504] because compared to what you were doing in the past
+[507] with the back and forth, in order
+[509] to get this first prototype of your idea.
+[515] OK, so at this point, the PM creates a prototypes
+[520] and pass these prototypes to the UI UX developer.
+[525] And at this point, it needs to implement
+[528] our more solid interface in order to use it in production.
+[533] So in this particular use case, what we want to create,
+[537] it's at least three pages, from the landing
+[542] to the tanking message, like message page, and a dashboard.
+[547] That will allow me to show you in real time what can be the feedback
+[552] that we receive from the room.
+[554] So in this case, there are many ways
+[557] you can implement this.
+[559] But in this case, I want to use an additional capabilities
+[562] of the code, which is the plan mode.
+[565] So with the plan mode, what we do,
+[567] we put Cloud in a mode where it thinks
+[571] and proposes what it's going to do before to implement any code.
+[577] And this is very important, because it gives me
+[579] a degree of freedom of deciding to change something,
+[583] according to my preference or according to some standard,
+[587] that probably I will get access to an MCP server using

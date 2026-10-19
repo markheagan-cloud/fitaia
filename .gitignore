@@ -1,0 +1,43 @@
+# --- Gros dossiers et fichiers personnels, gardés seulement sur le PC ---
+/tools/
+/runner/
+/tmp-portraits/
+/photo-id/
+/photos/
+/assets-src/
+/hero/
+/.claude/
+*.zip
+*.plugin
+*.7z
+*-log.txt
+*.log
+.terminal-nettoye
+verification.txt)
+
+# --- Usine 3D : on garde le code, pas les rendus ni les modèles ---
+/hero3d/**
+!/hero3d/**/
+!/hero3d/**/*.py
+!/hero3d/**/*.md
+!/hero3d/**/*.bat
+!/hero3d/**/*.ps1
+!/hero3d/**/*.txt
+__pycache__/
+
+# --- Teaser Remotion : code seulement ---
+/teaser/**/node_modules/
+/teaser/**/out/
+/teaser/**/*.mp4
+/teaser/**/*.mov
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+secrets/

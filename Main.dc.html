@@ -1,0 +1,653 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>FITAIA — prototype</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,700;112,800;125,800&amp;family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible{outline:2px solid #C8F03C;outline-offset:2px;box-shadow:0 0 0 4px rgba(200,240,60,0.15) !important}
+input{transition:background-color .2s ease-out, border-color .2s ease-out, box-shadow .2s ease-out}
+input:hover{border-color:#A2A6AD}
+input:focus{border-color:#C8F03C !important}
+.num{font-variant-numeric:tabular-nums}
+.fx-text-sm{font-size:12px}
+.fx-text-base{font-size:14px}
+.fx-text-lg{font-size:16px}
+.fx-weight-medium{font-weight:500}
+.fx-weight-semibold{font-weight:600}
+.fx-weight-bold{font-weight:700}
+.fx-card{transition:all .24s cubic-bezier(.32,.72,0,1);position:relative;border-radius:inherit}
+.fx-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,0.16) !important}
+.fx-card:active{transform:translateY(-1px)}
+.fx-premium{background: linear-gradient(135deg, rgba(200,240,60,0.08) 0%, rgba(200,240,60,0.04) 100%); border: 1px solid rgba(200,240,60,0.2); box-shadow: 0 8px 24px rgba(200,240,60,0.12), inset 0 1px 0 rgba(200,240,60,0.1)}
+.fx-badge{position:relative;display:inline-block}
+.fx-badge::after{content:"";position:absolute;top:-2px;right:-2px;width:8px;height:8px;border-radius:50%;background:#C8F03C;box-shadow:0 2px 6px rgba(200,240,60,0.4)}
+.fx-btn-elevated{box-shadow:0 8px 24px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06);transition:all .18s cubic-bezier(.32,.72,0,1)}
+.fx-btn-elevated:hover{box-shadow:0 14px 40px rgba(0,0,0,0.18), 0 4px 14px rgba(0,0,0,0.1);transform:translateY(-1px)}
+.fx-btn-elevated:active{box-shadow:0 4px 12px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);transform:translateY(0)}
+.fx-scroll{scrollbar-width:thin;scrollbar-color:rgba(0,0,0,0.15) transparent}
+.fx-scroll::-webkit-scrollbar{width:4px}
+.fx-scroll::-webkit-scrollbar-track{background:transparent}
+.fx-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:2px}
+.fx-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.18)}
+.fx-in{animation:fxIn .32s cubic-bezier(.32,.72,0,1) both}
+.fx-toast{animation:fxToast .36s cubic-bezier(.32,.72,0,1) both}
+.fx-sheet{animation:fxSheet .42s cubic-bezier(.32,.72,0,1) both}
+.fx-veil{animation:fxVeil .3s ease-out both}
+.fx-msg{animation:fxMsg .28s cubic-bezier(.32,.72,0,1) both}
+.fx-seg{transition:background-color .45s cubic-bezier(.32,.72,0,1)}
+.fx-press{transition:transform .12s ease-out, box-shadow .2s ease-out, background-color .2s ease-out, border-color .2s ease-out}
+.fx-press:active{transform:scale(.95)}
+.fx-press:hover{opacity:.92}
+.fx-dot{animation:fxDot 1s ease-in-out infinite}
+@keyframes fxIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes fxToast{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes fxSheet{from{transform:translateY(100%)}to{transform:none}}
+@keyframes fxVeil{from{opacity:0}to{opacity:1}}
+@keyframes fxMsg{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fxDot{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes softGlow{from{box-shadow:0 8px 24px rgba(200,240,60,0.18)}to{box-shadow:0 12px 40px rgba(200,240,60,0.24)}}
+@keyframes subtleScale{from{transform:scale(1)}
+@keyframes hoverGlow{0%{box-shadow:0 8px 24px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.06)}100%{box-shadow:0 14px 40px rgba(0,0,0,0.18), 0 4px 14px rgba(0,0,0,0.1)}}
+@keyframes activePress{0%{transform:scale(1)}100%{transform:scale(0.98)}}to{transform:scale(1.02)}}
+@keyframes fxShadow{from{box-shadow:0 2px 8px rgba(0,0,0,0.06)}to{box-shadow:0 12px 28px rgba(0,0,0,0.15)}}
+@keyframes fxGlow{from{box-shadow:0 0 0 0 rgba(200,240,60,0.4)}to{box-shadow:0 0 0 8px rgba(200,240,60,0)}}
+@keyframes fxBounce{from{transform:translateY(0)}to{transform:translateY(-2px)}}
+@keyframes fxFade{0%{opacity:0;transform:translateY(8px)}100%{opacity:1}}
+.fx-lime{transition:all .18s cubic-bezier(.32,.72,0,1)}
+.fx-lime:hover{filter:brightness(1.1) drop-shadow(0 6px 16px rgba(200,240,60,0.36)); transform:translateY(-1px)}
+.fx-lime:active{filter:brightness(.92) drop-shadow(0 2px 6px rgba(200,240,60,0.14)); transform:translateY(0)}
+.fx-press{cursor:pointer;transition:all .18s cubic-bezier(.32,.72,0,1);outline:none}
+.fx-press:focus-visible{outline:2px solid rgba(200,240,60,0.4);outline-offset:2px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.fx-shimmer{background-size:200% 100%;animation:shimmer 4s ease-in-out infinite;background-image:linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)}
+.fx-shadow{box-shadow:0 4px 16px rgba(0,0,0,0.1)}
+.fx-shadow-sm{box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.fx-shadow-lg{box-shadow:0 12px 32px rgba(0,0,0,0.18)}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeScale{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.8}}
+.fx-slide-up{animation:slideUp .4s cubic-bezier(.32,.72,0,1) both}
+.fx-fade-scale{animation:fadeScale .3s cubic-bezier(.32,.72,0,1) both}
+.fx-pulse{animation:pulse 2s ease-in-out infinite}
+.fx-interactive{transition:all .2s cubic-bezier(.32,.72,0,1)}
+.fx-interactive:hover{filter:brightness(1.04)}
+.fx-interactive:active{filter:brightness(.97)}
+.fx-focus{outline:2px solid rgba(200,240,60,0.3);outline-offset:2px}
+.fx-glow-light{box-shadow:0 0 20px rgba(200,240,60,0.16)}
+.fx-depth{box-shadow:0 4px 16px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.04)}
+.fx-blend{mix-blend-mode:overlay;opacity:.5}
+@supports (backdrop-filter: blur(1px)) {
+  .fx-glass-premium{-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);background:rgba(255,255,255,0.05)}
+}.fx-glow-hover:hover{box-shadow:0 0 20px rgba(200,240,60,0.15)}
+.fx-border-accent{border:1px solid rgba(200,240,60,0.15)}
+.fx-border-accent:hover{border-color:rgba(200,240,60,0.3);transition:all .18s cubic-bezier(.32,.72,0,1)}
+@media (prefers-reduced-motion:reduce){.fx-in,.fx-toast,.fx-sheet,.fx-veil,.fx-msg,.fx-dot,.fx-slide-up,.fx-fade-scale,.fx-pulse{animation:none}.fx-seg{transition:none}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: {{t.bg}}; color: {{t.ink}}; font-family: 'DM Sans', system-ui, sans-serif; position: relative; overflow: hidden; -webkit-font-smoothing: antialiased">
+
+<header style="position: absolute; left: 0; right: 0; top: 0; padding: 52px 16px 8px 16px; display: flex; align-items: center; justify-content: space-between; background: {{t.bg}}; z-index: 5; border-bottom: 1px solid {{t.line}}; -webkit-backdrop-filter: blur(18px) saturate(130%); backdrop-filter: blur(18px) saturate(130%); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 4px 12px rgba(0,0,0,0.08)">
+<button onClick="{{openCoach}}" aria-label="Parler à Fito, ton coach" class="fx-press" style="display: flex; align-items: center; gap: 10px; background: transparent; border: 0; padding: 0; color: {{t.ink}}; font-family: inherit; text-align: left; transition: all .2s cubic-bezier(.32,.72,0,1)">
+<span style="position: relative; width: 40px; height: 40px; flex-shrink: 0">
+<img src="{{coachImg}}" alt="" style="width: 40px; height: 40px; border-radius: 999px; object-fit: cover; object-position: 50% 8%; background: #DAD7D1; display: block; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 2px solid rgba(255,255,255,0.08)">
+<span style="position: absolute; right: -1px; bottom: -1px; width: 12px; height: 12px; border-radius: 999px; background: #C8F03C; border: 2px solid {{t.bg}}; box-shadow: 0 2px 6px rgba(200,240,60,0.3); animation: pulse 2s ease-in-out infinite"></span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 1px">
+<span style="font-family: 'Archivo', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 20px; letter-spacing: -0.035em; line-height: 1.1">{{screenTitle}}</span>
+<span style="font-size: 12px; color: {{t.ink2}}">{{screenSub}}</span>
+</span>
+</button>
+<div style="display: flex; gap: 6px">
+<button onClick="{{goEarn}}" aria-label="{{cur.earnAria}}" class="fx-press fx-lime num" style="display: flex; align-items: center; gap: 5px; height: 34px; background: {{t.strong}}; color: {{t.strongInk}}; border: 0; border-radius: 999px; padding: 0 11px 0 9px; font-family: inherit; font-weight: 700; font-size: 14px; box-shadow: 0 3px 10px rgba(0,0,0,0.1); transition: all .18s cubic-bezier(.32,.72,0,1)">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="#C8F03C"><circle cx="12" cy="12" r="10"></circle><path d="M14.8 8.6A4.2 4.2 0 1 0 14.8 15.4" fill="none" stroke="#1C1D1F" stroke-width="2.6" stroke-linecap="round"></path></svg>{{earnFmt}}</button>
+<button onClick="{{goPrem}}" aria-label="{{cur.premAria}}" class="fx-press num" style="display: flex; align-items: center; gap: 5px; height: 34px; background: {{t.surf}}; color: {{t.ink}}; border: 1px solid {{t.line}}; box-sizing: border-box; border-radius: 999px; padding: 0 11px 0 9px; font-family: inherit; font-weight: 700; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all .18s cubic-bezier(.32,.72,0,1)">
+<svg width="16" height="15" viewBox="0 0 24 22" fill="none"><path d="M6 6h12l4 12H2z" fill="#E5B53A"></path><path d="M6 6h12l-1.5 4.5h-9z" fill="#F7D774"></path></svg>{{premFmt}}</button>
+</div>
+</header>
+
+<div class="fx-scroll" style="position: absolute; left: 0; right: 0; top: 100px; bottom: 0; overflow-y: auto; padding: 4px 16px 124px; box-sizing: border-box; scroll-behavior: smooth">
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+<div class="fx-in" style="display: flex; flex-direction: column; gap: 12px">
+
+<section aria-label="Ton personnage" style="height: 372px; border-radius: 32px; background: linear-gradient(180deg, #DAD7D1 0%, #D2CFC8 100%); position: relative; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08); transition: all .3s cubic-bezier(.32,.72,0,1)">
+<svg width="358" height="372" viewBox="0 0 358 372" style="position: absolute; inset: 0" aria-hidden="true"><path d="M0 70 L120 0 H190 L0 150 Z" fill="#E3E1DC"></path><path d="M358 220 L230 372 H300 L358 300 Z" fill="#E3E1DC"></path><path d="M250 0 H358 V90 Z" fill="#D2CFC8"></path></svg>
+<img src="{{hero.img}}" alt="{{hero.alt}}" style="position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); height: 372px; width: 298px; object-fit: cover; object-position: top">
+<div style="position: absolute; left: 14px; top: 14px; display: flex; align-items: center; gap: 6px; background: rgba(28,29,31,0.88); color: #F5F4F1; border-radius: 999px; padding: 5px 10px 5px 6px; font-size: 12px; font-weight: 600">
+<span style="width: 14px; height: 14px; border-radius: 4px; background: {{hero.rc}}"></span>{{hero.name}}</div>
+<button onClick="{{goPerso}}" class="fx-press" style="position: absolute; left: 10px; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 12px; background: rgba(245,244,241,0.92); color: #1C1D1F; border: 0; border-radius: 22px; padding: 10px 14px 10px 10px; font-family: inherit; text-align: left; -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 8px 24px rgba(0,0,0,0.15)">
+<span class="num" style="width: 40px; height: 40px; border-radius: 13px; background: #1C1D1F; color: #C8F03C; display: flex; align-items: center; justify-content: center; font-family: 'Archivo', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 17px; flex-shrink: 0">12</span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 700">Palier 3 sur 5</span><span class="num" style="color: #5A5D63">encore 2,4 kg</span></span>
+<span style="display: block; height: 5px; border-radius: 9px; background: #D6D3CD"><span style="display: block; width: 68%; height: 5px; border-radius: 9px; background: #1C1D1F"></span></span>
+</span>
+</button>
+</section>
+
+<section aria-label="Calories du jour" style="background: {{t.surf}}; border-radius: 26px; padding: 18px 16px 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: all .3s cubic-bezier(.32,.72,0,1); position: relative; overflow: hidden">
+<div style="display: flex; align-items: flex-end; justify-content: space-between">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div class="num" style="font-family: 'Archivo', sans-serif; font-stretch: 125%; font-weight: 800; font-size: 44px; letter-spacing: -0.05em; line-height: 0.95; color: {{cal.numColor}}">{{cal.bigFmt}}</div>
+<div style="font-size: 13px; color: {{t.ink2}}">{{cal.bigLabel}}</div>
+</div>
+<div class="num" style="display: flex; gap: 14px; text-align: right">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: {{t.ink2}}">Mangé</span><span style="font-weight: 700; font-size: 15px">{{cal.eatenFmt}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: {{t.ink2}}">Brûlé</span><span style="font-weight: 700; font-size: 15px">+{{cal.burnedFmt}}</span></div>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: {{t.ink2}}">Budget</span><span style="font-weight: 700; font-size: 15px">{{cal.budgetFmt}}</span></div>
+</div>
+</div>
+<div role="meter" aria-label="Calories consommées" aria-valuemin="0" aria-valuemax="{{cal.budget}}" aria-valuenow="{{cal.eaten}}" style="display: flex; gap: 3px">
+<sc-for list="{{cal.segs}}" as="seg" hint-placeholder-count="30">
+<div class="fx-seg" style="flex-grow: 1; height: 26px; border-radius: 3px; background: {{seg.bg}}"></div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{macros}}" as="m" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div class="num" style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: {{t.ink2}}">{{m.label}}</span><span style="font-weight: 700">{{m.val}}</span></div>
+<div style="height: 4px; border-radius: 9px; background: {{t.track}}; box-shadow: inset 0 1px 2px rgba(0,0,0,0.08)"><div class="fx-seg" style="height: 4px; border-radius: 9px; width: {{m.pct}}; background: {{t.ink}}"></div></div>
+</div>
+</sc-for>
+</div>
+</section>
+
+<button onClick="{{openCoach}}" class="fx-press" style="display: flex; gap: 12px; align-items: flex-start; background: {{cal.alertBg}}; color: {{cal.alertInk}}; border: 0; border-radius: 22px; padding: 12px 14px 12px 12px; font-family: inherit; text-align: left; box-shadow: 0 6px 16px rgba(0,0,0,0.12); transition: all .24s cubic-bezier(.32,.72,0,1)">
+<img src="{{coachImg}}" alt="" style="width: 34px; height: 34px; border-radius: 999px; object-fit: cover; object-position: 50% 8%; background: #DAD7D1; flex-shrink: 0">
+<span style="display: flex; flex-direction: column; gap: 3px">
+<span style="font-weight: 700; font-size: 14px">{{cal.alertTitle}}</span>
+<span style="font-size: 13px; line-height: 1.4">{{cal.alertTip}}</span>
+</span>
+</button>
+
+<button onClick="{{goDefis}}" class="fx-press fx-lime fx-card" style="display: flex; align-items: center; gap: 14px; background: {{t.strong}}; color: {{t.strongInk}}; border: 0; border-radius: 24px; padding: 14px 14px 14px 14px; font-family: inherit; text-align: left">
+<span style="width: 46px; height: 46px; border-radius: 15px; background: #C8F03C; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1C1D1F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5h3.5l3.5-6 4 4 2.5-3.5H21"></path></svg></span>
+<span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 700; font-size: 15px">{{pushTitle}}</span><span style="font-size: 13px; color: {{t.strongInk2}}">{{pushSub}}</span></span>
+<span class="num" style="display: flex; align-items: center; gap: 4px; font-weight: 700; font-size: 15px"><svg width="13" height="13" viewBox="0 0 24 24" fill="#C8F03C"><circle cx="12" cy="12" r="10"></circle><path d="M14.8 8.6A4.2 4.2 0 1 0 14.8 15.4" fill="none" stroke="#1C1D1F" stroke-width="2.6" stroke-linecap="round"></path></svg>{{pushReward}}</span>
+</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isDefis}}" hint-placeholder-val="{{ false }}">
+<div class="fx-in" style="display: flex; flex-direction: column; gap: 12px">
+<section aria-label="Défi pompes" style="background: #1C1D1F; color: #F5F4F1; border-radius: 30px; padding: 8px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.16); transition: all .28s cubic-bezier(.32,.72,0,1); position: relative">
+<div style="height: 236px; border-radius: 24px; background: #26282C; position: relative; overflow: hidden">
+<svg width="342" height="236" viewBox="0 0 342 236" fill="none" style="position: absolute; left: 0; top: 0" aria-hidden="true">
+<line x1="30" y1="206" x2="312" y2="206" stroke="#34373C" stroke-width="2"></line>
+<g stroke="#C8F03C" stroke-width="4" stroke-linecap="round" style="transition: all .25s cubic-bezier(.32,.72,0,1)">
+<line x1="86" y1="{{pose.head}}" x2="146" y2="{{pose.shoulder}}"></line>
+<line x1="146" y1="{{pose.shoulder}}" x2="266" y2="{{pose.hip}}"></line>
+<line x1="266" y1="{{pose.hip}}" x2="298" y2="202"></line>
+<line x1="146" y1="{{pose.shoulder}}" x2="{{pose.elbowX}}" y2="{{pose.elbowY}}"></line>
+<line x1="{{pose.elbowX}}" y1="{{pose.elbowY}}" x2="146" y2="202"></line>
+</g>
+<g fill="#F5F4F1"><circle cx="86" cy="{{pose.head}}" r="7"></circle><circle cx="146" cy="{{pose.shoulder}}" r="5"></circle><circle cx="{{pose.elbowX}}" cy="{{pose.elbowY}}" r="5"></circle><circle cx="146" cy="202" r="5"></circle><circle cx="266" cy="{{pose.hip}}" r="5"></circle><circle cx="298" cy="202" r="5"></circle></g>
+</svg>
+<div style="position: absolute; left: 14px; top: 14px; display: flex; align-items: center; gap: 7px; font-size: 12px; color: #B7BBC2; background: rgba(28,29,31,0.7); border-radius: 999px; padding: 5px 10px"><span style="width: 7px; height: 7px; border-radius: 9px; background: {{push.dot}}"></span>{{push.status}}</div>
+<div class="num" style="position: absolute; right: 16px; top: 8px; font-family: 'Archivo', sans-serif; font-stretch: 125%; font-weight: 800; font-size: 64px; letter-spacing: -0.06em; line-height: 1">{{push.reps}}<span style="font-size: 24px; color: #6E727A; letter-spacing: -0.02em">/5</span></div>
+</div>
+<div style="padding: 4px 8px 0; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><div style="font-family: 'Archivo', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 22px; letter-spacing: -0.035em">5 pompes</div><div class="num" style="font-size: 14px; font-weight: 700; color: #C8F03C">+50 {{cur.earn}}</div></div>
+<div role="status" style="background: {{push.fbBg}}; color: {{push.fbInk}}; border-radius: 14px; padding: 10px 12px; font-size: 13px; font-weight: 600; line-height: 1.35">{{push.feedback}}</div>
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 2px 2px">
+<sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #D4D6DA"><span style="width: 18px; height: 18px; border-radius: 6px; background: {{c.bg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{c.ink}}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{c.path}}"></path></svg></span>{{c.label}}</div>
+</sc-for>
+</div>
+</div>
+<button onClick="{{startPush}}" class="fx-press fx-lime fx-btn-elevated" style="height: 54px; border: 0; border-radius: 22px; background: {{push.btnBg}}; color: #1C1D1F; font-family: inherit; font-weight: 700; font-size: 16px">{{push.btn}}</button>
+</section>
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 4px 0"><span style="font-weight: 700; font-size: 15px">Autres défis</span><span style="font-size: 12px; color: {{t.ink2}}">Nouveaux dans 9 h</span></div>
+<div style="background: {{t.surf}}; border-radius: 24px; padding: 4px 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.04); transition: all .24s cubic-bezier(.32,.72,0,1)">
+<sc-for list="{{otherDefis}}" as="d" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: {{d.border}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><div style="font-weight: 600; font-size: 15px">{{d.name}}</div><div style="font-size: 12px; color: {{t.ink2}}">{{d.sub}}</div></div><div class="num" style="font-weight: 700; font-size: 14px">+{{d.reward}}</div></div>
+</sc-for>
+</div>
+<div style="background: {{t.surf}}; border-radius: 24px; padding: 14px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06)">
+<div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 700">Coffre de la semaine</span><span class="num" style="color: {{t.ink2}}">5 jours sur 7</span></div>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{week}}" as="w" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 5px"><div style="width: 100%; height: 8px; border-radius: 9px; background: {{w.bg}}"></div><span style="font-size: 11px; color: {{t.ink2}}">{{w.d}}</span></div>
+</sc-for>
+</div>
+<div style="font-size: 13px; color: {{t.ink2}}">Encore 2 jours actifs pour gagner 500 {{cur.earn}} et une tenue rare mystère.</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isScan}}" hint-placeholder-val="{{ false }}">
+<div class="fx-in" style="display: flex; flex-direction: column; gap: 12px">
+<div style="height: 268px; border-radius: 30px; background: #26282C; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(0,0,0,0.12)">
+<div style="font-size: 13px; color: #8A8E96">{{scanHint}}</div>
+<svg width="358" height="268" viewBox="0 0 358 268" fill="none" stroke="#C8F03C" stroke-width="3" stroke-linecap="round" style="position: absolute; inset: 0" aria-hidden="true"><path d="M40 70V52a12 12 0 0 1 12-12h18M288 40h18a12 12 0 0 1 12 12v18M318 198v18a12 12 0 0 1-12 12h-18M70 228H52a12 12 0 0 1-12-12v-18"></path></svg>
+<sc-if value="{{scanned}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 52px; top: 56px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+<sc-for list="{{meal.items}}" as="it" hint-placeholder-count="3">
+<div class="fx-msg" style="background: rgba(245,244,241,0.94); color: #1C1D1F; border-radius: 999px; padding: 6px 11px; font-size: 13px; font-weight: 600">{{it}}</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{notScanned}}" hint-placeholder-val="{{ true }}">
+<button onClick="{{doScan}}" class="fx-press fx-lime fx-btn-elevated" style="height: 56px; border: 0; border-radius: 22px; background: #C8F03C; color: #1C1D1F; font-family: inherit; font-weight: 700; font-size: 16px">Prendre la photo</button>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button class="fx-press" style="height: 48px; border: 1px solid {{t.line}}; border-radius: 18px; background: transparent; color: {{t.ink}}; font-family: inherit; font-weight: 600; font-size: 14px; transition: all .18s cubic-bezier(.32,.72,0,1)">Code-barres</button>
+<button class="fx-press" style="height: 48px; border: 1px solid {{t.line}}; border-radius: 18px; background: transparent; color: {{t.ink}}; font-family: inherit; font-weight: 600; font-size: 14px; transition: all .18s cubic-bezier(.32,.72,0,1)">Écrire mon repas</button>
+</div>
+</sc-if>
+<sc-if value="{{scanned}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Résultat du scan" class="fx-in fx-fade-scale" style="background: {{t.surf}}; border-radius: 28px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.04); transition: all .3s cubic-bezier(.32,.72,0,1)">
+<div style="display: flex; justify-content: space-between; align-items: center">
+<div style="display: flex; flex-direction: column; gap: 3px"><div style="font-size: 13px; color: {{t.ink2}}">{{meal.name}}</div><div class="num" style="font-family: 'Archivo', sans-serif; font-stretch: 125%; font-weight: 800; font-size: 34px; letter-spacing: -0.05em; line-height: 1">{{meal.kcal}}<span style="font-size: 16px; letter-spacing: 0; color: {{t.ink2}}"> kcal</span></div></div>
+<div style="width: 60px; height: 60px; border-radius: 999px; border: 5px solid {{meal.scoreColor}}; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center"><div class="num" style="font-weight: 800; font-size: 18px; line-height: 1">{{meal.score}}</div><div style="font-size: 10px; color: {{t.ink2}}">score</div></div>
+</div>
+<div class="num" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<div style="background: {{t.bg}}; border-radius: 16px; padding: 10px 12px"><div style="font-size: 12px; color: {{t.ink2}}">Protéines</div><div style="font-weight: 700; font-size: 17px">{{meal.p}} g</div></div>
+<div style="background: {{t.bg}}; border-radius: 16px; padding: 10px 12px"><div style="font-size: 12px; color: {{t.ink2}}">Glucides</div><div style="font-weight: 700; font-size: 17px">{{meal.g}} g</div></div>
+<div style="background: {{t.bg}}; border-radius: 16px; padding: 10px 12px"><div style="font-size: 12px; color: {{t.ink2}}">Lipides</div><div style="font-weight: 700; font-size: 17px">{{meal.l}} g</div></div>
+</div>
+<div style="display: flex; gap: 10px; align-items: flex-start; background: {{impact.bg}}; color: {{impact.ink}}; border-radius: 18px; padding: 11px 12px">
+<img src="{{coachImg}}" alt="" style="width: 28px; height: 28px; border-radius: 999px; object-fit: cover; object-position: 50% 8%; background: #DAD7D1; flex-shrink: 0">
+<div style="font-size: 13px; line-height: 1.4"><span style="font-weight: 700">{{impact.title}}</span> {{impact.text}}</div>
+</div>
+<div style="display: flex; gap: 8px">
+<button onClick="{{nextMeal}}" class="fx-press" style="flex-grow: 1; height: 52px; border: 1px solid {{t.line}}; border-radius: 20px; background: transparent; color: {{t.ink}}; font-family: inherit; font-weight: 600; font-size: 14px; transition: all .18s cubic-bezier(.32,.72,0,1)">Autre exemple</button>
+<button onClick="{{addMeal}}" class="fx-press fx-lime fx-btn-elevated num" style="flex-grow: 1.4; height: 52px; border: 0; border-radius: 20px; background: #C8F03C; color: #1C1D1F; font-family: inherit; font-weight: 700; font-size: 14px">Ajouter, +{{meal.reward}} {{cur.earn}}</button>
+</div>
+</section>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isShop}}" hint-placeholder-val="{{ false }}">
+<div class="fx-in" style="display: flex; flex-direction: column; gap: 12px">
+<section aria-label="Pass de saison" style="background: linear-gradient(135deg, #1C1D1F 0%, #242628 100%); color: #F5F4F1; border-radius: 30px; padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.1); transition: all .3s cubic-bezier(.32,.72,0,1)">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 13px; color: #C8F03C; font-weight: 600">Saison 1 : Origines</span><span style="font-size: 12px; color: #9EA2AA">fin dans 41 jours</span></div>
+<div class="num" style="font-family: 'Archivo', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 24px; letter-spacing: -0.035em; line-height: 1.1">Palier 7 sur 50</div>
+<div style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px">
+<sc-for list="{{passSegs}}" as="ps" hint-placeholder-count="10"><div style="height: 6px; border-radius: 3px; background: {{ps.bg}}; transition: all .24s cubic-bezier(.32,.72,0,1); box-shadow: 0 1px 3px rgba(0,0,0,0.08)"></div></sc-for>
+</div>
+<div style="font-size: 13px; color: #B7BBC2; line-height: 1.45">La voie gratuite donne des {{cur.earn}} et des tenues communes. La voie Élite ajoute 2 tenues légendaires animées et te rend 1 200 {{cur.prem}} au fil des paliers.</div>
+<button onClick="{{buyPass}}" class="fx-press fx-lime fx-btn-elevated num" style="height: 50px; border: 0; border-radius: 18px; background: {{passBtnBg}}; color: #1C1D1F; font-family: inherit; font-weight: 700; font-size: 15px">{{passBtn}}</button>
+</section>
+<div style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 4px 0; opacity: 0.9; transition: opacity .2s cubic-bezier(.32,.72,0,1)"><span style="font-weight: 700; font-size: 15px">Tenues</span><span style="font-size: 12px; color: {{t.ink2}}">Boutique renouvelée dans 14 h</span></div>
+<div style="display: flex; gap: 12px; flex-wrap: wrap; padding: 0 4px">
+<sc-for list="{{rarityLegend}}" as="r" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: {{t.ink2}}; transition: all .18s cubic-bezier(.32,.72,0,1)"><span style="width: 9px; height: 9px; border-radius: 3px; background: {{r.c}}; box-shadow: 0 0 8px rgba({{r.c_rgb}}, 0.2)"></span>{{r.label}}</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<sc-for list="{{skins}}" as="s" hint-placeholder-count="6">
+<button onClick="{{s.act}}" class="fx-press fx-card" style="background: {{t.surf}}; border: 0; box-shadow: inset 0 0 0 2px {{s.border}}, 0 4px 12px rgba(0,0,0,0.08); border-radius: 24px; padding: 6px; display: flex; flex-direction: column; gap: 8px; text-align: left; font-family: inherit; color: {{t.ink}}">
+<span style="display: block; height: 164px; width: 100%; border-radius: 18px; overflow: hidden; background: #DAD7D1; position: relative; box-shadow: inset 0 -2px 8px rgba(0,0,0,0.08)">
+<img src="{{s.img}}" alt="{{s.name}}" style="width: 100%; height: 164px; object-fit: cover; object-position: top; display: block; transition: all .3s cubic-bezier(.32,.72,0,1)">
+<span style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: {{s.rc}}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 8px rgba(0,0,0,0.12)"></span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px; padding: 0 6px 6px">
+<span style="font-size: 14px; font-weight: 700">{{s.name}}</span>
+<span class="num" style="display: flex; align-items: center; gap: 5px; font-size: 13px; color: {{s.ctaColor}}; font-weight: 600"><span style="font-size: 12px; color: {{t.ink2}}; font-weight: 500">{{s.rarity}}</span><span style="flex-grow: 1"></span>{{s.cta}}</span>
+</span>
+</button>
+</sc-for>
+</div>
+<div id="recharge" style="display: flex; justify-content: space-between; align-items: baseline; padding: 6px 4px 0"><span style="font-weight: 700; font-size: 15px">Recharger en {{cur.prem}}</span><span style="font-size: 12px; color: {{t.ink2}}">Paiement Apple</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{packs}}" as="pk" hint-placeholder-count="3">
+<button onClick="{{pk.buy}}" class="fx-press fx-card fx-btn-elevated num" style="background: {{t.surf}}; border: 0; box-shadow: inset 0 0 0 2px {{pk.border}}; border-radius: 20px; padding: 14px 4px 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit; color: {{t.ink}}"><span style="font-family: 'Archivo', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 19px; letter-spacing: -0.03em">{{pk.amount}}</span><span style="font-size: 13px; color: {{t.ink2}}">{{pk.price}}</span><span style="font-size: 11px; font-weight: 700; color: {{pk.tagColor}}; height: 14px">{{pk.tag}}</span></button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isPerso}}" hint-placeholder-val="{{ false }}">
+<div class="fx-in" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; gap: 8px; align-items: flex-end">
+<div style="flex-grow: 1; height: 300px; border-radius: 28px; background: linear-gradient(180deg, #DAD7D1 0%, #D2CFC8 100%); overflow: hidden; position: relative; box-shadow: 0 16px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08); transition: all .3s cubic-bezier(.32,.72,0,1)"><img src="{{hero.img}}" alt="{{hero.alt}}" style="width: 100%; height: 300px; object-fit: cover; object-position: top; transition: all .3s cubic-bezier(.32,.72,0,1)"><div style="position: absolute; left: 10px; bottom: 10px; background: rgba(28,29,31,0.88); color: #F5F4F1; border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600">Aujourd’hui, palier 3</div></div>
+<div style="width: 96px; height: 220px; border-radius: 24px; background: {{t.surf}}; box-shadow: inset 0 0 0 1.5px {{t.line}}, 0 6px 18px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; transition: all .24s cubic-bezier(.32,.72,0,1)"><svg width="46" height="104" viewBox="0 0 24 52" fill="{{t.track}}" aria-hidden="true" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1))"><circle cx="12" cy="6" r="5"></circle><path d="M5 13h14l1 18h-4l-1 20h-2.5l-.5-15-.5 15H9L8 31H4z"></path></svg><div class="num" style="font-size: 12px; font-weight: 600; text-align: center; color: {{t.ink2}}; line-height: 1.3">Palier 4<br>dans 2,4 kg</div></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 0 2px"><div style="height: 5px; border-radius: 9px; background: {{t.ink}}; box-shadow: 0 1px 3px rgba(0,0,0,0.12)"></div><div style="height: 5px; border-radius: 9px; background: {{t.ink}}; box-shadow: 0 1px 3px rgba(0,0,0,0.12)"></div><div style="height: 5px; border-radius: 9px; background: {{t.ink}}; box-shadow: 0 1px 3px rgba(0,0,0,0.12)"></div><div style="height: 5px; border-radius: 9px; background: {{t.track}}; opacity: .5"></div><div style="height: 5px; border-radius: 9px; background: {{t.track}}; opacity: .5"></div></div>
+<div class="fx-card num" style="background: {{t.surf}}; border-radius: 24px; padding: 14px 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06)">
+<div><div style="font-size: 12px; color: {{t.ink2}}">Départ</div><div style="font-weight: 700; font-size: 18px">92,0 kg</div></div>
+<div><div style="font-size: 12px; color: {{t.ink2}}">Aujourd’hui</div><div style="font-weight: 700; font-size: 18px">84,6 kg</div></div>
+<div><div style="font-size: 12px; color: {{t.ink2}}">Objectif</div><div style="font-weight: 700; font-size: 18px">78,0 kg</div></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{stats}}" as="st" hint-placeholder-count="4">
+<div class="fx-card" style="will-change:transform" style="background: {{t.surf}}; border-radius: 20px; padding: 12px 14px; display: flex; flex-direction: column; gap: 9px; box-shadow: 0 3px 10px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.04)"><div class="num" style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 700">{{st.name}}</span><span style="color: {{t.ink2}}">niv. {{st.lvl}}</span></div><div style="height: 4px; border-radius: 9px; background: {{t.track}}; box-shadow: inset 0 1px 2px rgba(0,0,0,0.08)"><div class="fx-seg" style="width: {{st.pct}}; height: 4px; border-radius: 9px; background: {{t.ink}}"></div></div></div>
+</sc-for>
+</div>
+<button onClick="{{goSelfie}}" class="fx-press" style="height: 52px; border: 1px solid {{t.line}}; border-radius: 20px; background: transparent; color: {{t.ink}}; font-family: inherit; font-weight: 600; font-size: 14px; transition: all .2s cubic-bezier(.32,.72,0,1); box-shadow: 0 1px 3px rgba(0,0,0,0.04)">Recréer mon perso avec un selfie</button>
+</div>
+</sc-if>
+
+<sc-if value="{{isSelfie}}" hint-placeholder-val="{{ false }}">
+<div class="fx-in" style="display: flex; flex-direction: column; gap: 14px">
+<div style="height: 380px; border-radius: 32px; background: linear-gradient(135deg, #1C1D1F 0%, #26282C 100%); position: relative; display: flex; align-items: center; justify-content: center; box-shadow: 0 16px 40px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08); transition: all .3s cubic-bezier(.32,.72,0,1)">
+<div style="width: 196px; height: 256px; border-radius: 50%; box-shadow: 0 0 0 3px {{selfie.ring}}, 0 0 0 600px rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center"><svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#3A3D43" stroke-width="1.4" aria-hidden="true"><circle cx="12" cy="8" r="4.5"></circle><path d="M4 21c1-4.5 4.5-7 8-7s7 2.5 8 7"></path></svg></div>
+<div role="status" style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-size: 13px; color: #B7BBC2">{{selfie.hint}}</div>
+</div>
+<div style="font-size: 13px; color: {{t.ink2}}; line-height: 1.45; padding: 0 4px; opacity: 0.85; transition: opacity .2s cubic-bezier(.32,.72,0,1)">Ton selfie sert seulement à dessiner ton perso dans le style FITAIA. Il est supprimé juste après.</div>
+<button onClick="{{doSelfie}}" class="fx-press fx-lime fx-btn-elevated" style="height: 56px; border: 0; border-radius: 22px; background: #C8F03C; color: #1C1D1F; font-family: inherit; font-weight: 700; font-size: 16px">{{selfie.btn}}</button>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" class="fx-toast" style="position: absolute; left: 16px; right: 16px; bottom: 104px; display: flex; align-items: center; gap: 10px; background: {{toastBg}}; color: {{toastInk}}; border-radius: 20px; padding: 13px 16px; font-size: 14px; font-weight: 600; z-index: 20; box-shadow: 0 14px 40px rgba(0,0,0,0.24), 0 6px 12px rgba(0,0,0,0.12); -webkit-backdrop-filter: blur(12px) saturate(180%); backdrop-filter: blur(12px) saturate(180%); border: 1px solid rgba(255,255,255,0.1); animation: slideUp .4s cubic-bezier(.32,.72,0,1) both">{{toast}}</div>
+</sc-if>
+
+<nav aria-label="Navigation" style="position: absolute; left: 14px; right: 14px; bottom: 22px; height: 70px; background: {{t.glass}}; -webkit-backdrop-filter: blur(32px) saturate(220%); backdrop-filter: blur(32px) saturate(220%); box-shadow: inset 0 0 0 1px {{t.glassEdge}}, 0 12px 40px rgba(0,0,0,0.18), 0 4px 14px rgba(0,0,0,0.1); border-radius: 30px; display: flex; align-items: center; justify-content: space-around; z-index: 10">
+<button onClick="{{goHome}}" aria-label="Accueil" style="background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit; font-size: 11px; font-weight: {{nav.home.w}}; color: {{nav.home.c}}; min-width: 56px; min-height: 48px; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" style="transition: all .18s cubic-bezier(.32,.72,0,1)" stroke-linejoin="round"><path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H15v-6H9v6H4.5a1 1 0 0 1-1-1z" stroke-linecap="round" stroke-linejoin="round"></path></svg>Accueil</button>
+<button onClick="{{goDefis}}" aria-label="Défis" style="background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit; font-size: 11px; font-weight: {{nav.defis.w}}; color: {{nav.defis.c}}; min-width: 56px; min-height: 48px; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" style="transition: all .18s cubic-bezier(.32,.72,0,1)" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15.5h3.5l3.5-6 4 4 2.5-3.5H21"></path></svg>Défis</button>
+<button onClick="{{goScan}}" aria-label="Scanner un repas" class="fx-press fx-lime fx-btn-elevated" style="width: 58px; height: 58px; border-radius: 22px; border: 0; background: #1C1D1F; display: flex; align-items: center; justify-content: center; inset 0 1px 2px rgba(255,255,255,0.08)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C8F03C" stroke-width="2.1" stroke-linecap="round"><path d="M4 8.5V6a2 2 0 0 1 2-2h2.5M15.5 4H18a2 2 0 0 1 2 2v2.5M20 15.5V18a2 2 0 0 1-2 2h-2.5M8.5 20H6a2 2 0 0 1-2-2v-2.5"></path><circle cx="12" cy="12" r="3.2"></circle></svg></button>
+<button onClick="{{goShop}}" aria-label="Boutique" style="background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit; font-size: 11px; font-weight: {{nav.shop.w}}; color: {{nav.shop.c}}; min-width: 56px; min-height: 48px; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" style="transition: all .18s cubic-bezier(.32,.72,0,1)" stroke-linejoin="round"><path d="M8.5 4 12 6.5 15.5 4l5 3.5-2.8 3.2V20H6.3v-9.3L3.5 7.5z"></path></svg>Boutique</button>
+<button onClick="{{goPerso}}" aria-label="Mon perso" style="background: transparent; border: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; font-family: inherit; font-size: 11px; font-weight: {{nav.perso.w}}; color: {{nav.perso.c}}; min-width: 56px; min-height: 48px; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" style="transition: all .18s cubic-bezier(.32,.72,0,1)"><circle cx="12" cy="7.5" r="3.8"></circle><path d="M4.5 20.5c1-4.3 4.2-6.8 7.5-6.8s6.5 2.5 7.5 6.8" stroke-linecap="round"></path></svg>Mon perso</button>
+</nav>
+
+<sc-if value="{{coachOpen}}" hint-placeholder-val="{{ false }}">
+<div class="fx-veil" onClick="{{closeCoach}}" style="position: absolute; inset: 0; background: rgba(10,11,12,0.52); z-index: 30; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); transition: all .3s cubic-bezier(.32,.72,0,1)"></div>
+<section role="dialog" aria-label="Fito, ton coach" class="fx-sheet" style="position: absolute; left: 0; right: 0; bottom: 0; height: 712px; background: {{t.bg}}; border-radius: 34px 34px 0 0; z-index: 31; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 -16px 48px rgba(0,0,0,0.28), 0 -8px 20px rgba(0,0,0,0.12); border-top: 1px solid rgba(255,255,255,0.06)">
+<div style="display: flex; justify-content: center; padding: 8px 0 0"><div style="width: 38px; height: 5px; border-radius: 9px; background: {{t.track}}; opacity: .6"></div></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px">
+<img src="{{coachImg}}" alt="" style="width: 48px; height: 48px; border-radius: 16px; object-fit: cover; object-position: 50% 8%; background: #DAD7D1; box-shadow: 0 2px 8px rgba(0,0,0,0.12)">
+<div style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px"><div style="font-family: 'Archivo', sans-serif; font-stretch: 112%; font-weight: 800; font-size: 20px; letter-spacing: -0.035em">Fito</div><div style="font-size: 12px; color: {{t.ink2}}">Ton coach, connaît ton journal et tes objectifs</div></div>
+<button onClick="{{closeCoach}}" aria-label="Fermer" class="fx-press" style="width: 40px; height: 40px; border-radius: 999px; border: 0; background: {{t.surf}}; color: {{t.ink}}; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all .18s cubic-bezier(.32,.72,0,1)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></button>
+</div>
+<div class="fx-scroll" style="flex-grow: 1; overflow-y: auto; padding: 4px 16px 12px; display: flex; flex-direction: column; gap: 8px; scroll-behavior: smooth">
+<sc-for list="{{chat}}" as="msg" hint-placeholder-count="2">
+<div class="fx-msg fx-slide-up" style="align-self: {{msg.align}}; max-width: 84%; background: {{msg.bg}}; color: {{msg.ink}}; border-radius: {{msg.radius}}; padding: 10px 13px; font-size: 14px; line-height: 1.45; white-space: pre-line; box-shadow: 0 3px 12px rgba(0,0,0,0.1); animation: slideUp .4s cubic-bezier(.32,.72,0,1) both">{{msg.text}}</div>
+</sc-for>
+<sc-if value="{{typing}}" hint-placeholder-val="{{ false }}">
+<div style="align-self: flex-start; background: {{t.surf}}; border-radius: 18px 18px 18px 6px; padding: 12px 14px; display: flex; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); animation: slideUp .4s cubic-bezier(.32,.72,0,1) both" aria-label="Fito écrit"><span class="fx-dot" style="width: 6px; height: 6px; border-radius: 9px; background: {{t.ink2}}; animation: fxDot .6s ease-in-out infinite"></span><span class="fx-dot" style="width: 6px; height: 6px; border-radius: 9px; background: {{t.ink2}}; animation: fxDot .6s ease-in-out infinite .15s"></span><span class="fx-dot" style="width: 6px; height: 6px; border-radius: 9px; background: {{t.ink2}}; animation: fxDot .6s ease-in-out infinite .3s"></span></div>
+</sc-if>
+</div>
+<div style="display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 10px" class="fx-scroll">
+<sc-for list="{{suggestions}}" as="sg" hint-placeholder-count="3">
+<button onClick="{{sg.ask}}" class="fx-press" style="flex-shrink: 0; height: 38px; border: 1px solid {{t.line}}; border-radius: 999px; background: {{t.surf}}; color: {{t.ink}}; padding: 0 13px; font-family: inherit; font-size: 13px; font-weight: 600; transition: all .18s cubic-bezier(.32,.72,0,1); box-shadow: 0 1px 4px rgba(0,0,0,0.04)">{{sg.q}}</button>
+</sc-for>
+</div>
+<div style="display: flex; gap: 8px; padding: 0 16px 30px">
+<label for="coach-q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Ta question pour Fito</label>
+<input id="coach-q" value="{{draft}}" onChange="{{onDraft}}" placeholder="Pose ta question à Fito" style="flex-grow: 1; height: 50px; border: 1px solid {{t.line}}; border-radius: 20px; background: {{t.surf}}; color: {{t.ink}}; padding: 0 16px; font-family: inherit; font-size: 15px; box-sizing: border-box; min-width: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.04)">
+<button onClick="{{sendDraft}}" aria-label="Envoyer" class="fx-press fx-lime fx-btn-elevated" style="width: 50px; height: 50px; border-radius: 18px; border: 0; background: #C8F03C; color: #1C1D1F; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"></path></svg></button>
+</div>
+</section>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["clair","sombre"],"default":"clair"},"monnaies":{"editor":"enum","options":["FIT Crédits et FIT Points","Gouttes et Lingots","Sueur et Or"],"default":"FIT Crédits et FIT Points"},"$preview":{"width":390,"height":844}}'>
+var IMG = {
+  p1: '/_blob/6926bc32eeb57141a87cf7ad77dc488d', p2: '/_blob/c4291a743b0763d28ab4ba7afab60495',
+  p3: '/_blob/a61bde92d07c18a95b4148a41d4371dd', p4: '/_blob/a99a8946f56f0a9239ebfb441688a3a9',
+  p5: '/_blob/dce0518f8affd22e54b60f14680c72f6', p6: '/_blob/d80770c4b65f6026588614cce1ec7505'
+};
+var CURS = {
+  'FIT Crédits et FIT Points': ['FIT Crédits', 'FIT Points'],
+  'Gouttes et Lingots': ['Gouttes', 'Lingots'], 'Sueur et Or': ['Sueur', 'Or'],
+};
+var RARITY = {
+  commune: { label: 'Commune', c: '#8A8E96' },
+  rare: { label: 'Rare', c: '#2F6BF0' },
+  epique: { label: 'Épique', c: '#8247E5' },
+  legendaire: { label: 'Légendaire', c: '#E9A10B' }
+};
+var SKINS = [
+  { id: 'origine', name: 'Origine', rarity: 'commune', img: IMG.p1, cur: 'earn', price: 0 },
+  { id: 'cargo', name: 'Cargo Urbain', rarity: 'rare', img: IMG.p4, cur: 'earn', price: 400 },
+  { id: 'olive', name: 'Olive Tech', rarity: 'rare', img: IMG.p6, cur: 'earn', price: 650 },
+  { id: 'creme', name: 'Crème Studio', rarity: 'epique', img: IMG.p2, cur: 'prem', price: 80 },
+  { id: 'titane', name: 'Titane Néon', rarity: 'legendaire', img: IMG.p3, cur: 'prem', price: 150 },
+  { id: 'atelier', name: 'Atelier Noir', rarity: 'legendaire', img: IMG.p4, cur: 'prem', price: 180 }
+];
+var MEALS = [
+  { name: 'Bowl poulet, riz, brocolis', kcal: 620, p: 48, g: 70, l: 14, score: 86, items: ['Poulet grillé, 150 g', 'Riz basmati, 120 g', 'Brocolis, 80 g'] },
+  { name: 'Burger, frites et soda', kcal: 1080, p: 34, g: 128, l: 46, score: 31, items: ['Burger double', 'Frites, 150 g', 'Soda, 33 cl'] },
+  { name: 'Salade saumon avocat', kcal: 450, p: 32, g: 18, l: 27, score: 82, items: ['Saumon, 100 g', 'Avocat, ½', 'Quinoa, 60 g'] }
+];
+var Q_LIP = 'Lipides ou glucides, lesquels privilégier ?';
+var Q_SOIR = 'Que manger ce soir ?';
+var Q_STAG = 'Pourquoi mon poids stagne ?';
+function fmt(n) { return Math.round(n).toLocaleString('fr-FR'); }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      tab: 'home', earn: 1240, prem: 35, owned: ['origine'], equipped: 'origine', pass: false,
+      goal: 2100, burned: 320, eaten: 1420, p: 96, g: 160, l: 48,
+      reps: 0, attempt: 0, running: false, pushDone: false, feedback: 'Pose ton iPhone au sol, de profil, à environ 1,5 m.', fbKind: 'info', phase: 0,
+      scanned: false, mealIdx: 0, selfieStep: 0, toast: '', toastKind: 'ok',
+      coachOpen: false, typing: false, draft: '',
+      chat: [{ from: 'coach', text: 'Salut Mark, moi c’est Fito. Pose-moi n’importe quelle question sur ta nutrition, tes entraînements ou ta progression.' }]
+    };
+  }
+  componentWillUnmount() { clearInterval(this.timer); clearTimeout(this.toastT); clearTimeout(this.selfieT); clearTimeout(this.typeT); }
+  say(msg, kind) {
+    clearTimeout(this.toastT);
+    this.setState({ toast: '' });
+    setTimeout(() => this.setState({ toast: msg, toastKind: kind || 'ok' }), 10);
+    this.toastT = setTimeout(() => this.setState({ toast: '' }), 2800);
+  }
+  answer(q) {
+    const S = this.state;
+    const remaining = S.goal + S.burned - S.eaten;
+    if (q === Q_LIP) return 'Aucun n’est « meilleur » : ton corps a besoin des deux.\n\nLes lipides (9 kcal par gramme) fabriquent tes hormones et transportent les vitamines A, D, E et K. Ils calent longtemps. Vise environ 30 % de tes calories, surtout huile d’olive, noix, poissons gras.\n\nLes glucides (4 kcal par gramme) sont le carburant de tes séances. Choisis-les complets et riches en fibres.\n\nPour ton objectif, la vraie priorité, ce sont les protéines : 140 g par jour.';
+    if (q === Q_SOIR) return remaining > 500
+      ? 'Il te reste ' + fmt(remaining) + ' kcal. Idée : pavé de saumon, légumes rôtis et 80 g de riz complet. Environ 550 kcal et 38 g de protéines.'
+      : remaining > 0
+        ? 'Il te reste ' + fmt(remaining) + ' kcal. Reste léger : omelette de 3 œufs aux épinards et une salade. Environ 320 kcal.'
+        : 'Tu as déjà dépassé de ' + fmt(-remaining) + ' kcal. Ce soir, une soupe de légumes et un yaourt nature suffiront. Pas de panique, c’est la moyenne de la semaine qui compte.';
+    if (q === Q_STAG) return 'C’est normal : l’eau fait varier ton poids de 1 à 2 kg d’un jour à l’autre.\n\nRegarde ta moyenne sur 7 jours. Si elle ne bouge pas pendant 3 semaines, je baisserai ton budget de 150 kcal.';
+    return 'Bonne question. Dans l’app, je te répondrai en m’appuyant sur ton journal, tes défis et ton objectif.';
+  }
+  ask(q) {
+    if (!q || this.state.typing) return;
+    this.setState({ chat: this.state.chat.concat([{ from: 'me', text: q }]), typing: true, draft: '' });
+    clearTimeout(this.typeT);
+    this.typeT = setTimeout(() => {
+      this.setState({ typing: false, chat: this.state.chat.concat([{ from: 'coach', text: this.answer(q) }]) });
+    }, 1100);
+  }
+  startPush() {
+    const S = this.state;
+    if (S.running) return;
+    if (S.pushDone) { this.setState({ tab: 'home' }); return; }
+    this.setState({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Corps détecté, 19 points suivis. Vas-y.', fbKind: 'info' });
+    clearInterval(this.timer);
+    this.timer = setInterval(() => {
+      const s = this.state;
+      if (s.phase === 0) { this.setState({ phase: 1 }); return; }
+      const attempt = s.attempt + 1;
+      if (attempt === 3) {
+        this.setState({ phase: 0, attempt: attempt, feedback: 'Pas comptée : descends jusqu’à 90° aux coudes.', fbKind: 'bad' });
+        return;
+      }
+      const reps = s.reps + 1;
+      if (reps >= 5) {
+        clearInterval(this.timer);
+        this.setState({ phase: 0, attempt: attempt, reps: 5, running: false, pushDone: true, earn: s.earn + 50, burned: s.burned + 8, feedback: 'Défi réussi. 5 pompes complètes, 1 refusée.', fbKind: 'good' });
+        this.say('+50 ' + this.curNames()[0] + ', défi du jour réussi', 'ok');
+        return;
+      }
+      this.setState({ phase: 0, attempt: attempt, reps: reps, feedback: 'Pompe ' + reps + ' validée, amplitude complète.', fbKind: 'good' });
+    }, 650);
+  }
+  curNames() { return CURS[this.props.monnaies ?? 'FIT Crédits et FIT Points'] || CURS['FIT Crédits et FIT Points']; }
+  skinAct(sk) {
+    const S = this.state;
+    const names = this.curNames();
+    if (S.equipped === sk.id) { this.say(sk.name + ' est déjà sur ton perso', 'ok'); return; }
+    if (S.owned.indexOf(sk.id) >= 0) { this.setState({ equipped: sk.id }); this.say(sk.name + ' équipée', 'ok'); return; }
+    const bal = sk.cur === 'earn' ? S.earn : S.prem;
+    if (bal < sk.price) {
+      this.say(sk.cur === 'earn' ? 'Il te manque ' + fmt(sk.price - bal) + ' ' + names[0] + '. Fais tes défis du jour.' : 'Il te manque ' + fmt(sk.price - bal) + ' ' + names[1] + '. Recharge plus bas.', 'bad');
+      return;
+    }
+    const upd = { owned: S.owned.concat([sk.id]), equipped: sk.id };
+    if (sk.cur === 'earn') upd.earn = S.earn - sk.price; else upd.prem = S.prem - sk.price;
+    this.setState(upd);
+    this.say(sk.name + ' débloquée et équipée', 'ok');
+  }
+  renderVals() {
+    const S = this.state;
+    const dark = (this.props.theme ?? 'clair') === 'sombre';
+    const names = this.curNames();
+    const cur = { earn: names[0], prem: names[1], earnAria: names[0] + ' : en gagner avec les défis', premAria: names[1] + ' : recharger' };
+    const t = dark
+      ? { bg: '#121315', surf: '#1D1F22', ink: '#EDEEF0', ink2: '#A2A6AD', track: '#30333A', line: '#30333A', strong: '#26282C', strongInk: '#EDEEF0', strongInk2: '#A2A6AD', glass: 'rgba(29,31,34,0.72)', glassEdge: 'rgba(255,255,255,0.08)' }
+      : { bg: '#E6E4DF', surf: '#F5F4F1', ink: '#1C1D1F', ink2: '#5A5D63', track: '#D6D3CD', line: '#CFCBC4', strong: '#1C1D1F', strongInk: '#F5F4F1', strongInk2: '#A2A6AD', glass: 'rgba(245,244,241,0.74)', glassEdge: 'rgba(255,255,255,0.7)' };
+    const go = (tab) => () => this.setState({ tab: tab });
+
+    const budget = S.goal + S.burned;
+    const remaining = budget - S.eaten;
+    const ratio = S.eaten / budget;
+    const over = ratio > 1, near = !over && ratio >= 0.85;
+    const barColor = over ? '#E2483D' : near ? '#E9A10B' : '#C8F03C';
+    const segs = [];
+    const N = 30;
+    for (let i = 0; i < N; i++) segs.push({ bg: ((i + 0.5) / N) <= Math.min(ratio, 1) ? barColor : t.track });
+    const cal = {
+      eaten: S.eaten, budget: budget,
+      eatenFmt: fmt(S.eaten), budgetFmt: fmt(budget), burnedFmt: fmt(S.burned),
+      bigFmt: over ? '+' + fmt(-remaining) : fmt(remaining),
+      bigLabel: over ? 'kcal au-dessus de ton budget' : 'kcal restantes aujourd’hui',
+      numColor: over ? '#E2483D' : t.ink, segs: segs,
+      alertBg: over ? (dark ? '#3A1714' : '#F8DEDB') : near ? (dark ? '#382A0C' : '#F8EBCB') : t.surf,
+      alertInk: over ? (dark ? '#FFB8AF' : '#7D1D14') : near ? (dark ? '#FFD88C' : '#6A4300') : t.ink,
+      alertTitle: over ? 'On a dépassé de ' + fmt(-remaining) + ' kcal' : near ? 'Plus que ' + fmt(remaining) + ' kcal aujourd’hui' : 'Bonne journée, tu es dans les clous',
+      alertTip: over ? '20 minutes de marche rapide en brûlent environ 120. Ton budget de demain ne change pas.' : near ? 'Un yaourt grec et une pomme font environ 180 kcal et 15 g de protéines.' : 'Chaque défi réussi ajoute des calories à ton budget du jour.'
+    };
+    const macros = [
+      { label: 'Protéines', val: S.p + ' g', pct: Math.min(100, S.p / 140 * 100) + '%' },
+      { label: 'Glucides', val: S.g + ' g', pct: Math.min(100, S.g / 230 * 100) + '%' },
+      { label: 'Lipides', val: S.l + ' g', pct: Math.min(100, S.l / 70 * 100) + '%' }
+    ];
+
+    const eqSkin = SKINS.filter((x) => x.id === S.equipped)[0];
+    const hero = { img: eqSkin.img, name: eqSkin.name, alt: 'Ton perso en tenue ' + eqSkin.name, rc: RARITY[eqSkin.rarity].c };
+
+    const skins = SKINS.map((sk) => {
+      const r = RARITY[sk.rarity];
+      const owned = S.owned.indexOf(sk.id) >= 0, eq = S.equipped === sk.id;
+      return { name: sk.name, img: sk.img, rarity: r.label, rc: r.c, border: eq ? '#C8F03C' : 'transparent',
+        ctaColor: eq ? (dark ? '#C8F03C' : '#3F5600') : t.ink,
+        cta: eq ? 'Équipée' : owned ? 'Équiper' : (sk.price === 0 ? 'Gratuite' : fmt(sk.price) + ' ' + (sk.cur === 'earn' ? names[0] : names[1])),
+        act: () => this.skinAct(sk) };
+    });
+    const rarityLegend = ['commune', 'rare', 'epique', 'legendaire'].map((k) => ({ label: RARITY[k].label + ((k === 'epique' || k === 'legendaire') ? ', en ' + names[1] : ', en ' + names[0]), c: RARITY[k].c }));
+    const packs = [
+      { amount: '100', price: '0,99 €', tag: '', n: 100 },
+      { amount: '550', price: '4,99 €', tag: 'Le plus pris', n: 550 },
+      { amount: '1 200', price: '9,99 €', tag: '+20 % offerts', n: 1200 }
+    ].map((pk) => ({ amount: pk.amount, price: pk.price, tag: pk.tag, tagColor: dark ? '#C8F03C' : '#3F5600', border: pk.n === 550 ? t.ink : 'transparent',
+      buy: () => { this.setState({ prem: this.state.prem + pk.n }); this.say('+' + pk.amount + ' ' + names[1] + ' (paiement simulé)', 'ok'); } }));
+    const passSegs = [];
+    for (let i = 0; i < 10; i++) passSegs.push({ bg: i < 1 ? '#C8F03C' : i < 2 ? '#7C8A4A' : '#34373C' });
+
+    const meal = MEALS[S.mealIdx];
+    const after = S.eaten + meal.kcal;
+    const overAfter = after > budget;
+    const impact = overAfter
+      ? { bg: dark ? '#3A1714' : '#F8DEDB', ink: dark ? '#FFB8AF' : '#7D1D14', title: 'Attention.', text: 'Avec ce repas tu passes à ' + fmt(after) + ' kcal, ' + fmt(after - budget) + ' de plus que ton budget.' }
+      : { bg: dark ? '#22300C' : '#E9F3C8', ink: dark ? '#D6F57A' : '#334600', title: 'Parfait.', text: 'Après ce repas, il te restera ' + fmt(budget - after) + ' kcal.' };
+    const mealV = { name: meal.name, kcal: fmt(meal.kcal), p: meal.p, g: meal.g, l: meal.l, score: meal.score, items: meal.items,
+      scoreColor: meal.score >= 70 ? '#C8F03C' : meal.score >= 50 ? '#E9A10B' : '#E2483D', reward: meal.score >= 70 ? 30 : 10 };
+
+    const ph = S.phase === 1;
+    const pose = { head: ph ? 176 : 132, shoulder: ph ? 178 : 140, hip: ph ? 190 : 172, elbowX: ph ? 106 : 146, elbowY: ph ? 192 : 172 };
+    const fb = S.fbKind === 'bad' ? { bg: '#3A1714', ink: '#FFB8AF' } : S.fbKind === 'good' ? { bg: '#22300C', ink: '#D6F57A' } : { bg: '#26282C', ink: '#D4D6DA' };
+    const push = {
+      reps: S.reps, feedback: S.feedback, fbBg: fb.bg, fbInk: fb.ink,
+      status: S.running ? 'Analyse en direct' : S.pushDone ? 'Terminé' : 'Caméra prête',
+      dot: S.running ? '#E2483D' : S.pushDone ? '#C8F03C' : '#8A8E96',
+      btn: S.pushDone ? 'Retour à l’accueil' : S.running ? 'Analyse en cours' : 'Commencer',
+      btnBg: S.running ? '#5A5D63' : '#C8F03C'
+    };
+    const ok = S.running || S.pushDone;
+    const bad = S.fbKind === 'bad';
+    const CHECK = 'M5 12.5l4.5 4.5L19 7.5', CROSS = 'M7 7l10 10M17 7 7 17';
+    const mk = (label, state) => ({ label: label, bg: state === 'ok' ? '#C8F03C' : state === 'bad' ? '#E2483D' : '#34373C', ink: state === 'idle' ? '#6E727A' : '#1C1D1F', path: state === 'bad' ? CROSS : CHECK });
+    const checks = [
+      mk('Coudes à 90° en bas', bad ? 'bad' : ok ? 'ok' : 'idle'),
+      mk('Corps gainé et aligné', ok ? 'ok' : 'idle'),
+      mk('Bras tendus en haut', ok ? 'ok' : 'idle')
+    ];
+    const otherDefis = [
+      { name: '20 squats', sub: 'Caméra, amplitude vérifiée', reward: 40 },
+      { name: 'Gainage, 1 minute', sub: 'Caméra, position tenue', reward: 60 },
+      { name: 'Scanner 2 repas', sub: '1 sur 2', reward: 30 },
+      { name: 'Marcher 6 000 pas', sub: 'Podomètre de l’iPhone', reward: 40 }
+    ].map((d, i) => ({ name: d.name, sub: d.sub, reward: d.reward, border: i === 0 ? '0' : '1px solid ' + t.line }));
+    const week = ['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => ({ d: d, bg: i < 5 ? t.ink : t.track }));
+    const stats = [
+      { name: 'Force', lvl: S.pushDone ? 10 : 9, pct: S.pushDone ? '8%' : '55%' },
+      { name: 'Forme', lvl: 11, pct: '72%' },
+      { name: 'Énergie', lvl: 14, pct: '40%' },
+      { name: 'Discipline', lvl: 13, pct: '86%' }
+    ];
+    const navC = (on) => ({ c: on ? t.ink : t.ink2, w: on ? 700 : 500 });
+    const titles = {
+      home: ['Salut Mark', 'Vendredi 2 octobre'], defis: ['Défis du jour', 'Gratuits, chaque jour'], scan: ['Scanner', 'Une photo suffit'],
+      shop: ['Boutique', 'Tenues et saison'], perso: ['Mon perso', 'Niveau 12'], selfie: ['Ton selfie', 'Étape 2 sur 4']
+    };
+    const selfie = [
+      { ring: '#C8F03C', hint: 'Place ton visage dans l’ovale', btn: 'Prendre mon selfie' },
+      { ring: '#E9A10B', hint: 'Fito dessine ton perso…', btn: 'Dessin en cours' }
+    ][S.selfieStep];
+    const chat = S.chat.map((m) => m.from === 'me'
+      ? { text: m.text, align: 'flex-end', bg: t.strong, ink: t.strongInk, radius: '20px 20px 6px 20px' }
+      : { text: m.text, align: 'flex-start', bg: t.surf, ink: t.ink, radius: '20px 20px 20px 6px' });
+    const suggestions = [Q_LIP, Q_SOIR, Q_STAG].map((q) => ({ q: q, ask: () => this.ask(q) }));
+
+    return {
+      t: t, cur: cur, cal: cal, macros: macros, hero: hero, skins: skins, rarityLegend: rarityLegend, packs: packs, passSegs: passSegs,
+      meal: mealV, impact: impact, pose: pose, push: push, checks: checks, otherDefis: otherDefis, week: week, stats: stats, selfie: selfie,
+      chat: chat, suggestions: suggestions, typing: S.typing, draft: S.draft, coachOpen: S.coachOpen, coachImg: IMG.p5,
+      screenTitle: titles[S.tab][0], screenSub: titles[S.tab][1], earnFmt: fmt(S.earn), premFmt: fmt(S.prem),
+      isHome: S.tab === 'home', isDefis: S.tab === 'defis', isScan: S.tab === 'scan', isShop: S.tab === 'shop', isPerso: S.tab === 'perso', isSelfie: S.tab === 'selfie',
+      scanned: S.scanned, notScanned: !S.scanned, scanHint: S.scanned ? '' : 'Vise ton assiette',
+      pushTitle: S.pushDone ? 'Défi du jour réussi' : 'Défi du jour : 5 pompes', pushSub: S.pushDone ? 'Reviens demain pour le suivant' : 'Gratuit, comptées par la caméra', pushReward: S.pushDone ? 'Gagné' : '+50',
+      passBtn: S.pass ? 'Pass Élite actif' : 'Passer Élite pour 950 ' + names[1], passBtnBg: S.pass ? '#5A5D63' : '#C8F03C',
+      nav: { home: navC(S.tab === 'home'), defis: navC(S.tab === 'defis'), shop: navC(S.tab === 'shop'), perso: navC(S.tab === 'perso' || S.tab === 'selfie') },
+      hasToast: !!S.toast, toast: S.toast, toastBg: S.toastKind === 'bad' ? '#E2483D' : '#1C1D1F', toastInk: S.toastKind === 'bad' ? '#FFFFFF' : '#F5F4F1',
+      goHome: go('home'), goDefis: go('defis'), goShop: go('shop'), goPerso: go('perso'), goSelfie: go('selfie'),
+      goScan: () => this.setState({ tab: 'scan', scanned: false }),
+      goEarn: () => { this.setState({ tab: 'defis' }); this.say('Les ' + names[0] + ' se gagnent avec les défis gratuits', 'ok'); },
+      goPrem: () => { this.setState({ tab: 'shop' }); this.say('Les ' + names[1] + ' se rechargent en bas de la boutique', 'ok'); },
+      openCoach: () => this.setState({ coachOpen: true }),
+      closeCoach: () => this.setState({ coachOpen: false }),
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      sendDraft: () => this.ask((S.draft || '').trim()),
+      startPush: () => this.startPush(),
+      doScan: () => this.setState({ scanned: true }),
+      nextMeal: () => this.setState({ mealIdx: (S.mealIdx + 1) % MEALS.length }),
+      addMeal: () => {
+        this.setState({ eaten: S.eaten + meal.kcal, p: S.p + meal.p, g: S.g + meal.g, l: S.l + meal.l, earn: S.earn + mealV.reward, scanned: false, tab: 'home', mealIdx: (S.mealIdx + 1) % MEALS.length });
+        this.say(meal.name + ' ajouté, +' + mealV.reward + ' ' + names[0], 'ok');
+      },
+      buyPass: () => {
+        if (S.pass) return;
+        if (S.prem < 950) { this.say('Il te manque ' + fmt(950 - S.prem) + ' ' + names[1] + '. Recharge plus bas.', 'bad'); return; }
+        this.setState({ prem: S.prem - 950, pass: true }); this.say('Pass Élite activé', 'ok');
+      },
+      doSelfie: () => {
+        if (S.selfieStep === 1) return;
+        this.setState({ selfieStep: 1 });
+        clearTimeout(this.selfieT);
+        this.selfieT = setTimeout(() => { this.setState({ selfieStep: 0, tab: 'perso' }); this.say('Ton perso est prêt', 'ok'); }, 1800);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
