@@ -10,7 +10,7 @@ export type PurchaseBlock = 'ITEM_DISABLED' | 'NOT_FOR_SALE';
 /** Un objet s'achète s'il est actif et a un prix (jamais une récompense ni un objet de prestige). */
 export function purchaseBlock(item: CosmeticItem): PurchaseBlock | null {
   if (!item.enabled) return 'ITEM_DISABLED';
-  if (item.priceFitcoins === null || item.source === 'REWARD' || item.source === 'PRESTIGE') return 'NOT_FOR_SALE';
+  if (item.priceFitcoins === null || item.source === 'REWARD' || item.source === 'PRESTIGE' || item.source === 'STORE') return 'NOT_FOR_SALE';
   return null;
 }
 

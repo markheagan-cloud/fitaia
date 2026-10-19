@@ -10,15 +10,19 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const filter = process.argv[2] || '';
-const files = fs.readdirSync(path.join(root, 'tests')).filter((f) => f.endsWith('.test.ts') && f.includes(filter)).sort();
+// tests/*.test.ts + les tests serveur qui tournent sans PostgreSQL (synchronisation TypeScript ↔ SQL)
+const files = [
+  ...fs.readdirSync(path.join(root, 'tests')).filter((f) => f.endsWith('.test.ts')).sort().map((f) => 'tests/' + f),
+  'supabase/tests/seed_sync.test.ts',
+].filter((f) => f.includes(filter));
 const esbuild = path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'esbuild.cmd' : 'esbuild');
 
 let failed = 0;
 for (const f of files) {
-  const name = f.replace(/\.ts$/, '');
+  const name = path.basename(f).replace(/\.ts$/, '');
   try {
     execFileSync(esbuild, [
-      `tests/${f}`, '--bundle', '--platform=node', '--alias:@=./src', '--alias:react-native=./tests/rn-stub.js',
+      f, '--bundle', '--platform=node', '--alias:@=./src', '--alias:react-native=./tests/rn-stub.js',
       '--loader:.jpg=file', '--loader:.png=file', '--loader:.glb=file', '--outdir=.tests-out', '--log-level=error',
     ], { cwd: root, stdio: 'pipe', shell: process.platform === 'win32' });
   } catch (e) {

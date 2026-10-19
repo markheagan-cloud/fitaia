@@ -257,7 +257,7 @@ export function decodeCatalog(value: unknown): CosmeticItem[] {
       category: oneOf(o, 'category', COSMETIC_CATEGORIES),
       rarity: oneOf(o, 'rarity', RARITIES),
       assetReference: str(o, 'assetReference'),
-      source: oneOf(o, 'source', ['SHOP', 'REWARD', 'EVENT', 'LIMITED', 'PRESTIGE'] as const),
+      source: oneOf(o, 'source', ['SHOP', 'REWARD', 'EVENT', 'LIMITED', 'PRESTIGE', 'STORE'] as const),
       priceFitcoins: o.priceFitcoins === null ? null : int(o, 'priceFitcoins'),
       enabled: bool(o, 'enabled'),
       createdAt: iso(o, 'createdAt'),

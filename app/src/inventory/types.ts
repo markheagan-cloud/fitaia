@@ -6,8 +6,11 @@ export type CosmeticCategory = 'TOP' | 'BOTTOM' | 'SHOES' | 'JACKET' | 'HEAD' | 
 
 export type Rarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
-/** Origine d'un objet (l'habit raconte quelque chose) : seuls SHOP, EVENT et LIMITED peuvent avoir un prix. */
-export type CosmeticSource = 'SHOP' | 'REWARD' | 'EVENT' | 'LIMITED' | 'PRESTIGE';
+/**
+ * Origine d'un objet (l'habit raconte quelque chose) : seuls SHOP, EVENT et LIMITED peuvent avoir un prix en Fitcoins.
+ * STORE = cosmétique vendu par achat intégré Apple, jamais payable en Fitcoins (attribué par le serveur après reçu vérifié).
+ */
+export type CosmeticSource = 'SHOP' | 'REWARD' | 'EVENT' | 'LIMITED' | 'PRESTIGE' | 'STORE';
 
 export type CosmeticItem = {
   id: string;

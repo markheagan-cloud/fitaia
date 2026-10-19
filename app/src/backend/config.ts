@@ -51,7 +51,7 @@ export function validateServerConfig(config: EconomyServerConfig): string[] {
   for (const item of config.catalog) {
     if (!/^[a-z0-9_]{2,64}$/.test(item.id)) errors.push(item.id + ' : identifiant invalide');
     if (item.priceFitcoins !== null && !positiveInt(item.priceFitcoins)) errors.push(item.id + ' : prix invalide');
-    if ((item.source === 'REWARD' || item.source === 'PRESTIGE') && item.priceFitcoins !== null) errors.push(item.id + ' : objet non achetable avec un prix');
+    if ((item.source === 'REWARD' || item.source === 'PRESTIGE' || item.source === 'STORE') && item.priceFitcoins !== null) errors.push(item.id + ' : objet non achetable avec un prix');
   }
   if (new Set(config.rewards.map((r) => r.id)).size !== config.rewards.length) errors.push('identifiants de récompense en double');
   for (const reward of config.rewards) errors.push(...validateRewardDefinition(reward, itemIds));

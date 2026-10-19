@@ -224,15 +224,21 @@ create table public.cosmetic_items (
   category        text        not null check (category in ('TOP','BOTTOM','SHOES','JACKET','HEAD','GLASSES','ACCESSORY','FULL_OUTFIT')),
   rarity          text        not null check (rarity in ('COMMON','RARE','EPIC','LEGENDARY')),
   asset_reference text        not null check (char_length(asset_reference) between 1 and 200),
-  source          text        not null check (source in ('SHOP','REWARD','EVENT','LIMITED','PRESTIGE')),
+  source          text        not null check (source in ('SHOP','REWARD','EVENT','LIMITED','PRESTIGE','STORE')),
   price_fitcoins  integer     check (price_fitcoins is null or price_fitcoins > 0),
   enabled         boolean     not null default true,
   created_at      timestamptz not null default now(),
   unique (id, category),
-  check (source not in ('REWARD','PRESTIGE') or price_fitcoins is null)
+  check (source not in ('REWARD','PRESTIGE','STORE') or price_fitcoins is null)
 );
 -- Catalogue de départ (démonstration ; même contenu que src/inventory/cosmeticCatalog.ts).
 insert into public.cosmetic_items (id, name, category, rarity, asset_reference, source, price_fitcoins, enabled, created_at) values
+  ('outfit_origine', 'Origine', 'FULL_OUTFIT', 'COMMON', 'cosmetic/full_outfit/outfit_origine', 'REWARD', null, true, '2026-10-04T00:00:00Z'),
+  ('outfit_cargo', 'Cargo Urbain', 'FULL_OUTFIT', 'RARE', 'cosmetic/full_outfit/outfit_cargo', 'SHOP', 400, true, '2026-10-04T00:00:00Z'),
+  ('outfit_olive', 'Olive Tech', 'FULL_OUTFIT', 'RARE', 'cosmetic/full_outfit/outfit_olive', 'SHOP', 650, true, '2026-10-04T00:00:00Z'),
+  ('outfit_creme', 'Crème Studio', 'FULL_OUTFIT', 'EPIC', 'cosmetic/full_outfit/outfit_creme', 'STORE', null, true, '2026-10-04T00:00:00Z'),
+  ('outfit_titane', 'Titane Néon', 'FULL_OUTFIT', 'LEGENDARY', 'cosmetic/full_outfit/outfit_titane', 'STORE', null, true, '2026-10-04T00:00:00Z'),
+  ('outfit_atelier', 'Atelier Noir', 'FULL_OUTFIT', 'LEGENDARY', 'cosmetic/full_outfit/outfit_atelier', 'STORE', null, true, '2026-10-04T00:00:00Z'),
   ('outfit_urban_001', 'Tenue Urbaine', 'FULL_OUTFIT', 'COMMON', 'cosmetic/full_outfit/outfit_urban_001', 'SHOP', 250, true, '2026-10-04T00:00:00Z'),
   ('top_tee_graphite', 'Tee Essentiel Graphite', 'TOP', 'COMMON', 'cosmetic/top/top_tee_graphite', 'SHOP', 120, true, '2026-10-04T00:00:00Z'),
   ('top_hoodie_nuit', 'Hoodie Nuit', 'TOP', 'RARE', 'cosmetic/top/top_hoodie_nuit', 'SHOP', 300, true, '2026-10-04T00:00:00Z'),
@@ -362,7 +368,9 @@ insert into public.reward_definitions (id, type, amount, cosmetic_item_id, unloc
   ('milestone_1000', 'capsule', 1, null, '{"kind":"lifetime_points","atLeast":1000}', false, true),
   ('milestone_1150', 'cosmetic', 1, 'accessory_montre_parcours', '{"kind":"lifetime_points","atLeast":1150}', false, true),
   ('milestone_1300', 'fitcoins', 100, null, '{"kind":"lifetime_points","atLeast":1300}', false, true),
-  ('daily_goal', 'fitcoins', 10, null, '{"kind":"action_completed_today","action":"daily_goal_completed"}', true, true);
+  ('daily_goal', 'fitcoins', 10, null, '{"kind":"action_completed_today","action":"daily_goal_completed"}', true, true),
+  ('daily_challenge', 'fitcoins', 50, null, '{"kind":"action_completed_today","action":"challenge_completed"}', true, true),
+  ('daily_meal', 'fitcoins', 10, null, '{"kind":"action_completed_today","action":"meal_logged"}', true, true);
 
 -- `pending` : capsule due, ouverture construite en Phase 5 (seule évolution permise : pending → fulfilled).
 create table public.reward_claims (
@@ -835,7 +843,7 @@ begin
   select * into it from public.cosmetic_items where id = p_item_id;
   if not found then return jsonb_build_object('ok', false, 'code', 'ITEM_NOT_FOUND', 'wallet', public._wallet_json(me)); end if;
   if not it.enabled then return jsonb_build_object('ok', false, 'code', 'ITEM_DISABLED', 'wallet', public._wallet_json(me)); end if;
-  if it.price_fitcoins is null or it.source in ('REWARD','PRESTIGE') then
+  if it.price_fitcoins is null or it.source in ('REWARD','PRESTIGE','STORE') then
     return jsonb_build_object('ok', false, 'code', 'NOT_FOR_SALE', 'wallet', public._wallet_json(me));
   end if;
   if exists (select 1 from public.user_inventory where user_id = me and item_id = it.id) then

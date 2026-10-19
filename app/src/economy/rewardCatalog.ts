@@ -21,4 +21,7 @@ export const REWARD_DEFINITIONS: readonly RewardDefinition[] = [
   },
   { id: 'milestone_1300', type: 'fitcoins', amount: 100, unlockCondition: { kind: 'lifetime_points', atLeast: 1300 }, repeatable: false, enabled: true },
   { id: 'daily_goal', type: 'fitcoins', amount: 10, unlockCondition: { kind: 'action_completed_today', action: 'daily_goal_completed' }, repeatable: true, enabled: true },
+  // Revenu quotidien du jeu gratuit : un défi réussi (50) et un repas enregistré (10), une fois par jour chacun.
+  { id: 'daily_challenge', type: 'fitcoins', amount: 50, unlockCondition: { kind: 'action_completed_today', action: 'challenge_completed' }, repeatable: true, enabled: true },
+  { id: 'daily_meal', type: 'fitcoins', amount: 10, unlockCondition: { kind: 'action_completed_today', action: 'meal_logged' }, repeatable: true, enabled: true },
 ];
