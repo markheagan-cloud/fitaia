@@ -139,7 +139,7 @@ export default function Scanner() {
           <Card radius={28} pad={16} elevated style={{ gap: 14 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ gap: 3 }}>
-                <Txt size={13} color={t.ink2}>{meal.name}</Txt>
+                <Txt size={13} color={t.ink2}>{customMeal ? meal.name : 'Exemple · ' + meal.name}</Txt>
                 <Display wide size={34} num lineHeight={34} letterSpacing={-1.7}>
                   {fmt(kcalShown)}
                   <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal</Display>
@@ -172,16 +172,23 @@ export default function Scanner() {
               <Press onPress={customMeal ? () => { useGame.getState().resetScan(); setMode(food ? 'portion' : 'idle'); } : nextMeal} style={[styles.ghost, { flex: 1, height: 52, borderRadius: 20, borderColor: t.line }]}>
                 <Txt size={14} weight="semibold">{customMeal ? 'Modifier' : 'Autre exemple'}</Txt>
               </Press>
-              <Press
-                haptic="medium"
-                onPress={() => {
-                  addMeal();
-                  router.navigate('/(tabs)');
-                }}
-                style={[styles.primary, { flex: 1.4, height: 52, borderRadius: 20 }, shadow.btn]}
-              >
-                <Txt size={14} weight="bold" num color={OBSIDIAN}>{reward ? 'Ajouter, +' + reward + ' ' + CUR_NAMES[0] : 'Ajouter au journal'}</Txt>
-              </Press>
+              {customMeal ? (
+                <Press
+                  haptic="medium"
+                  onPress={() => {
+                    addMeal();
+                    router.navigate('/(tabs)');
+                  }}
+                  style={[styles.primary, { flex: 1.4, height: 52, borderRadius: 20 }, shadow.btn]}
+                >
+                  <Txt size={14} weight="bold" num color={OBSIDIAN}>{reward ? 'Ajouter, +' + reward + ' ' + CUR_NAMES[0] : 'Ajouter au journal'}</Txt>
+                </Press>
+              ) : (
+                // exemple de démonstration : on le montre, il ne s'ajoute jamais au journal ni ne rapporte quoi que ce soit
+                <Press onPress={() => useGame.getState().resetScan()} style={[styles.ghost, { flex: 1.4, height: 52, borderRadius: 20, borderColor: t.ink }]}>
+                  <Txt size={14} weight="semibold">Fermer l’exemple</Txt>
+                </Press>
+              )}
             </View>
           </Card>
         </Animated.View>

@@ -12,13 +12,21 @@ import { Toast } from '@/components/Toast';
 import { RewardBurst } from '@/fx/RewardBurst';
 import { CoachSheet } from '@/components/CoachSheet';
 import { useGame } from '@/store/useGame';
+import { COMMUNITY_MINOR_MESSAGE, canJoinCommunity } from '@/community/access';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Root() {
   const t = useTheme();
   const onboarded = useGame((s) => s.onboarded);
+  const age = useGame((s) => s.profile.age);
   const pathname = usePathname();
+  // Garde des routes : Communauté réservée aux majeurs (liens profonds compris), labo 3D réservé au développement.
+  const minorInCommunity = pathname.startsWith('/communaute') && !canJoinCommunity(age);
+  const devOnly = !__DEV__ && pathname.startsWith('/human-engine-debug');
+  useEffect(() => {
+    if (minorInCommunity) useGame.getState().say(COMMUNITY_MINOR_MESSAGE, 'bad');
+  }, [minorInCommunity]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') useGame.getState().rollover();
@@ -47,6 +55,7 @@ function Root() {
         <Stack.Screen name="communaute/discussion/[id]" />
       </Stack>
       {!onboarded && pathname !== '/onboarding' ? <Redirect href="/onboarding" /> : null}
+      {onboarded && (minorInCommunity || devOnly) ? <Redirect href="/(tabs)" /> : null}
       <Toast />
       <CoachSheet />
       <RewardBurst />

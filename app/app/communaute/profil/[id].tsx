@@ -313,7 +313,7 @@ export default function MemberProfile() {
                   report(id, r.id);
                   setReporting(false);
                   setSafety(false);
-                  say('Merci. Le signalement est enregistré et sera examiné.');
+                  say('Signalement enregistré. Pour ne plus voir cette personne, bloque-la.');
                 }}
                 style={[styles.reason, { borderColor: t.line }]}
               >

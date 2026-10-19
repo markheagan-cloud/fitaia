@@ -30,6 +30,7 @@ function toggle<T>(list: T[], v: T): T[] {
 
 /** Tranche d'âge et objectif pré-remplis depuis le profil de l'app (jamais publiés tels quels : seulement la tranche et la catégorie). */
 function rangeOf(age: number): AgeRange {
+  // les mineurs n'arrivent jamais ici (garde de route dans app/_layout.tsx, voir community/access.ts)
   if (age <= 24) return '18-24';
   if (age <= 30) return '25-30';
   if (age <= 35) return '31-35';

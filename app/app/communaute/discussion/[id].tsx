@@ -196,7 +196,7 @@ export default function Discussion() {
                       ]}
                     >
                       {flagged ? (
-                        <Txt size={13} color={mine ? '#A2A6AD' : t.ink2}>Message signalé · en cours de vérification</Txt>
+                        <Txt size={13} color={mine ? '#A2A6AD' : t.ink2}>Message signalé · masqué pour toi</Txt>
                       ) : (
                         <Txt size={15.5} lineHeight={21} color={mine ? '#F5F4F1' : t.ink}>{frenchSpacing(m.content)}</Txt>
                       )}
@@ -250,7 +250,7 @@ export default function Discussion() {
                   onPress={() => {
                     report(id, r.id, reportFor);
                     setReportFor(null);
-                    say('Merci. Le message est masqué en attendant la vérification.');
+                    say('Message masqué pour toi. Tu peux aussi bloquer la personne.');
                   }}
                   style={[styles.reason, { borderColor: t.line }]}
                 >

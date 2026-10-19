@@ -346,7 +346,12 @@ export const useGame = create<GameState>()(
         setCustomMeal: (m) => set({ customMeal: m, scanned: !!m }),
         addMeal: () => {
           const S = get();
-          const meal = S.customMeal ?? MEALS[S.mealIdx];
+          // seul un vrai repas (recherche, code-barres, saisie) entre au journal : les exemples ne comptent jamais
+          if (!S.customMeal) {
+            S.say('Exemple : rien n’est ajouté au journal', 'bad');
+            return;
+          }
+          const meal = S.customMeal;
           const rewarded = S.mealsRewardedToday < RULES.mealsRewardedPerDay;
           const reward = rewarded ? mealReward(meal.score) : 0;
           set({
@@ -358,7 +363,7 @@ export const useGame = create<GameState>()(
             mealsTotal: S.mealsTotal + 1,
             scanned: false,
             customMeal: null,
-            mealIdx: S.customMeal ? S.mealIdx : (S.mealIdx + 1) % MEALS.length,
+            mealIdx: S.mealIdx,
           });
           credit(reward, 'earn', 'Repas : ' + meal.name + ' (score ' + meal.score + ')', { meals: 1 });
           S.say(

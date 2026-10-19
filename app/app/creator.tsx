@@ -111,7 +111,7 @@ export default function Creator() {
         <Image source={previewImage(sheet)} accessibilityLabel="Aperçu de ton perso" style={{ width: width - 32, height: 340 }} resizeMode="cover" />
         <View style={styles.tag}>
           <Txt size={12} weight="semibold" color="#F5F4F1" numberOfLines={1}>
-            {busy ? STEP[busy] : dirty ? 'Perso de base le plus proche · non enregistré' : avatarConfigured ? 'Perso de base · dessine ta version à ton image' : 'Perso de base · le dessin à ton image arrive avec la clé Hugging Face'}
+            {busy ? STEP[busy] : dirty ? 'Perso de base le plus proche · non enregistré' : avatarConfigured ? 'Perso de base · dessine ta version à ton image' : 'Perso de base'}
           </Txt>
         </View>
       </View>
@@ -168,10 +168,10 @@ export default function Creator() {
       ) : null}
       <Txt size={12} lineHeight={17} color={t.ink2} style={{ paddingHorizontal: 4 }}>
         {avatarMode === 'none'
-          ? 'Le perso de base est choisi parmi six rendus. Le dessin à ton image (gratuit, Hugging Face) s’active avec une clé dans le fichier .env.'
+          ? 'Ta fiche choisit le rendu le plus proche parmi nos persos de base.'
           : avatarMode === 'huggingface'
-            ? 'Dessin réaliste à partir de ta fiche, gratuit via Hugging Face (quelques secondes, parfois une attente si le modèle dort).'
-            : 'Dessin HD par le serveur FITAIA, à partir de ta fiche et de ton selfie.'}
+            ? 'Dessin réaliste à partir de ta fiche (mode développement).'
+            : 'Dessin à partir de ta fiche et de ton selfie.'}
       </Txt>
     </Screen>
   );
