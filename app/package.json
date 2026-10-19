@@ -8,6 +8,7 @@
     "ios": "expo start --ios",
     "android": "expo start --android",
     "typecheck": "tsc --noEmit",
+    "test": "node scripts/run-tests.js",
     "lint": "expo lint",
     "doctor": "npx expo-doctor",
     "preflight": "node scripts/preflight.js",
@@ -61,6 +62,7 @@
   "devDependencies": {
     "@types/react": "~19.2.4",
     "@types/three": "0.170.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~57.0.2",
     "sharp": "^0.33.5",
