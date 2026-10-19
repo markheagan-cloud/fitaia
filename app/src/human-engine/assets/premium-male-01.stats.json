@@ -17,8 +17,8 @@
       "triangles": 368
     },
     "hair": {
-      "vertices": 9100,
-      "triangles": 7800
+      "vertices": 15400,
+      "triangles": 13200
     },
     "male_casualsuit06": {
       "vertices": 4035,
@@ -39,7 +39,7 @@
     "male_casualsuit06_normal": 19951,
     "shoes05": 138499
   },
-  "bytes": 3911908,
+  "bytes": 4390416,
   "height_m": 1.763,
   "morphs": [
     "body_weight",
@@ -58,6 +58,6 @@
     "face_fat",
     "neck_fat"
   ],
-  "vertices": 25410,
-  "triangles": 37312
+  "vertices": 31710,
+  "triangles": 42712
 }
