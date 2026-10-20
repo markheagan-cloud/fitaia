@@ -54,6 +54,15 @@ export function avatarForProfile(sex: 'f' | 'm' | 'x', appearance?: string): Ava
   return avatarForBase(female ? 'f' : 'm');
 }
 
+/**
+ * Avatar personnel construit depuis le selfie (serveur FITAIA) : même usine, mêmes 15 morphs, donc mêmes drivers
+ * que la base. Seul le fichier change (visage, teint, cheveux de la personne).
+ */
+export function personalAvatar(p: { id: string; uri: string; base: 'm' | 'f' }): AvatarDefinition {
+  const base = avatarForBase(p.base);
+  return { ...base, id: 'personal-' + p.id, label: 'Mon avatar', source: { uri: p.uri } };
+}
+
 /** Base 3D pour une identité déjà résolue (src/avatar/identity.ts : même règle que les images 2D). */
 export function avatarForBase(base: 'm' | 'f'): AvatarDefinition {
   return AVATARS[base === 'f' ? 'premium-female-01' : 'premium-male-01'];

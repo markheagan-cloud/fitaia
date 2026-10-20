@@ -10,6 +10,7 @@ import { fmtKg } from '@/data/content';
 import {
   DEFAULT_ANIMATION_MS,
   avatarForBase,
+  personalAvatar,
   HumanAvatarView,
   currentAndTarget,
   fitaiaHumanEngine,
@@ -22,6 +23,9 @@ import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { CloseIcon } from '@/components/Icons';
 import { avatarBase } from '@/avatar/identity';
+import { avatar3dConfigured, createAvatar3d } from '@/services/avatar3d';
+
+const AMBER_TXT = '#B87A00';
 
 const lerp = (a: BodyParameters, b: BodyParameters, t: number): BodyParameters => ({
   weight: a.weight + (b.weight - a.weight) * t,
@@ -42,7 +46,33 @@ export default function Corps() {
   const ready = useGame((s) => s.characterReady);
   // même base que les images 2D (Accueil, Mon perso, Communauté)
   const base = avatarBase(profile.sex, { appearance }, ready);
-  const avatar = useMemo(() => avatarForBase(base), [base]);
+  const mine = useGame((s) => s.avatar3d);
+  const selfieUri = useGame((s) => s.selfieUri);
+  const setAvatar3d = useGame((s) => s.setAvatar3d);
+  const say = useGame((s) => s.say);
+  const [making, setMaking] = useState(false);
+  const [makeError, setMakeError] = useState('');
+  // avatar personnel (selfie) s'il correspond à la base du perso, sinon la base homme / femme
+  const personal = mine && mine.base === base ? mine : null;
+  const avatar = useMemo(() => (personal ? personalAvatar(personal) : avatarForBase(base)), [personal, base]);
+  const make = async () => {
+    if (!selfieUri) {
+      router.push('/selfie');
+      return;
+    }
+    setMaking(true);
+    setMakeError('');
+    try {
+      const a = await createAvatar3d(selfieUri, base);
+      fitaiaHumanEngine.setBody(lerp(current, target, mix));
+      setAvatar3d(a);
+      say('Ton avatar 3D est prêt', 'ok');
+    } catch (e) {
+      setMakeError(e instanceof Error ? e.message : 'Création impossible.');
+    } finally {
+      setMaking(false);
+    }
+  };
   const weights = useGame((s) => s.weights);
   const kg = currentWeight(profile, weights);
   const { current, target } = useMemo(() => currentAndTarget(profile, kg), [profile, kg]);
@@ -89,6 +119,7 @@ export default function Corps() {
 
         <View>
           <HumanAvatarView
+            key={avatar.id}
             avatar={avatar}
             engine={fitaiaHumanEngine}
             strategy={Platform.OS === 'web' ? 'gpu' : 'cpu'}
@@ -129,6 +160,35 @@ export default function Corps() {
           <Txt size={15} weight="bold" color={OBSIDIAN}>{mix < 0.5 ? 'Voir mon objectif' : 'Revenir à aujourd’hui'}</Txt>
         </Press>
 
+        <View style={[styles.card, { backgroundColor: t.surf }]}>
+          <Txt size={15} weight="bold">{personal ? 'Ton visage en 3D' : 'Mettre ton visage sur ton perso'}</Txt>
+          {personal ? (
+            <>
+              <Txt size={13} lineHeight={18} color={t.ink2}>
+                Lu sur ton selfie : forme du visage ({personal.fromPhoto.faceTargets} réglages){personal.fromPhoto.skin ? ', teint' : ''}{personal.fromPhoto.hair ? ', couleur des cheveux' : personal.fromPhoto.bald ? ', crâne rasé' : ''}.
+              </Txt>
+              <Txt size={13} lineHeight={18} color={t.ink2}>
+                Pas lisible sur un selfie, pris dans ton profil : {personal.notFromPhoto.map((x) => x.trait).join(', ')}.
+              </Txt>
+              {personal.limits.map((l) => (
+                <Txt key={l} size={13} lineHeight={18} color={AMBER_TXT}>{l}</Txt>
+              ))}
+            </>
+          ) : (
+            <Txt size={13} lineHeight={18} color={t.ink2}>
+              {avatar3dConfigured
+                ? 'On lit ton visage sur ton selfie (forme, teint, cheveux). Ta taille et ton poids viennent de ton profil : une photo ne les montre pas.'
+                : 'La création depuis un selfie n’est pas encore disponible dans cette version. Ton perso garde la base ' + (base === 'f' ? 'femme' : 'homme') + '.'}
+            </Txt>
+          )}
+          {makeError ? <Txt size={13} color="#E2483D">{makeError}</Txt> : null}
+          {avatar3dConfigured ? (
+            <Press disabled={making} onPress={make} style={[styles.cta, { borderColor: t.line, opacity: making ? 0.6 : 1 }]}>
+              <Txt size={14} weight="semibold">{making ? 'Création en cours, environ une minute…' : !selfieUri ? 'Prendre mon selfie' : personal ? 'Refaire depuis mon selfie' : 'Créer depuis mon selfie'}</Txt>
+            </Press>
+          ) : null}
+        </View>
+
         <Txt size={12} lineHeight={17} color={t.ink2}>
           Illustration calculée à partir de ta taille, de ton poids et de ton objectif. Ce n’est ni une prédiction médicale ni une reconstruction exacte de ton corps.
         </Txt>
@@ -144,5 +204,6 @@ const styles = StyleSheet.create({
   camBtn: { minWidth: 44, height: 44, paddingHorizontal: 10, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(18,19,21,0.72)' },
   card: { borderRadius: 22, padding: 14, gap: 12 },
   btn: { flex: 1, height: 48, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  cta: { minHeight: 48, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
   primary: { height: 54, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

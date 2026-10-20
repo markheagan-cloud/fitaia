@@ -5,6 +5,7 @@
  */
 import { create } from 'zustand';
 import { defaultSheetFor } from '@/avatar/identity';
+import { deleteAvatar3d, type Avatar3d } from '@/services/avatar3d';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CUR_NAMES, MEALS, Meal, MealEntry, OTHER_DEFIS, fmtKg } from '@/data/content';
@@ -35,6 +36,7 @@ type Persisted = {
   meals: Record<string, MealEntry[]>;
   extraDone: Record<string, string[]>; // jour → ids des défis bonus validés
   avatar: { uri: string; outfit: string; createdAt: number } | null; // perso dessiné depuis le selfie
+  avatar3d: Avatar3d | null; // avatar 3D personnel (GLB construit depuis le selfie, enregistré sur le téléphone)
   character: CharacterSheet; // fiche du créateur (gratuit, illimité)
   characterReady: boolean; // le perso FITAIA Studio (vectoriel) remplace l'image par défaut
   profile: Profile; // sexe, âge, taille, poids de départ, objectif, activité, rythme
@@ -99,6 +101,7 @@ type Actions = {
   addWeight: (kg: number) => void;
   setGoal: (kcal: number) => void;
   setSelfieUri: (u: string | null) => void;
+  setAvatar3d: (a: Avatar3d | null) => void;
   stopTimers: () => void;
 };
 
@@ -188,6 +191,7 @@ export const useGame = create<GameState>()(
         meals: {},
         extraDone: {},
         avatar: null,
+        avatar3d: null,
         character: DEFAULT_SHEET,
         characterReady: false,
         profile: DEFAULT_PROFILE,
@@ -378,6 +382,11 @@ export const useGame = create<GameState>()(
         },
 
         setAvatar: (a) => set({ avatar: a }),
+        setAvatar3d: (a) => {
+          const old = get().avatar3d;
+          if (old && old.uri !== a?.uri) deleteAvatar3d(old);
+          set({ avatar3d: a });
+        },
         setCharacter: (c) => set({ character: c, characterReady: true }),
         setProfile: (patch) => {
           const S = get();
@@ -426,7 +435,7 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 12,
+      version: 13,
       // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         // champs des anciennes versions, lus seulement pour les convertir
@@ -482,6 +491,7 @@ export const useGame = create<GameState>()(
           // v12 : une fiche jamais validée suit le sexe du profil (avant : masculine par défaut, même pour une femme)
           s.character = defaultSheetFor(s.profile.sex);
         }
+        if (version < 13) s.avatar3d = s.avatar3d ?? null;
         return s as Persisted;
       },
       storage: createJSONStorage(() => AsyncStorage),
@@ -499,6 +509,7 @@ export const useGame = create<GameState>()(
         meals: s.meals,
         extraDone: s.extraDone,
         avatar: s.avatar,
+        avatar3d: s.avatar3d,
         character: s.character,
         characterReady: s.characterReady,
         profile: s.profile,

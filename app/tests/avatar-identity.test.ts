@@ -34,3 +34,17 @@ ok(previewImage(fem) !== previewImage(DEFAULT_SHEET), 'image de départ femme di
 ok(defaultSheetFor('m').appearance === 'masc' && defaultSheetFor('x').appearance === 'neutre', 'fiches de départ homme / autre');
 
 console.log(n + ' tests identité avatar OK');
+
+// rapport du serveur selfie → avatar 3D : ce qui vient de la photo, ce qui n'en vient pas
+import { parseReport } from '../src/avatar/avatar3dReport';
+const rep = parseReport('abc', 'file:///a.glb', 'm', {
+  ok: true,
+  traits_photo: { teint_rgb: [0.8935, 0.6259, 0.4913], cheveux_rgb: [0.1569, 0.2, 0.2235], chauve: false, cibles_visage: 39, erreur_moyenne_mm: 6.29 },
+  non_deductible: [{ trait: 'taille', raison: 'pas d’échelle', source: 'profil' }, { trait: 'poids', raison: 'visage seul', source: 'profil' }],
+  limites: [],
+}, 1);
+ok(rep.fromPhoto.skin === '#e4a07d' && rep.fromPhoto.hair === '#283339' && rep.fromPhoto.faceTargets === 39 && rep.fromPhoto.errorMm === 6.3, 'traits lus sur la photo convertis ' + JSON.stringify(rep.fromPhoto));
+ok(rep.notFromPhoto.map((x) => x.trait).join(',') === 'taille,poids', 'traits non déductibles transmis à l’écran');
+const bald = parseReport('b', 'u', 'f', { ok: true, traits_photo: { chauve: true, cheveux_rgb: [0, 0, 0] }, limites: ['base féminine : visage non ajusté'] });
+ok(bald.fromPhoto.hair === null && bald.fromPhoto.bald && bald.limits.length === 1 && bald.base === 'f', 'crâne rasé et limites de la base féminine');
+console.log(n + ' tests rapport avatar 3D OK');

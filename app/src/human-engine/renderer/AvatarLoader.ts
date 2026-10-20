@@ -30,15 +30,8 @@ async function fetchBytes(uri: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
-export async function readAvatarBytes(source: AvatarSource): Promise<ArrayBuffer> {
-  if (source instanceof ArrayBuffer) return source;
-  if (typeof source === 'string') return fetchBytes(source);
-  if (typeof source === 'object') return fetchBytes('uri' in source ? source.uri : source.default);
-  const asset = Asset.fromModule(source);
-  if (Platform.OS === 'web') return fetchBytes(asset.uri);
-  await asset.downloadAsync();
-  const uri = asset.localUri ?? asset.uri;
-  if (uri.startsWith('file:')) {
+async function readUri(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS !== 'web' && uri.startsWith('file:')) {
     try {
       const f = new File(uri) as unknown as BytesFile;
       if (typeof f.bytes === 'function') {
@@ -50,6 +43,17 @@ export async function readAvatarBytes(source: AvatarSource): Promise<ArrayBuffer
     }
   }
   return fetchBytes(uri);
+}
+
+export async function readAvatarBytes(source: AvatarSource): Promise<ArrayBuffer> {
+  if (source instanceof ArrayBuffer) return source;
+  // GLB personnel enregistré sur le téléphone (file://) ou servi par le serveur FITAIA (https://)
+  if (typeof source === 'string') return readUri(source);
+  if (typeof source === 'object') return readUri('uri' in source ? source.uri : source.default);
+  const asset = Asset.fromModule(source);
+  if (Platform.OS === 'web') return fetchBytes(asset.uri);
+  await asset.downloadAsync();
+  return readUri(asset.localUri ?? asset.uri);
 }
 
 export function measureScene(root: THREE.Object3D): Omit<MeshStats, 'morphTargets' | 'missingMorphs'> {

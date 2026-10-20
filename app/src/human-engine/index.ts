@@ -9,7 +9,7 @@ import type { EngineSnapshot } from './core/types';
 export { FitaiaHumanEngine, fitaiaHumanEngine, DEFAULT_ANIMATION_MS } from './core/FitaiaHumanEngine';
 export * from './core/types';
 export { bodyFromProfile, currentAndTarget, bmiOf, NEUTRAL_BODY, evaluateDrivers, PROTOTYPE_DRIVERS } from './body/BodyParameterMapper';
-export { AVATARS, DEFAULT_AVATAR, PREMIUM_MALE_DRIVERS, avatarForBase, avatarForProfile } from './avatars';
+export { AVATARS, DEFAULT_AVATAR, PREMIUM_MALE_DRIVERS, avatarForBase, avatarForProfile, personalAvatar } from './avatars';
 export { shapeFromBody, withOverrides, BODY_SHAPE_KEYS, type BodyShape } from './body/BodyShape';
 export { HumanAvatarView } from './renderer/HumanAvatarView';
 export type { ExpoThreeRenderer, RenderMode } from './renderer/ExpoThreeRenderer';
