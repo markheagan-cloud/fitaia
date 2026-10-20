@@ -3,7 +3,8 @@ import { View, StyleSheet, ScrollView, Image, useWindowDimensions } from 'react-
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
-import { useEquippedSkin, useGame } from '@/store/useGame';
+import { useGame } from '@/store/useGame';
+import { useEquippedSkin } from '@/avatar/outfits';
 import {
   APPEARANCE, BEARD, BODY, CharacterSheet, EXTRAS, EYES, FACE, HAIR_COLOR, HAIR_STYLE, Option, SKIN, combinations,
   previewImage,
@@ -57,7 +58,6 @@ export default function Creator() {
   const setCharacter = useGame((s) => s.setCharacter);
   const setAvatar = useGame((s) => s.setAvatar);
   const selfieUri = useGame((s) => s.selfieUri);
-  const equipped = useGame((s) => s.equipped);
   const say = useGame((s) => s.say);
   const skin = useEquippedSkin();
   const [busy, setBusy] = useState<AvatarStep | null>(null);
@@ -91,7 +91,7 @@ export default function Creator() {
     abortRef.current = new AbortController();
     try {
       const selfie = selfieUri ? { base64: await readSelfieBase64(selfieUri) } : null;
-      const result = await generateAvatar(selfie, equipped, setBusy, abortRef.current.signal, sheet);
+      const result = await generateAvatar(selfie, skin.id, setBusy, abortRef.current.signal, sheet);
       if (result.simulated) say('Mode démo : le dessin réel s’activera avec le serveur configuré', 'ok');
       else {
         setAvatar({ uri: result.uri, outfit: result.outfit, createdAt: Date.now() });

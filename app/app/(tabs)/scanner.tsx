@@ -15,7 +15,7 @@ import { ManualMealSheet } from '@/components/ManualMealSheet';
 import { FoodSearch, PortionPicker } from '@/components/FoodSearch';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { Food, fetchBarcode, toMeal } from '@/services/food';
-import { RULES, mealReward } from '@/store/economy';
+import { useDailyCoins } from '@/store/useEco';
 import { useCountUp } from '@/fx/AnimatedNumber';
 
 type Mode = 'idle' | 'search' | 'portion' | 'barcode';
@@ -27,7 +27,8 @@ export default function Scanner() {
   const { width } = useWindowDimensions();
   const W = Math.max(0, width - 32);
   const cal = useCalories();
-  const { scanned, mealIdx, customMeal, mealsRewardedToday, doScan, nextMeal, addMeal, setCustomMeal, say } = useGame();
+  const { scanned, mealIdx, customMeal, doScan, nextMeal, addMeal, setCustomMeal, say } = useGame();
+  const mealCoins = useDailyCoins('daily_meal');
   const [manual, setManual] = useState(false);
   const [mode, setMode] = useState<Mode>('idle');
   const [food, setFood] = useState<Food | null>(null);
@@ -56,14 +57,13 @@ export default function Scanner() {
   };
 
   const meal = customMeal ?? MEALS[mealIdx];
-  const rewardAllowed = mealsRewardedToday < RULES.mealsRewardedPerDay;
   const after = cal.eaten + meal.kcal;
   const overAfter = after > cal.budget;
   const impact = overAfter
     ? { bg: a.overBg, ink: a.overInk, title: 'Attention.', text: 'Avec ce repas tu passes à ' + fmt(after) + ' kcal, ' + fmt(after - cal.budget) + ' de plus que ton budget.' }
     : { bg: a.goodBg, ink: a.goodInk, title: 'Dans le budget.', text: 'Après ce repas, il te restera ' + fmt(cal.budget - after) + ' kcal.' };
   const scoreColor = meal.score >= 70 ? LIME : meal.score >= 50 ? AMBER : RED;
-  const reward = rewardAllowed ? mealReward(meal.score) : 0;
+  const reward = mealCoins;
   const kcalShown = useCountUp(meal.kcal, 500);
 
   if (!scanned && mode === 'search') {

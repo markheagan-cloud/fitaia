@@ -6,7 +6,12 @@ import { BlurView } from 'expo-blur';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
 import { RARITY, fmt, fmtKg } from '@/data/content';
-import { useBody, useCalories, useEquippedSkin, useGame } from '@/store/useGame';
+import { useBody, useCalories, useGame } from '@/store/useGame';
+import { useEquippedSkin } from '@/avatar/outfits';
+import { useDailyCoins } from '@/store/useEco';
+import { PROGRESSION_RULES } from '@/progression/progressionRules';
+
+const PF_CHALLENGE = PROGRESSION_RULES.challenge_completed.points;
 import { useCountUp } from '@/fx/AnimatedNumber';
 import { Bar } from '@/fx/Bar';
 import { HeroAvatar } from '@/avatar/HeroAvatar';
@@ -28,6 +33,7 @@ export default function Home() {
   const W = Math.max(0, width - 32);
   const cal = useCalories();
   const skin = useEquippedSkin();
+  const dailyCoins = useDailyCoins('daily_challenge');
   const { pushDone, openCoach } = useGame();
   const body = useBody();
   const remainingShown = useCountUp(Math.abs(cal.remaining));
@@ -141,7 +147,7 @@ export default function Home() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <CoinIcon size={13} />
-          <Txt size={15} weight="bold" num color={t.strongInk}>{pushDone ? 'Gagné' : '+' + RULES.challengeReward}</Txt>
+          <Txt size={15} weight="bold" num color={t.strongInk}>{pushDone ? 'Gagné' : '+' + (dailyCoins || PF_CHALLENGE) + (dailyCoins ? '' : ' PF')}</Txt>
         </View>
       </Press>
 

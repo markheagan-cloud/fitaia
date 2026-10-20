@@ -3,7 +3,9 @@ import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
-import { useBody, useEquippedSkin, useGame } from '@/store/useGame';
+import { useBody, useGame } from '@/store/useGame';
+import { useEquippedSkin } from '@/avatar/outfits';
+import { transactionLabel, useEco } from '@/store/useEco';
 import { Bar } from '@/fx/Bar';
 import { WeightSheet, ProfileSheet } from '@/components/BodySheets';
 import { HeroAvatar, useHeroStage } from '@/avatar/HeroAvatar';
@@ -20,7 +22,8 @@ export default function Perso() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const heroW = Math.max(0, width - 32 - 8 - 96);
-  const ledger = useGame((s) => s.ledger);
+  const ledger = useEco((s) => s.transactions);
+  const catalog = useEco((s) => s.catalog);
   const skin = useEquippedSkin();
   const avatar = useGame((s) => s.avatar);
   const sheet = useGame((s) => s.character);
@@ -101,15 +104,15 @@ export default function Perso() {
         <Card style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <Txt size={14} weight="bold">Derniers mouvements</Txt>
-            <Txt size={12} color={t.ink2}>{ledger.length} au total</Txt>
+            <Txt size={12} color={t.ink2}>{ledger.length >= 30 ? "30 derniers" : ledger.length + " au total"}</Txt>
           </View>
           {recent.map((e) => {
-            const d = new Date(e.ts);
+            const d = new Date(e.createdAt);
             const when = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
             return (
               <View key={e.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                 <View style={{ flex: 1, gap: 1 }}>
-                  <Txt size={13} weight="semibold" numberOfLines={1}>{e.reason}</Txt>
+                  <Txt size={13} weight="semibold" numberOfLines={1}>{transactionLabel(e, catalog)}</Txt>
                   <Txt size={11} color={t.ink2}>{when}</Txt>
                 </View>
                 <CoinIcon size={12} />

@@ -9,6 +9,10 @@ import { useSteps } from '@/hooks/useSteps';
 import { usePushupCamera } from '@/pose/usePushupCamera';
 import { FitaiaPoseView } from '../../modules/fitaia-pose';
 import { useEconomy, useGame } from '@/store/useGame';
+import { useDailyCoins, useEco } from '@/store/useEco';
+import { PROGRESSION_RULES } from '@/progression/progressionRules';
+
+const PF_CHALLENGE = PROGRESSION_RULES.challenge_completed.points;
 import { RULES, dayKey, isActiveDay, weekDays } from '@/store/economy';
 import { Screen, Card, Row } from '@/components/Screen';
 import { Press } from '@/components/Press';
@@ -27,7 +31,8 @@ export default function Defis() {
   const eco = useEconomy();
   const days = weekDays();
   const todayK = dayKey();
-  const remainingDays = Math.max(0, RULES.chestActiveDays - eco.activeDays);
+  const dailyCoins = useDailyCoins('daily_challenge');
+  const weeklyPoints = useEco((s) => s.account?.weeklyPoints ?? 0);
   const stepsState = useSteps();
   const completeExtra = useGame((s) => s.completeExtra);
   const cam = usePushupCamera(5);
@@ -95,7 +100,7 @@ export default function Defis() {
         <View style={{ paddingHorizontal: 8, paddingTop: 4, gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <Display size={22} color="#F5F4F1">5 pompes</Display>
-            <Txt size={14} weight="bold" num color={LIME}>+{RULES.challengeReward} {CUR_NAMES[0]}</Txt>
+            <Txt size={14} weight="bold" num color={LIME}>{dailyCoins ? '+' + dailyCoins + ' ' + CUR_NAMES[0] : '+' + PF_CHALLENGE + ' PF'}</Txt>
           </View>
           <View accessibilityRole="text" accessibilityLiveRegion="polite" style={[styles.fb, { backgroundColor: fb.bg }]}>
             <Txt size={13} weight="semibold" lineHeight={18} color={fb.ink}>{feedback}</Txt>
@@ -185,7 +190,7 @@ export default function Defis() {
 
       <Card style={{ gap: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Txt size={14} weight="bold">Coffre de la semaine</Txt>
+          <Txt size={14} weight="bold">Ta semaine</Txt>
           <Txt size={14} num color={t.ink2}>{eco.activeDays} jour{eco.activeDays > 1 ? 's' : ''} sur 7</Txt>
         </View>
         <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -194,18 +199,14 @@ export default function Defis() {
             const isToday = days[i] === todayK;
             return (
               <View key={i} style={{ flex: 1, alignItems: 'center', gap: 5 }}>
-                <View style={{ width: '100%', height: 8, borderRadius: 9, backgroundColor: active ? (eco.chestClaimed ? LIME : t.ink) : t.track, borderWidth: isToday && !active ? 1 : 0, borderColor: t.ink2 }} />
+                <View style={{ width: '100%', height: 8, borderRadius: 9, backgroundColor: active ? LIME : t.track, borderWidth: isToday && !active ? 1 : 0, borderColor: t.ink2 }} />
                 <Txt size={11} weight={isToday ? 'bold' : 'regular'} color={isToday ? t.ink : t.ink2}>{d}</Txt>
               </View>
             );
           })}
         </View>
         <Txt size={13} color={t.ink2}>
-          {eco.chestClaimed
-            ? 'Coffre récupéré cette semaine. Nouveau coffre lundi.'
-            : remainingDays === 0
-              ? 'Coffre débloqué. Il arrive avec ta prochaine action.'
-              : 'Encore ' + remainingDays + ' jour' + (remainingDays > 1 ? 's' : '') + ' actif' + (remainingDays > 1 ? 's' : '') + ' pour gagner ' + fmt(RULES.chestReward) + ' ' + CUR_NAMES[0] + ' et une tenue rare mystère.'}
+          {fmt(weeklyPoints) + ' Points FITAIA cette semaine. Un défi rapporte ' + PF_CHALLENGE + ' PF, un repas enregistré ' + PROGRESSION_RULES.meal_logged.points + ' PF.'}
         </Txt>
       </Card>
     </Screen>

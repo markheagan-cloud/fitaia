@@ -7,6 +7,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, shadow } from '@/theme/tokens';
 import { CUR_NAMES, TITLES, fmt, todayLabel } from '@/data/content';
 import { useBody, useEconomy, useGame } from '@/store/useGame';
+import { useBalance } from '@/store/useEco';
 import { Press } from './Press';
 import { Txt, Display } from './Txt';
 import { CoinIcon } from './Icons';
@@ -23,12 +24,13 @@ function LiveDot({ bg }: { bg: string }) {
   return <Animated.View style={[styles.dot, { borderColor: bg }, st]} />;
 }
 
-/** En-tête commun : coach + titre d'écran + FIT Crédits. Fidèle au <header> de la maquette. */
+/** En-tête commun : coach + titre d'écran + solde de Fitcoins. Fidèle au <header> de la maquette. */
 export function Header({ screen }: { screen: keyof typeof TITLES }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { earn, openCoach, say } = useGame();
+  const { openCoach, say } = useGame();
+  const earn = useBalance();
   const eco = useEconomy();
   const body = useBody();
   const [title, baseSub] = TITLES[screen];

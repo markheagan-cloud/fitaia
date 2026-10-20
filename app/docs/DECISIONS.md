@@ -87,3 +87,13 @@ Les 5 skills projet (preflight, aso-audit, app-icons, native-ui, apple-search-ad
 - Vêtements = proxies ajustés au corps pour chaque morph → ils suivent la morphologie.
 - Rendu « studio » (tone mapping ACES, key/fill/rims, ombre de contact, pas de shadow map) ; textures décodées en JS sur iPhone/Android (jpeg-js, upng-js).
 - Prototype conservé comme asset de test (comparateur dans le labo).
+
+## Modèle gratuit à jouer (20 octobre 2026, cahier des charges du fondateur)
+- Plus d'abonnement, de paywall, de pass payant ni de monnaie achetable. Retirés : FITAIA Plus, Pass Élite, FIT Points, packs.
+- Une seule monnaie, gagnée en jouant : **Fitcoins** (ancien nom affiché « FIT Crédits »). Les Points FITAIA (PF) mesurent la progression et ne s'achètent jamais.
+- Seuls des cosmétiques se vendent, par achat intégré Apple (origine `STORE` du catalogue) : jamais payables en Fitcoins, attribués par le serveur après reçu vérifié.
+- Toute l'économie passe par le registre Phase 2 (`src/services/session.ts` → `src/store/useEco.ts`) : l'écran déclare une action, le serveur décide (règles, plafonds, idempotence). Mode local tant que Supabase n'est pas branché.
+- Revenus quotidiens : premier défi du jour +50 Fitcoins, premier repas +10 ; chaque défi +50 PF (max 150/j), chaque repas +5 PF (max 15/j). Paliers du Parcours inchangés.
+- Ancien solde converti une fois : 10 crédits = 1 Fitcoin, plafond 2 000 ; tenues possédées conservées.
+- Supprimés car contraires au modèle ou malsains : coffre hebdomadaire à tenue aléatoire (tirage au sort), bonus de série en monnaie, récompense de repas selon le score (récompensait le fait de manger moins).
+- Communauté réservée aux 18 ans et plus.

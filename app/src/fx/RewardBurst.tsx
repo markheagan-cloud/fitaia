@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { useGame } from '@/store/useGame';
+import { useEco } from '@/store/useEco';
 import { CoinIcon } from '@/components/Icons';
 
 const N = 14;
@@ -33,14 +33,14 @@ function Coin({ i, cur, w, h }: { i: number; cur: 'earn'; w: number; h: number }
   return <Animated.View style={[styles.coin, st]}><CoinIcon size={22} /></Animated.View>;
 }
 
-/** Pluie de crédits à chaque gain (défi, repas, coffre). Montée uniquement sur un événement, jamais en boucle. */
+/** Pluie de pièces à chaque gain de Fitcoins accordé par le registre. Montée uniquement sur un événement, jamais en boucle. */
 export function RewardBurst() {
-  const burst = useGame((s) => s.burst);
+  const burst = useEco((s) => s.burst);
   const reduced = useReducedMotion();
   const { width, height } = useWindowDimensions();
   const [live, setLive] = useState<{ id: number; cur: 'earn' } | null>(null);
   // État dérivé pendant le rendu : un nouveau gain déclenche une nouvelle pluie.
-  if (burst.id && live?.id !== burst.id) setLive({ id: burst.id, cur: burst.cur });
+  if (burst.id && live?.id !== burst.id) setLive({ id: burst.id, cur: 'earn' });
   useEffect(() => {
     if (!live) return;
     if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});

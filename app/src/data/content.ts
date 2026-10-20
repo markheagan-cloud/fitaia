@@ -11,7 +11,7 @@ export const IMG: Record<string, ImageSourcePropType> = {
 };
 export const COACH_IMG = IMG.p5;
 
-export const CUR_NAMES: [string] = ['FIT Crédits'];
+export const CUR_NAMES: [string] = ['Fitcoins'];
 
 export type RarityKey = 'commune' | 'rare' | 'epique' | 'legendaire';
 export const RARITY: Record<RarityKey, { label: string; c: string }> = {

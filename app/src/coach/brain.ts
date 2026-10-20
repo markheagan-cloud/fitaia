@@ -5,6 +5,10 @@
  */
 import { CUR_NAMES, fmt, fmtKg } from '@/data/content';
 import { RULES } from '@/store/economy';
+import { REWARD_DEFINITIONS } from '@/economy/rewardCatalog';
+import { PROGRESSION_RULES } from '@/progression/progressionRules';
+
+const dailyCoins = (id: string) => REWARD_DEFINITIONS.find((r) => r.id === id)?.amount ?? 0;
 import type { WeightEntry } from '@/store/profile';
 
 export type CoachContext = {
@@ -66,8 +70,8 @@ function poids(c: CoachContext): string {
 function credits(c: CoachContext): string {
   return (
     `Tu as ${fmt(c.earn)} ${CUR_NAMES[0]}.\n\n` +
-    `Série : ${c.streak} jour${c.streak > 1 ? 's' : ''}. Cette semaine : ${c.activeDays} jour${c.activeDays > 1 ? 's' : ''} actif${c.activeDays > 1 ? 's' : ''} sur ${RULES.chestActiveDays} pour le coffre (${fmt(RULES.chestReward)} ${CUR_NAMES[0]}).\n\n` +
-    `Chaque jour : le défi rapporte ${RULES.challengeReward} (+${RULES.streakBonus3} dès 3 jours de série, +${RULES.streakBonus7} dès 7), et jusqu’à ${RULES.mealsRewardedPerDay} repas rapportent ${RULES.mealRewardGood} ou ${RULES.mealRewardBasic} selon leur score.`
+    `Série : ${c.streak} jour${c.streak > 1 ? 's' : ''}. Cette semaine : ${c.activeDays} jour${c.activeDays > 1 ? 's' : ''} actif${c.activeDays > 1 ? 's' : ''}.\n\n` +
+    `Chaque jour, ton premier défi réussi rapporte ${dailyCoins('daily_challenge')} ${CUR_NAMES[0]} et ton premier repas enregistré ${dailyCoins('daily_meal')}. Chaque défi (+${PROGRESSION_RULES.challenge_completed.points}) et chaque repas (+${PROGRESSION_RULES.meal_logged.points}) font aussi avancer ton Parcours en Points FITAIA, qui débloque des récompenses. Rien de tout ça ne s’achète.`
   );
 }
 
@@ -91,7 +95,7 @@ export function coachAnswer(c: CoachContext, question: string): string {
   if (/d[ée]fi|pompe|squat|gainage|entra[iî]n|sport|s[ée]ance/.test(q))
     return c.pushDone
       ? `Défi du jour réussi, ${c.streak} jour${c.streak > 1 ? 's' : ''} de série. Les défis bonus (repas, pas, squats) restent ouverts dans l’onglet Défis. Demain, nouveau défi, nouvelle récompense.`
-      : `Le défi du jour t’attend : 5 pompes comptées par la caméra, +${RULES.challengeReward} ${CUR_NAMES[0]}${c.streak >= 2 ? ' + bonus de série' : ''}. Pose le téléphone au sol de profil, 1,5 m de toi, et vas-y.`;
+      : `Le défi du jour t’attend : 5 pompes comptées par la caméra, +${dailyCoins('daily_challenge')} ${CUR_NAMES[0]} au premier défi du jour. Pose le téléphone au sol de profil, 1,5 m de toi, et vas-y.`;
   if (/cr[ée]dit|point|gagn|s[ée]rie|coffre|monnaie/.test(q)) return credits(c);
   if (/eau|boire|hydrat/.test(q)) return 'Repère simple : 30 à 35 ml par kilo et par jour, plus pendant les séances. Un verre à chaque repas et une gourde sur ton bureau suffisent la plupart du temps.';
   if (/sommeil|dormir|fatigu|nuit/.test(q)) return 'Le sommeil pèse autant que l’assiette : en dessous de 7 h, la faim augmente le lendemain et la récupération baisse. Même heure de coucher, écran coupé 30 min avant, chambre fraîche.';

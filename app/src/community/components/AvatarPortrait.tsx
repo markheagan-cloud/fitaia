@@ -9,7 +9,8 @@
 import React from 'react';
 import { Image, View, StyleProp, ViewStyle } from 'react-native';
 import { useHeroSource } from '@/avatar/HeroAvatar';
-import { useEquippedSkin, useGame } from '@/store/useGame';
+import { useGame } from '@/store/useGame';
+import { useEquippedSkin } from '@/avatar/outfits';
 import { IMG } from '@/data/content';
 import { portraitSource, PortraitKind } from '../avatars/portraits';
 import { VectorAvatar, AVATAR_VB } from '@/avatar/VectorAvatar';

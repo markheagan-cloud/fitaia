@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { ImageSourcePropType, ImageStyle, StyleProp, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { useBody, useEquippedSkin, useGame } from '@/store/useGame';
+import { useBody, useGame } from '@/store/useGame';
+import { useEquippedSkin } from '@/avatar/outfits';
 import { previewImage } from '@/data/character';
 import { BODY_STAGES, sheetMatchesHero, stageIndex } from './bodyStages';
 
