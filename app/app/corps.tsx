@@ -54,7 +54,10 @@ export default function Corps() {
   const [makeError, setMakeError] = useState('');
   // avatar personnel (selfie) s'il correspond à la base du perso, sinon la base homme / femme
   const personal = mine && mine.base === base ? mine : null;
-  const avatar = useMemo(() => (personal ? personalAvatar(personal) : avatarForBase(base)), [personal, base]);
+  // GLB personnel illisible (fichier abîmé ou serveur web éteint) : on revient à la base plutôt que de bloquer l'écran
+  const [brokenUri, setBrokenUri] = useState<string | null>(null);
+  const usable = personal && personal.uri !== brokenUri ? personal : null;
+  const avatar = useMemo(() => (usable ? personalAvatar(usable) : avatarForBase(base)), [usable, base]);
   const make = async () => {
     if (!selfieUri) {
       router.push('/selfie');
@@ -102,6 +105,22 @@ export default function Corps() {
   };
   const back = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/perso'));
   const load = snap.load;
+  const uri = usable?.uri ?? null;
+  useEffect(() => {
+    if (!uri) return;
+    // l'abonnement rejoue d'abord l'état courant (peut-être une vieille erreur d'un autre écran) : on l'ignore ;
+    // la vue repasse par « chargement » avant de lire le GLB, donc une erreur reçue ensuite concerne bien ce fichier
+    let first = true;
+    return fitaiaHumanEngine.subscribe((s) => {
+      if (first) {
+        first = false;
+        return;
+      }
+      if (s.load.status !== 'error') return;
+      setBrokenUri(uri);
+      say('Ton avatar 3D n’a pas pu être lu : ton perso de base est affiché. Tu peux le refaire depuis ton selfie.', 'bad');
+    });
+  }, [uri, say]);
   const shownKg = kg + (profile.targetKg - kg) * mix;
 
   return (
@@ -161,18 +180,18 @@ export default function Corps() {
         </Press>
 
         <View style={[styles.card, { backgroundColor: t.surf }]}>
-          <Txt size={15} weight="bold">{personal ? 'Ton visage en 3D' : 'Mettre ton visage sur ton perso'}</Txt>
-          {personal ? (
+          <Txt size={15} weight="bold">{usable ? 'Ton visage en 3D' : 'Mettre ton visage sur ton perso'}</Txt>
+          {usable ? (
             <>
-              {personal.fromPhoto.faceTargets > 0 ? (
+              {usable.fromPhoto.faceTargets > 0 ? (
               <Txt size={13} lineHeight={18} color={t.ink2}>
-                Lu sur ton selfie : forme du visage ({personal.fromPhoto.faceTargets} réglages){personal.fromPhoto.skin ? ', teint' : ''}{personal.fromPhoto.hair ? ', couleur des cheveux' : personal.fromPhoto.bald ? ', crâne rasé' : ''}.
+                Lu sur ton selfie : forme du visage ({usable.fromPhoto.faceTargets} réglages){usable.fromPhoto.skin ? ', teint' : ''}{usable.fromPhoto.hair ? ', couleur des cheveux' : usable.fromPhoto.bald ? ', crâne rasé' : ''}.
               </Txt>
               ) : null}
               <Txt size={13} lineHeight={18} color={t.ink2}>
-                Pas lisible sur un selfie, pris dans ton profil : {personal.notFromPhoto.map((x) => x.trait).join(', ')}.
+                Pas lisible sur un selfie, pris dans ton profil : {usable.notFromPhoto.map((x) => x.trait).join(', ')}.
               </Txt>
-              {personal.limits.map((l) => (
+              {usable.limits.map((l) => (
                 <Txt key={l} size={13} lineHeight={18} color={AMBER_TXT}>{l}</Txt>
               ))}
             </>
@@ -186,7 +205,7 @@ export default function Corps() {
           {makeError ? <Txt size={13} color="#E2483D">{makeError}</Txt> : null}
           {avatar3dConfigured ? (
             <Press disabled={making} onPress={make} style={[styles.cta, { borderColor: t.line, opacity: making ? 0.6 : 1 }]}>
-              <Txt size={14} weight="semibold">{making ? 'Création en cours, environ une minute…' : !selfieUri ? 'Prendre mon selfie' : personal ? 'Refaire depuis mon selfie' : 'Créer depuis mon selfie'}</Txt>
+              <Txt size={14} weight="semibold">{making ? 'Création en cours, environ une minute…' : !selfieUri ? 'Prendre mon selfie' : usable ? 'Refaire depuis mon selfie' : 'Créer depuis mon selfie'}</Txt>
             </Press>
           ) : null}
         </View>
