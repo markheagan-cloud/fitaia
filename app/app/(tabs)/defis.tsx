@@ -120,19 +120,20 @@ export default function Defis() {
         <Press
           haptic="medium"
           onPress={() => {
+            if (running) { cam.abort(); return; }
             if (pushDone) { router.navigate('/(tabs)'); return; }
             if (cam.ready) cam.begin(); else startPush(() => router.navigate('/(tabs)'));
           }}
-          disabled={running}
+          accessibilityLabel={running ? 'Arrêter le défi' : btn}
           style={[styles.startBtn, { backgroundColor: running ? '#5A5D63' : LIME }, shadow.btn]}
         >
-          <Txt size={16} weight="bold" color={OBSIDIAN}>{btn}</Txt>
+          <Txt size={16} weight="bold" color={running ? '#F5F4F1' : OBSIDIAN}>{running ? 'Arrêter' : btn}</Txt>
         </Press>
       </View>
 
       <Row>
         <Txt size={15} weight="bold">Autres défis</Txt>
-        <Txt size={12} color={t.ink2}>Nouveaux dans {Math.max(1, 24 - new Date().getHours())} h</Txt>
+        <Txt size={12} color={t.ink2}>Remis à zéro dans {Math.max(1, 24 - new Date().getHours())} h</Txt>
       </Row>
       <Card style={{ paddingVertical: 4, paddingHorizontal: 14 }}>
         {OTHER_DEFIS.map((d, i) => {

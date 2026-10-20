@@ -248,7 +248,10 @@ export const useGame = create<GameState>()(
           set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Place-toi de profil, corps entier visible.', fbKind: 'info' });
         },
         pushUpdate: (reps, feedback, kind) => set({ reps, feedback, fbKind: kind, phase: reps % 2 === 1 ? 1 : 0 }),
-        pushAbort: () => set({ running: false, reps: 0, phase: 0, feedback: DEFAULT_FEEDBACK, fbKind: 'info' }),
+        pushAbort: () => {
+          if (pushT) clearInterval(pushT);
+          set({ running: false, reps: 0, attempt: 0, phase: 0, feedback: 'Défi arrêté. Rien n’est compté, tu peux recommencer quand tu veux.', fbKind: 'info' });
+        },
         pushFinish: (rejected) => {
           const s = get();
           if (!s.running) return;

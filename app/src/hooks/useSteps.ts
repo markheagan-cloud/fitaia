@@ -6,7 +6,7 @@ export type StepsState = { available: boolean | null; steps: number; error?: str
 
 /**
  * Pas du jour (depuis minuit local) via le podomètre du téléphone.
- * iOS : Core Motion (fonctionne dans Expo Go). Android : capteur de pas (compte depuis l'ouverture, pas d'historique).
+ * iOS : Core Motion (fonctionne dans Expo Go). Android : capteur de pas, compté depuis l'ouverture de l'écran (pas d'historique).
  * Web/ordinateur : indisponible.
  */
 export function useSteps(refreshMs = 15000): StepsState {
@@ -47,11 +47,8 @@ export function useSteps(refreshMs = 15000): StepsState {
           await read();
           timer = setInterval(() => read().catch(() => {}), refreshMs);
         } else {
-          let base = 0;
-          sub = Pedometer.watchStepCount((r) => {
-            base += r.steps;
-            update({ available: true, steps: base });
-          });
+          // le rappel donne le CUMUL depuis le début de l'écoute (pas un incrément) : on l'affiche tel quel
+          sub = Pedometer.watchStepCount((r) => update({ available: true, steps: r.steps }));
           update({ available: true, steps: 0 });
         }
       } catch {
