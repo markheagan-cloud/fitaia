@@ -116,6 +116,7 @@ export function toMeal(food: Food, grams: number): Meal {
     kcal, p, g, l,
     score: mealScore(kcal, p, g, l),
     items: [food.name + ', ' + Math.round(grams) + ' g'],
+    origin: food.source === 'off' ? 'openfoodfacts' : 'average',
   };
 }
 

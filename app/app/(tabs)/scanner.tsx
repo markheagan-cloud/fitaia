@@ -5,13 +5,15 @@ import Svg, { Path } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
-import { CUR_NAMES, MEALS, fmt } from '@/data/content';
+import { CUR_NAMES, MEALS, ORIGIN_LABEL, fmt } from '@/data/content';
 import { useCalories, useGame } from '@/store/useGame';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { CoachAvatar } from '@/components/CoachAvatar';
 import { ManualMealSheet } from '@/components/ManualMealSheet';
+import { MealJournal } from '@/components/MealJournal';
+import type { MealEntry } from '@/data/content';
 import { FoodSearch, PortionPicker } from '@/components/FoodSearch';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { Food, fetchBarcode, toMeal } from '@/services/food';
@@ -30,6 +32,7 @@ export default function Scanner() {
   const { scanned, mealIdx, customMeal, doScan, nextMeal, addMeal, setCustomMeal, say } = useGame();
   const mealCoins = useDailyCoins('daily_meal');
   const [manual, setManual] = useState(false);
+  const [editing, setEditing] = useState<MealEntry | null>(null);
   const [mode, setMode] = useState<Mode>('idle');
   const [food, setFood] = useState<Food | null>(null);
   const [busy, setBusy] = useState(false);
@@ -133,6 +136,7 @@ export default function Scanner() {
           <Press onPress={doScan} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 10 }}>
             <Txt size={12} color={t.ink2}>Voir un exemple de repas</Txt>
           </Press>
+          <MealJournal onEdit={(m) => { setEditing(m); setManual(true); }} />
         </>
       ) : (
         <Animated.View entering={FadeIn.duration(300)}>
@@ -140,6 +144,7 @@ export default function Scanner() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ gap: 3 }}>
                 <Txt size={13} color={t.ink2}>{customMeal ? meal.name : 'Exemple · ' + meal.name}</Txt>
+                {customMeal?.origin ? <Txt size={11} color={t.ink2}>{ORIGIN_LABEL[customMeal.origin]}</Txt> : null}
                 <Display wide size={34} num lineHeight={34} letterSpacing={-1.7}>
                   {fmt(kcalShown)}
                   <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal</Display>
@@ -193,7 +198,7 @@ export default function Scanner() {
           </Card>
         </Animated.View>
       )}
-      <ManualMealSheet visible={manual} onClose={() => setManual(false)} />
+      <ManualMealSheet visible={manual} edit={editing} onClose={() => { setManual(false); setEditing(null); }} />
     </Screen>
   );
 }

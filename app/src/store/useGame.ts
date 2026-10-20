@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CUR_NAMES, MEALS, Meal, OTHER_DEFIS, fmtKg } from '@/data/content';
+import { CUR_NAMES, MEALS, Meal, MealEntry, OTHER_DEFIS, fmtKg } from '@/data/content';
 import { DayStats, LedgerEntry, RULES, activeDaysThisWeek, dayKey, streak } from './economy';
 import { LegacyEconomy, useEco } from './useEco';
 import type { SelfActionType } from '@/progression/types';
@@ -30,6 +30,8 @@ type Persisted = {
   pushDone: boolean;
   day: string;
   history: Record<string, DayStats>;
+  /** Journal des repas par jour (les totaux du jour en sont la somme). */
+  meals: Record<string, MealEntry[]>;
   extraDone: Record<string, string[]>; // jour → ids des défis bonus validés
   avatar: { uri: string; outfit: string; createdAt: number } | null; // perso dessiné depuis le selfie
   character: CharacterSheet; // fiche du créateur (gratuit, illimité)
@@ -83,6 +85,10 @@ type Actions = {
   nextMeal: () => void;
   setCustomMeal: (m: Meal | null) => void;
   addMeal: () => void;
+  /** Modifie un repas du jour (nom, calories, macros) ; les totaux suivent. */
+  updateMeal: (id: string, patch: Partial<Pick<Meal, 'name' | 'kcal' | 'p' | 'g' | 'l' | 'score'>>) => void;
+  /** Retire un repas du jour (les points déjà accordés restent : ils sont plafonnés par jour côté serveur). */
+  removeMeal: (id: string) => void;
   doSelfie: (onDone: () => void) => void;
   completeExtra: (id: string) => boolean;
   setAvatar: (a: { uri: string; outfit: string; createdAt: number } | null) => void;
@@ -103,6 +109,17 @@ let pushT: ReturnType<typeof setInterval> | undefined;
 let selfieT: ReturnType<typeof setTimeout> | undefined;
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+/** Totaux nutritionnels du jour = somme du journal. */
+function dayTotals(list: MealEntry[]) {
+  return list.reduce((a, m) => ({ eaten: a.eaten + m.kcal, p: a.p + m.p, g: a.g + m.g, l: a.l + m.l }), { eaten: 0, p: 0, g: 0, l: 0 });
+}
+
+/** Garde 60 jours de journal sur le téléphone. */
+function pruneMeals(meals: Record<string, MealEntry[]>): Record<string, MealEntry[]> {
+  const keys = Object.keys(meals).sort();
+  return keys.length <= 60 ? meals : Object.fromEntries(keys.slice(-60).map((k) => [k, meals[k]]));
+}
 
 const DEFAULT_FEEDBACK ='Pose ton iPhone au sol, de profil, à environ 1,5 m.';
 
@@ -167,6 +184,7 @@ export const useGame = create<GameState>()(
         pushDone: false,
         day: dayKey(),
         history: {},
+        meals: {},
         extraDone: {},
         avatar: null,
         character: DEFAULT_SHEET,
@@ -305,22 +323,43 @@ export const useGame = create<GameState>()(
             return;
           }
           const meal = S.customMeal;
+          const k = dayKey();
+          const entry: MealEntry = { ...meal, id: uid(), at: Date.now() };
+          const today = [...(S.meals[k] ?? []), entry];
           set({
-            eaten: S.eaten + meal.kcal,
-            p: S.p + meal.p,
-            g: S.g + meal.g,
-            l: S.l + meal.l,
+            ...dayTotals(today),
+            meals: pruneMeals({ ...S.meals, [k]: today }),
             mealsTotal: S.mealsTotal + 1,
             scanned: false,
             customMeal: null,
-            mealIdx: S.mealIdx,
           });
           logDay({ meals: 1 });
-          reward('meal_logged', 'meal:' + uid(), meal.name + ' ajouté');
+          reward('meal_logged', 'meal:' + entry.id, meal.name + ' ajouté');
           // Défi bonus « Scanner 2 repas » : validé automatiquement avec les vrais repas du jour
           const mealsToday = get().history[dayKey()]?.meals ?? 0;
           const mealsDefi = OTHER_DEFIS.find((x) => x.kind === 'meals');
           if (mealsDefi && mealsToday >= mealsDefi.target) setTimeout(() => get().completeExtra(mealsDefi.id), 3000);
+        },
+
+        updateMeal: (id, patch) => {
+          const S = get();
+          const k = dayKey();
+          const today = (S.meals[k] ?? []).map((m) => (m.id === id ? { ...m, ...patch } : m));
+          set({ ...dayTotals(today), meals: { ...S.meals, [k]: today } });
+        },
+        removeMeal: (id) => {
+          const S = get();
+          const k = dayKey();
+          const list = S.meals[k] ?? [];
+          if (!list.some((m) => m.id === id)) return;
+          const today = list.filter((m) => m.id !== id);
+          const prev = S.history[k];
+          set({
+            ...dayTotals(today),
+            meals: { ...S.meals, [k]: today },
+            mealsTotal: Math.max(0, S.mealsTotal - 1),
+            history: prev ? { ...S.history, [k]: { ...prev, meals: Math.max(0, prev.meals - 1) } } : S.history,
+          });
         },
 
         /** Valide un défi bonus (une fois par jour) et le déclare au backend. Renvoie true à la première validation du jour. */
@@ -384,7 +423,7 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 10,
+      version: 11,
       // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         // champs des anciennes versions, lus seulement pour les convertir
@@ -429,6 +468,13 @@ export const useGame = create<GameState>()(
           };
           for (const k of ['earn', 'owned', 'equipped', 'ledger', 'chestWeek', 'mealsRewardedToday']) delete old[k];
         }
+        if (version < 11) {
+          // v11 : journal des repas. Les repas d'aujourd'hui enregistrés avant le journal deviennent une entrée de reprise.
+          s.meals = {};
+          if (s.day && (s.eaten ?? 0) > 0) {
+            s.meals[s.day] = [{ id: 'reprise-' + s.day, at: Date.now(), name: 'Repas enregistrés avant le journal', kcal: s.eaten ?? 0, p: s.p ?? 0, g: s.g ?? 0, l: s.l ?? 0, score: 0, items: [], origin: 'manual' }];
+          }
+        }
         return s as Persisted;
       },
       storage: createJSONStorage(() => AsyncStorage),
@@ -443,6 +489,7 @@ export const useGame = create<GameState>()(
         pushDone: s.pushDone,
         day: s.day,
         history: s.history,
+        meals: s.meals,
         extraDone: s.extraDone,
         avatar: s.avatar,
         character: s.character,

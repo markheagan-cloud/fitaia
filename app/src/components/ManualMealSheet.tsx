@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet, Modal, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import Animated, { Easing, FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, motion, shadow } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
+import type { MealEntry } from '@/data/content';
 import { mealScore } from '@/store/economy';
 import { Press } from './Press';
 import { Txt, Display } from './Txt';
@@ -12,7 +13,8 @@ import { CloseIcon } from './Icons';
 
 const ease = Easing.bezier(motion.bezier[0], motion.bezier[1], motion.bezier[2], motion.bezier[3]);
 
-type Props = { visible: boolean; onClose: () => void };
+/** `edit` : repas du journal à corriger (sinon, saisie d'un nouveau repas). */
+type Props = { visible: boolean; onClose: () => void; edit?: MealEntry | null };
 
 function Field({ label, value, onChange, unit, keyboard = 'numeric', autoFocus }: { label: string; value: string; onChange: (v: string) => void; unit?: string; keyboard?: 'numeric' | 'default'; autoFocus?: boolean }) {
   const t = useTheme();
@@ -36,16 +38,27 @@ function Field({ label, value, onChange, unit, keyboard = 'numeric', autoFocus }
   );
 }
 
-/** Saisie manuelle d'un repas : nom, calories, macros → score et ajout au journal. */
-export function ManualMealSheet({ visible, onClose }: Props) {
+/** Saisie manuelle d'un repas (nom, calories, macros → score) ou correction d'un repas déjà au journal. */
+export function ManualMealSheet({ visible, onClose, edit }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const setCustomMeal = useGame((s) => s.setCustomMeal);
+  const updateMeal = useGame((s) => s.updateMeal);
+  const say = useGame((s) => s.say);
   const [name, setName] = useState('');
   const [kcal, setKcal] = useState('');
   const [p, setP] = useState('');
   const [g, setG] = useState('');
   const [l, setL] = useState('');
+  // à chaque ouverture : champs vides pour un nouveau repas, valeurs actuelles pour une correction
+  useEffect(() => {
+    if (!visible) return;
+    setName(edit?.name ?? '');
+    setKcal(edit ? String(edit.kcal) : '');
+    setP(edit ? String(edit.p) : '');
+    setG(edit ? String(edit.g) : '');
+    setL(edit ? String(edit.l) : '');
+  }, [visible, edit]);
 
   const n = (v: string) => Math.max(0, Math.round(Number(v.replace(',', '.')) || 0));
   const K = n(kcal), P = n(p), G = n(g), L = n(l);
@@ -55,6 +68,12 @@ export function ManualMealSheet({ visible, onClose }: Props) {
 
   const submit = () => {
     if (!valid) return;
+    if (edit) {
+      updateMeal(edit.id, { name: name.trim(), kcal: K, p: P, g: G, l: L, score });
+      say(name.trim() + ' corrigé', 'ok');
+      onClose();
+      return;
+    }
     setCustomMeal({
       name: name.trim(),
       kcal: K,
@@ -63,6 +82,7 @@ export function ManualMealSheet({ visible, onClose }: Props) {
       l: L,
       score,
       items: [name.trim(), K + ' kcal', P + ' g de protéines'],
+      origin: 'manual',
     });
     setName(''); setKcal(''); setP(''); setG(''); setL('');
     onClose();
@@ -79,7 +99,7 @@ export function ManualMealSheet({ visible, onClose }: Props) {
           <View style={styles.grabWrap}><View style={[styles.grab, { backgroundColor: t.track }]} /></View>
           <View style={styles.head}>
             <View style={{ flex: 1, gap: 1 }}>
-              <Display size={20}>Écrire mon repas</Display>
+              <Display size={20}>{edit ? 'Corriger le repas' : 'Écrire mon repas'}</Display>
               <Txt size={12} color={t.ink2}>Les valeurs sont sur l’emballage ou l’appli du restaurant</Txt>
             </View>
             <Press accessibilityLabel="Fermer" onPress={onClose} style={[styles.close, { backgroundColor: t.surf }, shadow.sm]}>
@@ -104,7 +124,7 @@ export function ManualMealSheet({ visible, onClose }: Props) {
               </View>
             </View>
             <Press haptic="medium" disabled={!valid} onPress={submit} style={[styles.primary, { backgroundColor: valid ? LIME : '#5A5D63' }, shadow.btn]}>
-              <Txt size={16} weight="bold" color={OBSIDIAN}>Analyser ce repas</Txt>
+              <Txt size={16} weight="bold" color={OBSIDIAN}>{edit ? 'Enregistrer' : 'Analyser ce repas'}</Txt>
             </Press>
           </ScrollView>
         </Animated.View>
