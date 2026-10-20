@@ -4,7 +4,9 @@ import { MorphAnimator, easeInOutCubic } from '../src/human-engine/animation/Mor
 import { FitaiaHumanEngine } from '../src/human-engine/core/FitaiaHumanEngine';
 import { DEFAULT_PROFILE } from '../src/store/profile';
 import { evaluateDrivers, piecewise, PROTOTYPE_DRIVERS } from '../src/human-engine/body/BodyParameterMapper';
-import { AVATARS, DEFAULT_AVATAR, PREMIUM_MALE_DRIVERS } from '../src/human-engine/avatars';
+import { AVATARS, DEFAULT_AVATAR, PREMIUM_MALE_DRIVERS, avatarForProfile } from '../src/human-engine/avatars';
+import maleStats from '../src/human-engine/assets/premium-male-01.stats.json';
+import femaleStats from '../src/human-engine/assets/premium-female-01.stats.json';
 import { BODY_SHAPE_KEYS, shapeFromBody, withOverrides } from '../src/human-engine/body/BodyShape';
 
 let n = 0;
@@ -92,6 +94,9 @@ ok(a.step(0)!.done, 'durée 0 (mouvement réduit) : immédiat');
   const asF = evaluateDrivers(body, PREMIUM_MALE_DRIVERS, 'f');
   ok((asF.hips ?? 0) > (asM.hips ?? 0) && (asF.belly_fat ?? 0) < (asM.belly_fat ?? 0) && asF.body_weight === asM.body_weight, 'base féminine : plus de hanches, moins de ventre, même masse');
   ok(JSON.stringify(evaluateDrivers(body, PREMIUM_MALE_DRIVERS)) === JSON.stringify(asM), 'sans base précisée : répartition masculine (comportement inchangé)');
+  ok(avatarForProfile('f').id === 'premium-female-01' && avatarForProfile('m').id === 'premium-male-01' && avatarForProfile('x', 'fem').id === 'premium-female-01' && avatarForProfile('x', 'masc').id === 'premium-male-01', 'base 3D choisie selon le profil (et l’apparence pour « autre »)');
+  ok(AVATARS['premium-female-01'].sex === 'f' && JSON.stringify(femaleStats.morphs) === JSON.stringify(maleStats.morphs), 'base féminine : mêmes 15 morphs que l’homme (mêmes drivers)');
+  ok(femaleStats.triangles <= 40000 && femaleStats.bytes < 6_000_000, 'base féminine : budget mobile respecté (≤ 40 000 triangles, < 6 Mo)');
   ok(DEFAULT_AVATAR.id === 'premium-male-01' && AVATARS.prototype.look === 'clay' && DEFAULT_AVATAR.look === 'studio', 'registre : premium par défaut, prototype gardé en test');
   const e2 = new FitaiaHumanEngine();
   e2.attachAvatar({ traverse: () => {} } as never, 'gpu', { vertices: 0, triangles: 0, meshes: 0, materials: 0, textures: 0, geometryBytes: 0 }, PREMIUM_MALE_DRIVERS);

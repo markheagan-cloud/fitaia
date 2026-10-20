@@ -3,7 +3,8 @@
  * paramètres pilotent SES morphs (drivers). Ajouter une base (femme, autre carnation, autre tenue) = ajouter une entrée.
  *
  *  - prototype       : mannequin technique (preuve 3D), gardé comme asset de test.
- *  - premium-male-01 : homme premium (MakeHuman CC0, pipeline tools/premium-avatar) : visage, peau, cheveux, vêtements.
+ *  - premium-male-01   : homme premium (MakeHuman CC0, usine hero3d) : visage, peau, cheveux, vêtements.
+ *  - premium-female-01 : femme premium, même usine et mêmes 15 morphs (mêmes drivers, répartition féminine des formes).
  */
 import type { AvatarDefinition, MorphDriver } from '../core/types';
 import { PROTOTYPE_DRIVERS } from '../body/BodyParameterMapper';
@@ -11,6 +12,7 @@ import { PROTOTYPE_DRIVERS } from '../body/BodyParameterMapper';
 /* eslint-disable @typescript-eslint/no-require-imports -- les assets Metro (GLB) ne s'importent que par require() */
 const PROTOTYPE_GLB = require('../assets/prototype-avatar.glb');
 const PREMIUM_MALE_01_GLB = require('../assets/premium-male-01.glb');
+const PREMIUM_FEMALE_01_GLB = require('../assets/premium-female-01.glb');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 /**
@@ -38,7 +40,16 @@ export const PREMIUM_MALE_DRIVERS: MorphDriver[] = [
 
 export const AVATARS: Record<string, AvatarDefinition> = {
   prototype: { id: 'prototype', label: 'Prototype', source: PROTOTYPE_GLB, drivers: PROTOTYPE_DRIVERS, look: 'clay' },
-  'premium-male-01': { id: 'premium-male-01', label: 'Héros', source: PREMIUM_MALE_01_GLB, drivers: PREMIUM_MALE_DRIVERS, look: 'studio' },
+  'premium-male-01': { id: 'premium-male-01', label: 'Héros', source: PREMIUM_MALE_01_GLB, drivers: PREMIUM_MALE_DRIVERS, look: 'studio', sex: 'm' },
+  'premium-female-01': { id: 'premium-female-01', label: 'Héroïne', source: PREMIUM_FEMALE_01_GLB, drivers: PREMIUM_MALE_DRIVERS, look: 'studio', sex: 'f' },
 };
 
 export const DEFAULT_AVATAR = AVATARS['premium-male-01'];
+
+/**
+ * Base 3D du membre : femme si le profil le dit, sinon selon l'apparence choisie dans le créateur (profil « autre »).
+ */
+export function avatarForProfile(sex: 'f' | 'm' | 'x', appearance?: string): AvatarDefinition {
+  const female = sex === 'f' || (sex === 'x' && appearance === 'fem');
+  return AVATARS[female ? 'premium-female-01' : 'premium-male-01'];
+}

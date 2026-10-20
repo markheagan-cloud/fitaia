@@ -9,7 +9,7 @@ import { currentWeight } from '@/store/profile';
 import { fmtKg } from '@/data/content';
 import {
   DEFAULT_ANIMATION_MS,
-  DEFAULT_AVATAR,
+  avatarForProfile,
   HumanAvatarView,
   currentAndTarget,
   fitaiaHumanEngine,
@@ -37,6 +37,8 @@ export default function Corps() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useGame((s) => s.profile);
+  const appearance = useGame((s) => s.character.appearance);
+  const avatar = useMemo(() => avatarForProfile(profile.sex, appearance), [profile.sex, appearance]);
   const weights = useGame((s) => s.weights);
   const kg = currentWeight(profile, weights);
   const { current, target } = useMemo(() => currentAndTarget(profile, kg), [profile, kg]);
@@ -83,7 +85,7 @@ export default function Corps() {
 
         <View>
           <HumanAvatarView
-            avatar={DEFAULT_AVATAR}
+            avatar={avatar}
             engine={fitaiaHumanEngine}
             strategy={Platform.OS === 'web' ? 'gpu' : 'cpu'}
             mode="onDemand"
