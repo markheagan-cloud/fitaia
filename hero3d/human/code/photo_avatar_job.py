@@ -42,6 +42,7 @@ def main():
     ap.add_argument('--photo', required=True)
     ap.add_argument('--sex', choices=['m', 'f'], default='m')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--sheet', default=None, help='fiche du créateur (JSON) : carnation, cheveux, carrure pour la base féminine')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     t0 = time.time()
@@ -84,7 +85,8 @@ def main():
     }
     if a.sex == 'f':
         # l'ajustement du visage est calibré sur la base neutre masculine : il n'est pas encore validé sur la base féminine
-        report['limites'].append('base féminine : la forme du visage n’est pas encore ajustée à la photo (teint et cheveux seulement)')
+        report['limites'].append('Base femme : ton visage n’est pas encore construit depuis la photo. Teint et cheveux viennent de ta fiche du créateur.')
+        report['traits_photo'] = {'teint_rgb': None, 'cheveux_rgb': None, 'chauve': False, 'iris_rgb': None, 'cibles_visage': 0, 'erreur_moyenne_mm': None}
 
     t = time.time()
     idp = os.path.join(a.out, 'identity.json')
@@ -93,9 +95,16 @@ def main():
     cfg = None
     if a.sex == 'f':
         import persons
-        sheet = {'appearance': 'fem', 'body': 'moyen', 'skin': 's3', 'hairStyle': 'long', 'hairColor': 'brun', 'face': 'ovale',
+        sheet = {'appearance': 'fem', 'body': 'athle', 'skin': 's3', 'hairStyle': 'long', 'hairColor': 'brun', 'face': 'ovale',
                  'eyes': 'brun', 'beard': 'aucune', 'extras': []}
-        cfg = persons.config_for({'key': 'selfie', 'seed': 7, 'sheet': sheet}, a.src)
+        if a.sheet:
+            given = json.loads(a.sheet)
+            sheet.update({k: given[k] for k in ('body', 'skin', 'hairStyle', 'hairColor', 'eyes') if k in given})
+            if sheet['body'] not in ('mince', 'athle', 'rond', 'costaud'):
+                sheet['body'] = 'athle'
+        cfg = persons.config_for({'key': 'selfie', 'seed': 7, 'sheet': sheet,
+                                   'outfit': {'top': [0.205, 0.215, 0.235], 'bottom': [0.075, 0.078, 0.085]}}, a.src)
+        cfg['groom'] = None          # GLB temps réel : cheveux en cartes (cfg['hair']) ; les mèches ne servent qu'aux rendus
     else:
         B.CONFIG['identity'] = idj
         B.CONFIG['groom'] = None

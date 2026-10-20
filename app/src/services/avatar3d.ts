@@ -58,14 +58,14 @@ export function deleteAvatar3d(a: Avatar3d | null) {
   }
 }
 
-export async function createAvatar3d(selfieUri: string, base: AvatarBase, signal?: AbortSignal): Promise<Avatar3d> {
+export async function createAvatar3d(selfieUri: string, base: AvatarBase, sheet?: Record<string, unknown>, signal?: AbortSignal): Promise<Avatar3d> {
   if (!avatar3dConfigured) throw new Error('La création de l’avatar 3D n’est pas encore disponible.');
   const photo = await selfieJpegBase64(selfieUri);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
   let res: Response;
   try {
-    res = await fetch(ENDPOINT + '/v1/avatar', { method: 'POST', headers, body: JSON.stringify({ photo, sex: base }), signal });
+    res = await fetch(ENDPOINT + '/v1/avatar', { method: 'POST', headers, body: JSON.stringify({ photo, sex: base, sheet }), signal });
   } catch {
     throw new Error('Serveur d’avatar injoignable. Vérifie ta connexion.');
   }

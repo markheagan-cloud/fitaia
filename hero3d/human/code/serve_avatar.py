@@ -34,7 +34,7 @@ TOKEN = os.environ.get('FITAIA_AVATAR_TOKEN', '')
 ID_RE = re.compile(r'^[0-9a-f]{32}$')
 
 
-def run_job(photo_bytes, sex):
+def run_job(photo_bytes, sex, sheet=None):
     jid = uuid.uuid4().hex
     d = os.path.join(JOBS, jid)
     os.makedirs(d, exist_ok=True)
@@ -47,7 +47,7 @@ def run_job(photo_bytes, sex):
            '--model', os.path.join(ROOT, 'photo-id', 'face_landmarker.task'),
            '--seg', os.path.join(ROOT, 'photo-id', 'selfie_multiclass.tflite'),
            '--base', os.path.join(ROOT, 'hero3d', 'identites', '_base'),
-           '--photo', photo, '--sex', sex, '--out', d]
+           '--photo', photo, '--sex', sex, '--out', d] + (['--sheet', json.dumps(sheet)] if isinstance(sheet, dict) else [])
     env = dict(os.environ, PYTHONIOENCODING='utf-8')
     with LOCK:
         r = subprocess.run(cmd, capture_output=True, text=True, env=env, encoding='utf-8', errors='replace')
@@ -116,7 +116,7 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             return self._send(400, {'ok': False, 'error': 'requête invalide : ' + str(e)[:80]})
         t = time.time()
-        jid, report = run_job(photo, sex)
+        jid, report = run_job(photo, sex, body.get('sheet'))
         print(f'[{time.strftime("%H:%M:%S")}] tâche {jid[:8]} sexe={sex} ok={report.get("ok")} {time.time() - t:.0f} s', flush=True)
         if not report.get('ok'):
             return self._send(422, {'ok': False, 'error': report.get('erreur', 'échec'), 'report': report})

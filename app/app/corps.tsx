@@ -63,7 +63,7 @@ export default function Corps() {
     setMaking(true);
     setMakeError('');
     try {
-      const a = await createAvatar3d(selfieUri, base);
+      const a = await createAvatar3d(selfieUri, base, useGame.getState().character);
       fitaiaHumanEngine.setBody(lerp(current, target, mix));
       setAvatar3d(a);
       say('Ton avatar 3D est prêt', 'ok');
@@ -164,9 +164,11 @@ export default function Corps() {
           <Txt size={15} weight="bold">{personal ? 'Ton visage en 3D' : 'Mettre ton visage sur ton perso'}</Txt>
           {personal ? (
             <>
+              {personal.fromPhoto.faceTargets > 0 ? (
               <Txt size={13} lineHeight={18} color={t.ink2}>
                 Lu sur ton selfie : forme du visage ({personal.fromPhoto.faceTargets} réglages){personal.fromPhoto.skin ? ', teint' : ''}{personal.fromPhoto.hair ? ', couleur des cheveux' : personal.fromPhoto.bald ? ', crâne rasé' : ''}.
               </Txt>
+              ) : null}
               <Txt size={13} lineHeight={18} color={t.ink2}>
                 Pas lisible sur un selfie, pris dans ton profil : {personal.notFromPhoto.map((x) => x.trait).join(', ')}.
               </Txt>
