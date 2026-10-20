@@ -5,6 +5,15 @@ import { useBody, useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
 import { previewImage } from '@/data/character';
 import { BODY_STAGES, sheetMatchesHero, stageIndex } from './bodyStages';
+import { avatarBase, defaultSheetFor, type AvatarBase } from './identity';
+
+/** Base du perso (homme / femme), la même pour la 2D et la 3D. */
+export function useAvatarBase(): AvatarBase {
+  const sex = useGame((s) => s.profile.sex);
+  const appearance = useGame((s) => s.character.appearance);
+  const ready = useGame((s) => s.characterReady);
+  return avatarBase(sex, { appearance }, ready);
+}
 
 /** Silhouette de l'usine à montrer (index dans BODY_STAGES), ou null si elle ne s'applique pas à ce joueur. */
 export function useHeroStage(): number | null {
@@ -12,7 +21,8 @@ export function useHeroStage(): number | null {
   const ready = useGame((s) => s.characterReady);
   const sheet = useGame((s) => s.character);
   const body = useBody();
-  if (skin.id !== 'origine' || body.profile.startKg <= body.profile.targetKg || !sheetMatchesHero(sheet, ready)) return null;
+  const base = useAvatarBase();
+  if (skin.id !== 'origine' || body.profile.startKg <= body.profile.targetKg || !sheetMatchesHero(sheet, ready, base)) return null;
   return stageIndex(body.tier);
 }
 
@@ -23,11 +33,14 @@ export function useHeroSource(): { source: ImageSourcePropType; label: string } 
   const ready = useGame((s) => s.characterReady);
   const sheet = useGame((s) => s.character);
   const stage = useHeroStage();
+  const base = useAvatarBase();
   const label = 'Ton perso en tenue ' + skin.name;
   if (avatar && avatar.outfit === skin.id) return { source: { uri: avatar.uri }, label };
   // tenue de départ : le corps rendu par l'usine, au palier atteint (départ, en route, objectif)
   if (stage !== null) return { source: BODY_STAGES[stage].img, label: 'Ton perso, étape ' + BODY_STAGES[stage].label.toLowerCase() };
   if (ready) return { source: previewImage(sheet), label };
+  // les illustrations de tenue montrent un homme : une femme voit sa base réaliste, pas un autre personnage
+  if (base === 'f') return { source: previewImage(defaultSheetFor('f')), label: 'Ton perso' };
   return { source: skin.img, label };
 }
 

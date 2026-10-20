@@ -9,7 +9,7 @@ import { currentWeight } from '@/store/profile';
 import { fmtKg } from '@/data/content';
 import {
   DEFAULT_ANIMATION_MS,
-  avatarForProfile,
+  avatarForBase,
   HumanAvatarView,
   currentAndTarget,
   fitaiaHumanEngine,
@@ -21,6 +21,7 @@ import { Slider } from '@/components/Slider';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { CloseIcon } from '@/components/Icons';
+import { avatarBase } from '@/avatar/identity';
 
 const lerp = (a: BodyParameters, b: BodyParameters, t: number): BodyParameters => ({
   weight: a.weight + (b.weight - a.weight) * t,
@@ -38,7 +39,10 @@ export default function Corps() {
   const insets = useSafeAreaInsets();
   const profile = useGame((s) => s.profile);
   const appearance = useGame((s) => s.character.appearance);
-  const avatar = useMemo(() => avatarForProfile(profile.sex, appearance), [profile.sex, appearance]);
+  const ready = useGame((s) => s.characterReady);
+  // même base que les images 2D (Accueil, Mon perso, Communauté)
+  const base = avatarBase(profile.sex, { appearance }, ready);
+  const avatar = useMemo(() => avatarForBase(base), [base]);
   const weights = useGame((s) => s.weights);
   const kg = currentWeight(profile, weights);
   const { current, target } = useMemo(() => currentAndTarget(profile, kg), [profile, kg]);

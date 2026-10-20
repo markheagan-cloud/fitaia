@@ -51,5 +51,10 @@ export const DEFAULT_AVATAR = AVATARS['premium-male-01'];
  */
 export function avatarForProfile(sex: 'f' | 'm' | 'x', appearance?: string): AvatarDefinition {
   const female = sex === 'f' || (sex === 'x' && appearance === 'fem');
-  return AVATARS[female ? 'premium-female-01' : 'premium-male-01'];
+  return avatarForBase(female ? 'f' : 'm');
+}
+
+/** Base 3D pour une identité déjà résolue (src/avatar/identity.ts : même règle que les images 2D). */
+export function avatarForBase(base: 'm' | 'f'): AvatarDefinition {
+  return AVATARS[base === 'f' ? 'premium-female-01' : 'premium-male-01'];
 }

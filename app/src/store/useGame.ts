@@ -4,6 +4,7 @@
  * calculés ici : chaque action est déclarée au backend (useEco), qui décide (règles, plafonds, idempotence).
  */
 import { create } from 'zustand';
+import { defaultSheetFor } from '@/avatar/identity';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CUR_NAMES, MEALS, Meal, MealEntry, OTHER_DEFIS, fmtKg } from '@/data/content';
@@ -387,7 +388,9 @@ export const useGame = create<GameState>()(
         finishOnboarding: (p, kg) => {
           const weights = logWeight([], dayKey(), kg);
           const profile = { ...p, startKg: weights[0].kg, autoGoal: true };
-          set({ profile, weights, onboarded: true, goal: dailyGoal(profile, weights[0].kg) });
+          // fiche de départ alignée sur le sexe déclaré tant que le créateur n'a pas été validé (même perso en 2D et 3D)
+          const character = get().characterReady ? get().character : defaultSheetFor(profile.sex);
+          set({ profile, weights, character, onboarded: true, goal: dailyGoal(profile, weights[0].kg) });
         },
         addWeight: (kg) => {
           const S = get();
@@ -423,7 +426,7 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 11,
+      version: 12,
       // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         // champs des anciennes versions, lus seulement pour les convertir
@@ -474,6 +477,10 @@ export const useGame = create<GameState>()(
           if (s.day && (s.eaten ?? 0) > 0) {
             s.meals[s.day] = [{ id: 'reprise-' + s.day, at: Date.now(), name: 'Repas enregistrés avant le journal', kcal: s.eaten ?? 0, p: s.p ?? 0, g: s.g ?? 0, l: s.l ?? 0, score: 0, items: [], origin: 'manual' }];
           }
+        }
+        if (version < 12 && !s.characterReady && s.profile) {
+          // v12 : une fiche jamais validée suit le sexe du profil (avant : masculine par défaut, même pour une femme)
+          s.character = defaultSheetFor(s.profile.sex);
         }
         return s as Persisted;
       },

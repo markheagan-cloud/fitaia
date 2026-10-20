@@ -5,6 +5,7 @@
  */
 import type { ImageSourcePropType } from 'react-native';
 import type { CharacterSheet } from '@/data/character';
+import type { AvatarBase } from './identity';
 
 export const BODY_STAGES: { id: 'surpoids' | 'actuel' | 'athletique'; label: string; img: ImageSourcePropType }[] = [
   { id: 'surpoids', label: 'Départ', img: require('../../assets/hero/surpoids.jpg') },
@@ -13,7 +14,9 @@ export const BODY_STAGES: { id: 'surpoids' | 'actuel' | 'athletique'; label: str
 ];
 
 /** La fiche correspond-elle au héros de l'usine ? (sinon on ne montre pas son corps à la place du sien) */
-export function sheetMatchesHero(s: CharacterSheet, ready: boolean): boolean {
+export function sheetMatchesHero(s: CharacterSheet, ready: boolean, base: AvatarBase = 'm'): boolean {
+  // le héros de l'usine est un homme : jamais montré à la place d'une femme (même avant le créateur)
+  if (base !== 'm') return false;
   if (!ready) return true;
   return s.appearance === 'masc' && ['s1', 's2', 's3', 's4'].includes(s.skin) && s.hairStyle !== 'hijab';
 }
