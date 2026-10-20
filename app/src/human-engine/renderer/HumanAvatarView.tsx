@@ -67,7 +67,7 @@ export function HumanAvatarView({ engine, avatar = DEFAULT_AVATAR, strategy = 'g
     try {
       const loaded = await loadAvatar(avatar.source);
       if (!alive.current) return;
-      engine.attachAvatar(loaded.scene, strategy, loaded.stats, avatar.drivers);
+      engine.attachAvatar(loaded.scene, strategy, loaded.stats, avatar.drivers, avatar.sex ?? 'm');
       r.setAvatar(loaded.scene);
       engine.setLoadState({ status: 'ready', ms: loaded.ms, bytes: loaded.bytes, textureMs: loaded.textureMs });
     } catch (e) {

@@ -3,7 +3,7 @@
  *  1. UserProfile (sexe, taille, poids, activité) → BodyParameters (0 → 1) : ce que le corps « devrait » montrer ;
  *  2. BodyParameters → MorphWeights : calibration propre à un mesh (un nouveau GLB = une nouvelle table, l'UI ne change pas).
  */
-import { shapeFromBody, type BodyShape } from './BodyShape';
+import { shapeFromBody, type BodyShape, type Sex } from './BodyShape';
 import type { Activity, Profile } from '@/store/profile';
 import type { BodyParameters, MorphDriver, MorphValues, MorphWeights } from '../core/types';
 
@@ -96,15 +96,18 @@ export function piecewise(points: [number, number][], x: number): number {
   return points[points.length - 1][1];
 }
 
-/** BodyParameters → poids de morphs pour un avatar donné. Plusieurs drivers sur un même morph s'additionnent. */
-export function evaluateDrivers(b: BodyParameters, drivers: MorphDriver[]): MorphValues {
+/**
+ * BodyParameters → poids de morphs pour un avatar donné. Plusieurs drivers sur un même morph s'additionnent.
+ * `sex` = base de l'avatar : une base féminine répartit la masse davantage sur hanches et cuisses.
+ */
+export function evaluateDrivers(b: BodyParameters, drivers: MorphDriver[], sex: Sex = 'm'): MorphValues {
   const out: MorphValues = {};
   // réglages détaillés corrélés calculés seulement si un driver en a besoin
   let shape: BodyShape | null = null;
   for (const d of drivers) {
     let v: number;
     if (d.input === 'weight' || d.input === 'bellyFat' || d.input === 'muscle') v = b[d.input];
-    else v = (shape ??= shapeFromBody(b))[d.input];
+    else v = (shape ??= shapeFromBody(b, sex))[d.input];
     out[d.morph] = clamp01((out[d.morph] ?? 0) + piecewise(d.points, clamp01(v)));
   }
   return out;

@@ -49,6 +49,8 @@ export type AvatarDefinition = {
   drivers: MorphDriver[];
   /** 'clay' : prototype sans texture ; 'studio' : éclairage premium (tone mapping, lumières de studio). */
   look: 'clay' | 'studio';
+  /** Base corporelle : règle la répartition des formes (hanches, cuisses, ventre). Défaut : 'm'. */
+  sex?: 'm' | 'f';
 };
 
 /**

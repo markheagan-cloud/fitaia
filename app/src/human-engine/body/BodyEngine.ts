@@ -6,16 +6,19 @@
 import type { BodyParameters, MorphDriver, MorphValues } from '../core/types';
 import { NEUTRAL_BODY, PROTOTYPE_DRIVERS, evaluateDrivers, sanitizeBody } from './BodyParameterMapper';
 import type { MorphController } from './MorphController';
+import type { Sex } from './BodyShape';
 
 export class BodyEngine {
   private params: BodyParameters = { ...NEUTRAL_BODY };
   private drivers: MorphDriver[] = PROTOTYPE_DRIVERS;
+  private sex: Sex = 'm';
   private weights: MorphValues = evaluateDrivers(NEUTRAL_BODY, PROTOTYPE_DRIVERS);
   private controller: MorphController | null = null;
 
-  attach(controller: MorphController, drivers: MorphDriver[] = PROTOTYPE_DRIVERS) {
+  attach(controller: MorphController, drivers: MorphDriver[] = PROTOTYPE_DRIVERS, sex: Sex = 'm') {
     this.controller = controller;
     this.drivers = drivers;
+    this.sex = sex;
     this.push();
   }
 
@@ -38,7 +41,7 @@ export class BodyEngine {
   }
 
   private push() {
-    this.weights = evaluateDrivers(this.params, this.drivers);
+    this.weights = evaluateDrivers(this.params, this.drivers, this.sex);
     this.controller?.apply(this.weights);
   }
 }

@@ -44,11 +44,12 @@ export class FitaiaHumanEngine {
     strategy: MorphStrategy,
     stats: Omit<MeshStats, 'morphTargets' | 'missingMorphs'>,
     drivers: MorphDriver[] = PROTOTYPE_DRIVERS,
+    sex: 'm' | 'f' = 'm',
   ): MeshStats {
     this.body.detach();
     const controller = new MorphController(root, strategy, drivers.map((d) => d.morph));
     this.strategy = strategy;
-    this.body.attach(controller, drivers);
+    this.body.attach(controller, drivers, sex);
     this.mesh = { ...stats, morphTargets: controller.available, missingMorphs: controller.missing };
     this.dirty = true;
     this.emit();
