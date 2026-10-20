@@ -55,9 +55,14 @@ export function tdee(p: Profile, weightKg: number): number {
  * Objectif calorique du jour. Perte : déficit selon le rythme, jamais sous un plancher de sécurité
  * (1 200 kcal femmes / 1 500 hommes). Maintien si l'objectif est atteint ; prise de masse : +250.
  */
+/** Plancher de sécurité, aussi appliqué à un objectif saisi à la main. */
+export function minGoal(sex: Profile['sex']): number {
+  return sex === 'f' ? 1200 : sex === 'm' ? 1500 : 1350;
+}
+
 export function dailyGoal(p: Profile, weightKg: number): number {
   const maintenance = tdee(p, weightKg);
-  const floor = p.sex === 'f' ? 1200 : p.sex === 'm' ? 1500 : 1350;
+  const floor = minGoal(p.sex);
   let goal: number;
   if (p.targetKg < weightKg - 0.3) goal = maintenance - PACE[p.pace].deficit;
   else if (p.targetKg > weightKg + 0.3) goal = maintenance + 250;

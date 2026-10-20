@@ -31,7 +31,10 @@ function Root() {
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') useGame.getState().rollover();
     });
+    // l'app peut rester ouverte au passage de minuit : on vérifie le jour chaque minute (rollover ne fait rien le même jour)
+    const tick = setInterval(() => useGame.getState().rollover(), 60_000);
     return () => {
+      clearInterval(tick);
       sub.remove();
       useGame.getState().stopTimers();
     };

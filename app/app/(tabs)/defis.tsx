@@ -17,7 +17,7 @@ import { RULES, dayKey, isActiveDay, weekDays } from '@/store/economy';
 import { Screen, Card, Row } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
-import { CheckIcon, CoinIcon } from '@/components/Icons';
+import { CheckIcon } from '@/components/Icons';
 
 const PANEL_W = 342;
 const PANEL_H = 236;
@@ -180,8 +180,7 @@ export default function Defis() {
                 </View>
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <CoinIcon size={12} />
-                  <Txt size={14} weight="bold" num>+{d.reward}</Txt>
+                  <Txt size={14} weight="bold" num>+{d.points} PF</Txt>
                 </View>
               )}
             </View>

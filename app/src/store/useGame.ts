@@ -13,7 +13,7 @@ import { LegacyEconomy, useEco } from './useEco';
 import type { SelfActionType } from '@/progression/types';
 import { CharacterSheet, DEFAULT_SHEET } from '@/data/character';
 import { coachAnswer } from '@/coach/brain';
-import { DEFAULT_PROFILE, Profile, WeightEntry, currentWeight, dailyGoal, logWeight, stats as computeStats, tiers } from './profile';
+import { DEFAULT_PROFILE, Profile, WeightEntry, currentWeight, dailyGoal, logWeight, minGoal, stats as computeStats, tiers } from './profile';
 
 export type ToastKind = 'ok' | 'bad';
 export type FbKind = 'info' | 'good' | 'bad';
@@ -401,7 +401,7 @@ export const useGame = create<GameState>()(
           const t = tiers(profile, weights);
           get().say(t.reached ? 'Objectif atteint : ' + fmtKg(profile.targetKg) + ' kg' : 'Poids enregistré · palier ' + t.current + ', encore ' + fmtKg(t.toNext) + ' kg', 'ok');
         },
-        setGoal: (kcal) => set((s) => ({ goal: Math.max(800, Math.round(kcal)), profile: { ...s.profile, autoGoal: false } })),
+        setGoal: (kcal) => set((s) => ({ goal: Math.max(minGoal(s.profile.sex), Math.round(kcal)), profile: { ...s.profile, autoGoal: false } })),
         setSelfieUri: (u) => set({ selfieUri: u }),
 
         doSelfie: (onDone) => {

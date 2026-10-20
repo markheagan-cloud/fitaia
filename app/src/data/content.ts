@@ -61,12 +61,13 @@ export const MEALS: Meal[] = [
 ];
 
 export type ExtraKind = 'camera' | 'meals' | 'steps';
-export type ExtraDefi = { id: string; name: string; sub: string; reward: number; kind: ExtraKind; target: number };
+/** `points` = Points FITAIA réellement crédités (progressionRules : challenge_completed, 50 PF, plafond 150 PF/jour). */
+export type ExtraDefi = { id: string; name: string; sub: string; points: number; kind: ExtraKind; target: number };
 export const OTHER_DEFIS: ExtraDefi[] = [
-  { id: 'squats', name: '20 squats', sub: 'Caméra, amplitude vérifiée', reward: 400, kind: 'camera', target: 20 },
-  { id: 'plank', name: 'Gainage, 1 minute', sub: 'Caméra, position tenue', reward: 600, kind: 'camera', target: 60 },
-  { id: 'meals', name: 'Scanner 2 repas', sub: 'Repas ajoutés au journal', reward: 300, kind: 'meals', target: 2 },
-  { id: 'steps', name: 'Marcher 6 000 pas', sub: 'Podomètre de l’iPhone', reward: 400, kind: 'steps', target: 6000 },
+  { id: 'squats', name: '20 squats', sub: 'Caméra, amplitude vérifiée', points: 50, kind: 'camera', target: 20 },
+  { id: 'plank', name: 'Gainage, 1 minute', sub: 'Caméra, position tenue', points: 50, kind: 'camera', target: 60 },
+  { id: 'meals', name: 'Scanner 2 repas', sub: 'Repas ajoutés au journal', points: 50, kind: 'meals', target: 2 },
+  { id: 'steps', name: 'Marcher 6 000 pas', sub: 'Podomètre de l’iPhone', points: 50, kind: 'steps', target: 6000 },
 ];
 
 export const Q_LIP = 'Lipides ou glucides, lesquels privilégier ?';

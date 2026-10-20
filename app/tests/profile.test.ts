@@ -1,4 +1,4 @@
-import { bmr, dailyGoal, tiers, logWeight, levelFrom, stats, DEFAULT_PROFILE } from '../src/store/profile';
+import { bmr, dailyGoal, tiers, logWeight, levelFrom, stats, DEFAULT_PROFILE, minGoal } from '../src/store/profile';
 let n = 0;
 const ok = (c: boolean, m: string) => { n++; if (!c) throw new Error('FAIL ' + m); console.log('ok', m); };
 ok(Math.round(bmr('m', 30, 178, 92)) === 1888, 'bmr homme 30 ans 178 cm 92 kg ≈ 1888');
@@ -21,4 +21,5 @@ ok(logWeight(w, '2026-10-02', 89).length === 2, 'remplace le poids du jour');
 ok(levelFrom(0).level === 1 && levelFrom(45).level === 11 && levelFrom(44).level === 10, 'niveaux : 0→1, 45→11');
 const st = stats({ '2026-10-01': { challenges: 1, meals: 2, earned: 800 } }, 1, 2, 5, 0);
 ok(st.level >= 1 && st.force.level >= 1 && st.force.pct >= 0 && st.force.pct <= 100, 'stats cohérentes ' + JSON.stringify(st));
+ok(minGoal('f') === 1200 && minGoal('m') === 1500 && minGoal('x') === 1350, 'plancher de sécurité exposé pour la saisie manuelle');
 console.log(n + ' tests profil OK');

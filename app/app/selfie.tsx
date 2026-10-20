@@ -94,7 +94,7 @@ export default function Selfie() {
 
       <Txt size={13} lineHeight={19} color={t.ink2} style={{ paddingHorizontal: 4, opacity: 0.85 }}>
         Ton selfie reste sur ton téléphone. Il n’est jamais stocké sur nos serveurs : il est envoyé seulement le temps de dessiner ton perso, puis oublié.
-        {!avatarConfigured ? ' Mode démo actif : serveur de dessin non configuré.' : ''}
+        {!avatarConfigured ? ' Le dessin à partir du selfie n’est pas encore disponible : ton perso garde la base choisie dans le créateur.' : ''}
       </Txt>
 
       <Press haptic="medium" onPress={phase === 'idle' ? capture : phase === 'captured' ? keep : retake} style={[styles.btn, { backgroundColor: LIME }, shadow.btn]}>
