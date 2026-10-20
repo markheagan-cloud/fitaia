@@ -153,7 +153,7 @@ export default function Corps() {
         </View>
 
         <View style={[styles.card, { backgroundColor: t.surf }]}>
-          <Slider label={'Vers l’objectif · ' + fmtKg(shownKg) + ' kg'} value={mix} onChange={setAt} />
+          <Slider label={'Vers l’objectif · ' + fmtKg(shownKg) + ' kg'} value={mix} onChange={setAt} display={(v) => Math.round(v * 100) + ' %'} />
         </View>
 
         <Press haptic="medium" onPress={() => goTo(mix < 0.5 ? 1 : 0)} style={[styles.primary, { backgroundColor: LIME }]}>

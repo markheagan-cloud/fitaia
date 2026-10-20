@@ -62,6 +62,16 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "FITAIA",
+      "shortName": "FITAIA",
+      "lang": "fr",
+      "themeColor": "#121315",
+      "backgroundColor": "#121315"
     }
   }
 }

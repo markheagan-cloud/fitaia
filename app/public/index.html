@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>FITAIA</title>
+    <meta name="description" content="Défis du jour comptés par la caméra, repas, coach et ton perso qui évolue avec toi." />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#121315" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FITAIA" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <style id="expo-reset">
+      html, body { height: 100%; }
+      body { overflow: hidden; background: #E6E4DF; }
+      @media (prefers-color-scheme: dark) { body { background: #121315; } }
+      #root { display: flex; height: 100%; flex: 1; }
+    </style>
+  </head>
+  <body>
+    <noscript>FITAIA a besoin de JavaScript.</noscript>
+    <div id="root"></div>
+    <script>
+      // Hors ligne : l'interface déjà visitée reste disponible (service worker, production seulement)
+      if ('serviceWorker' in navigator && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+        window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+      }
+    </script>
+  </body>
+</html>

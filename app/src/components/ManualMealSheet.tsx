@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, StyleSheet, Modal, Pressable, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import Animated, { Easing, FadeIn, SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,14 +51,19 @@ export function ManualMealSheet({ visible, onClose, edit }: Props) {
   const [g, setG] = useState('');
   const [l, setL] = useState('');
   // à chaque ouverture : champs vides pour un nouveau repas, valeurs actuelles pour une correction
-  useEffect(() => {
-    if (!visible) return;
-    setName(edit?.name ?? '');
-    setKcal(edit ? String(edit.kcal) : '');
-    setP(edit ? String(edit.p) : '');
-    setG(edit ? String(edit.g) : '');
-    setL(edit ? String(edit.l) : '');
-  }, [visible, edit]);
+  // (réglé pendant le rendu quand la feuille s'ouvre, sans effet en cascade)
+  const openKey = visible ? (edit ? 'edit:' + edit.id + ':' + edit.kcal : 'new') : null;
+  const [shownKey, setShownKey] = useState<string | null>(null);
+  if (openKey !== shownKey) {
+    setShownKey(openKey);
+    if (openKey) {
+      setName(edit?.name ?? '');
+      setKcal(edit ? String(edit.kcal) : '');
+      setP(edit ? String(edit.p) : '');
+      setG(edit ? String(edit.g) : '');
+      setL(edit ? String(edit.l) : '');
+    }
+  }
 
   const n = (v: string) => Math.max(0, Math.round(Number(v.replace(',', '.')) || 0));
   const K = n(kcal), P = n(p), G = n(g), L = n(l);
