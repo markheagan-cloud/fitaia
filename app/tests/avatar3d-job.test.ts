@@ -10,7 +10,9 @@ type Reply = { status: number; body: unknown } | 'network-error';
 /** Faux serveur : une réponse par appel, dans l'ordre ; garde la trace des appels. */
 function fakeServer(replies: Reply[]) {
   const calls: { url: string; method: string; headers: Record<string, string>; body?: string }[] = [];
-  const fetch: JobFetch = async (url, init) => {
+  // comme le fetch natif du navigateur : refuse d'être appelé comme méthode d'un autre objet (« Illegal invocation »)
+  const fetch: JobFetch = async function (this: unknown, url, init) {
+    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
     calls.push({ url, method: init.method, headers: init.headers, body: init.body });
     const r = replies.shift();
     if (!r) throw new Error('appel inattendu : ' + url);

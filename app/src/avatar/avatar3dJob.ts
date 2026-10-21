@@ -64,10 +64,12 @@ export async function runAvatarJob(endpoint: string, payload: unknown, o: JobOpt
   const timeoutMs = o.timeoutMs ?? 6 * 60_000;
   const maxNetworkErrors = o.maxNetworkErrors ?? 10;
   const headers = { 'Content-Type': 'application/json', ...o.headers };
+  // appel sans `this` : le fetch natif du navigateur refuse d'être appelé comme méthode d'un autre objet (« Illegal invocation »)
+  const request = o.fetch;
 
   let res: Awaited<ReturnType<JobFetch>>;
   try {
-    res = await o.fetch(endpoint + '/v1/avatar', { method: 'POST', headers, body: JSON.stringify(payload), signal: o.signal });
+    res = await request(endpoint + '/v1/avatar', { method: 'POST', headers, body: JSON.stringify(payload), signal: o.signal });
   } catch {
     aborted(o.signal);
     throw new Error('Serveur d’avatar injoignable. Vérifie ta connexion.');
@@ -89,7 +91,7 @@ export async function runAvatarJob(endpoint: string, payload: unknown, o: JobOpt
     aborted(o.signal);
     let r: Awaited<ReturnType<JobFetch>>;
     try {
-      r = await o.fetch(statusUrl, { method: 'GET', headers: o.headers, signal: o.signal });
+      r = await request(statusUrl, { method: 'GET', headers: o.headers, signal: o.signal });
     } catch {
       aborted(o.signal);
       // réseau coupé un instant (écran verrouillé, Wi-Fi qui change) : la tâche continue sur le serveur
