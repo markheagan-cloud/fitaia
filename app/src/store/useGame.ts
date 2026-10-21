@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { defaultSheetFor } from '@/avatar/identity';
 import { deleteAvatar3d, type Avatar3d } from '@/services/avatar3d';
+import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CUR_NAMES, MEALS, Meal, MealEntry, OTHER_DEFIS, fmtKg } from '@/data/content';
@@ -524,7 +525,15 @@ export const useGame = create<GameState>()(
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.rollover();
-        useGame.setState({ hydrated: true });
+        // fichiers gardés sur le téléphone (selfie, GLB) : le dossier privé change d'adresse à chaque mise à jour de
+        // l'app sur iPhone ; on retrouve le fichier sous son nom, ou on oublie l'adresse s'il a disparu
+        const selfie = findDeviceFile(state.selfieUri);
+        const glb = findDeviceFile(state.avatar3d?.uri);
+        useGame.setState({
+          hydrated: true,
+          selfieUri: selfie,
+          avatar3d: state.avatar3d && glb ? (glb === state.avatar3d.uri ? state.avatar3d : { ...state.avatar3d, uri: glb }) : null,
+        });
         // registre Phase 2 : amorçage (tenue de départ) et conversion unique de l'ancienne économie
         void useEco
           .getState()
