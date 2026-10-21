@@ -55,7 +55,7 @@ class ServeAvatarTest(unittest.TestCase):
         S.JOBS = os.path.join(cls.tmp, 'jobs')
         os.makedirs(S.JOBS)
         fake = os.path.join(cls.tmp, 'fake_job.py')
-        open(fake, 'w').write(FAKE_JOB)
+        open(fake, 'w', encoding='utf-8').write(FAKE_JOB)
         S.job_command = lambda d, photo, sex, sheet=None: [sys.executable, fake, '--photo', photo, '--sex', sex, '--out', d]
         cls.httpd = ThreadingHTTPServer(('127.0.0.1', 0), S.Handler)
         cls.base = 'http://127.0.0.1:%d' % cls.httpd.server_address[1]
