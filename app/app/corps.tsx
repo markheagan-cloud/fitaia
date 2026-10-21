@@ -108,7 +108,7 @@ export default function Corps() {
   const uri = usable?.uri ?? null;
   useEffect(() => {
     if (!uri) return;
-    // l'abonnement rejoue d'abord l'état courant (peut-être une vieille erreur d'un autre écran) : on l'ignore ;
+    // le moteur rejoue d'abord son état courant (peut-être une vieille erreur d'un autre écran) : on l'ignore ;
     // la vue repasse par « chargement » avant de lire le GLB, donc une erreur reçue ensuite concerne bien ce fichier
     let first = true;
     return fitaiaHumanEngine.subscribe((s) => {
