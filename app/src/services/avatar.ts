@@ -88,7 +88,13 @@ export async function prepareSelfie(uri: string, width: number, height: number):
  * Dans la version compilée, la personne est détourée sur l'appareil (Apple Vision) : fond transparent, visage net dans le perso.
  */
 export async function keepSelfie(tmpUri: string): Promise<string> {
-  if (Platform.OS === 'web') return tmpUri; // web : reste en mémoire de session
+  if (Platform.OS === 'web') {
+    // web : pas de disque privé. L'adresse `blob:` du navigateur meurt au rechargement de la page ; on garde l'image
+    // elle-même (JPEG 768 px, ≈ 120 Ko) dans le store, sous forme d'adresse `data:` qui survit à la réouverture.
+    if (tmpUri.startsWith('data:')) return tmpUri;
+    const blob = await fetch(tmpUri).then((r) => r.blob());
+    return blobToDataUrl(blob);
+  }
   const cut = await segmentPerson(tmpUri);
   const isPng = cut !== tmpUri;
   const dest = new File(Paths.document, isPng ? 'selfie.png' : 'selfie.jpg');
@@ -124,6 +130,7 @@ export async function readSelfieBase64(uri: string): Promise<string> {
 export async function discardSelfie(uri: string): Promise<void> {
   try {
     if (Platform.OS !== 'web' && uri.startsWith('file:')) new File(uri).delete();
+    if (Platform.OS === 'web' && uri.startsWith('blob:')) URL.revokeObjectURL(uri);
   } catch {
     // déjà supprimé ou inaccessible : sans conséquence
   }
