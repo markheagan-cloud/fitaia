@@ -11,7 +11,8 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import type { AvatarBase } from '@/avatar/identity';
-import { parseReport, type Avatar3d, type ServerReport } from '@/avatar/avatar3dReport';
+import { parseReport, type Avatar3d } from '@/avatar/avatar3dReport';
+import { runAvatarJob, type JobFetch } from '@/avatar/avatar3dJob';
 
 const ENDPOINT = (process.env.EXPO_PUBLIC_AVATAR3D_ENDPOINT ?? '').replace(/\/+$/, '');
 const TOKEN = process.env.EXPO_PUBLIC_AVATAR3D_TOKEN ?? '';
@@ -61,16 +62,9 @@ export function deleteAvatar3d(a: Avatar3d | null) {
 export async function createAvatar3d(selfieUri: string, base: AvatarBase, sheet?: Record<string, unknown>, signal?: AbortSignal): Promise<Avatar3d> {
   if (!avatar3dConfigured) throw new Error('La création de l’avatar 3D n’est pas encore disponible.');
   const photo = await selfieJpegBase64(selfieUri);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (TOKEN) headers.Authorization = 'Bearer ' + TOKEN;
-  let res: Response;
-  try {
-    res = await fetch(ENDPOINT + '/v1/avatar', { method: 'POST', headers, body: JSON.stringify({ photo, sex: base, sheet }), signal });
-  } catch {
-    throw new Error('Serveur d’avatar injoignable. Vérifie ta connexion.');
-  }
-  const body = (await res.json().catch(() => ({}))) as { ok?: boolean; id?: string; glb?: string; error?: string; report?: ServerReport };
-  if (!res.ok || !body.ok || !body.id || !body.glb || !body.report) throw new Error(body.error || 'Création de l’avatar 3D impossible (' + res.status + ').');
+  const headers: Record<string, string> = TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {};
+  // envoi puis suivi par requêtes courtes : voir src/avatar/avatar3dJob.ts (délai d'inactivité iOS de 60 s)
+  const body = await runAvatarJob(ENDPOINT, { photo, sex: base, sheet }, { fetch: fetch as unknown as JobFetch, headers, signal });
   let uri: string;
   try {
     uri = await saveGlb(body.id, ENDPOINT + body.glb);
