@@ -292,7 +292,8 @@ export const useGame = create<GameState>()(
             onDone();
             return;
           }
-          set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Corps détecté, 19 points suivis. Vas-y.', fbKind: 'info' });
+          // démonstration sans caméra : aucun corps n'est détecté, les messages le disent clairement
+          set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Démo sans caméra : mouvement d’exemple, rien n’est détecté ni compté.', fbKind: 'info' });
           if (pushT) clearInterval(pushT);
           pushT = setInterval(() => {
             const s = get();
@@ -302,7 +303,7 @@ export const useGame = create<GameState>()(
             }
             const attempt = s.attempt + 1;
             if (attempt === 3) {
-              set({ phase: 0, attempt, feedback: 'Pas comptée : descends jusqu’à 90° aux coudes.', fbKind: 'bad' });
+              set({ phase: 0, attempt, feedback: 'Exemple de refus : descends jusqu’à 90° aux coudes.', fbKind: 'bad' });
               return;
             }
             const reps = s.reps + 1;
@@ -313,7 +314,7 @@ export const useGame = create<GameState>()(
               get().say('Démo : aucune récompense sans la caméra', 'bad');
               return;
             }
-            set({ phase: 0, attempt, reps, feedback: 'Pompe ' + reps + ' validée, amplitude complète.', fbKind: 'good' });
+            set({ phase: 0, attempt, reps, feedback: 'Exemple : pompe ' + reps + ' (démo, non comptée).', fbKind: 'good' });
           }, 650);
         },
 
