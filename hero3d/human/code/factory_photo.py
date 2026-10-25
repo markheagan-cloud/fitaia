@@ -105,7 +105,11 @@ def main():
         o2 = dict(opt)
         o2['views'] = dict(opt['views'], photo=yaw)
         o2['hair_color'] = [round(float(c) ** 2.2, 4) for c in idn['colors'].get('hair', [0.3, 0.22, 0.15])]
-        o2['hair_melanin'], o2['hair_redness'] = hair_melanin(idn['colors'].get('hair', [0.3, 0.22, 0.15]))
+        hrgb = idn['colors'].get('hair', [0.3, 0.22, 0.15])
+        if (max(hrgb) - min(hrgb)) / max(max(hrgb), 1e-6) > 0.12:
+            o2['hair_melanin'], o2['hair_redness'] = hair_melanin(hrgb)
+        # cheveux sans teinte (gris, blancs, noirs) : une mélanine moyenne rend du blond-roux, pas du gris ;
+        # le shader est alors piloté par la couleur linéaire mesurée (o2['hair_color'])
         o2['only'] = opt['only'] + ['actuel_photo']
         optp = os.path.join(d, 'opt-identite.json')
         json.dump(o2, open(optp, 'w'))

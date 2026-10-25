@@ -1066,7 +1066,8 @@ def build(src, out, preview=False, cfg=None):
         # base femme du selfie) ; avec une photo, la coupe prend la couleur des cheveux lue sur la photo
         hopt = {k: v for k, v in cfg['hair'].items() if k not in ('mhclo', 'keep_with_identity')}
         if ident and ident['colors'].get('hair') and hopt.get('recolor'):
-            hopt['recolor'] = dict(hopt['recolor'], color=[float(x) * 2.2 for x in ident['colors']['hair']])
+            # couleur lue sur la photo en sRGB 0..1 → linéaire, même échelle que persons.HAIR (sinon châtain → rose)
+            hopt['recolor'] = dict(hopt['recolor'], color=[float(x) ** 2.2 * 2.2 for x in ident['colors']['hair']])
         layers.append(('hair', Mhclo(os.path.join(src, cfg['hair']['mhclo'])), None, {'kind': 'hair', **hopt}))
     gen = cfg.get('generated_clothes')
     gen_ok = bool(gen) and os.path.exists(os.path.join(src, gen['dir'], 'garments_out.json'))

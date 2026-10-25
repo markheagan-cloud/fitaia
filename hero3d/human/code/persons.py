@@ -176,6 +176,7 @@ def selfie_config(src, sex='f', sheet=None):
     (photo_id.make_identity avec cfg=cette config) puis appliqué par build_premium_avatar.build (cfg['identity']).
     Un seul endroit pour la base selfie : serveur (photo_avatar_job.py), usine (factory_photo.py), construction GLB."""
     sh = dict(SELFIE_SHEET, appearance='fem' if sex == 'f' else 'masc')
+    given = None
     if sheet:
         given = json.loads(sheet) if isinstance(sheet, str) else dict(sheet)
         sh.update({k: given[k] for k in ('body', 'skin', 'hairStyle', 'hairColor', 'eyes', 'beard', 'extras') if k in given})
@@ -190,9 +191,19 @@ def selfie_config(src, sex='f', sheet=None):
     cfg = config_for({'key': 'selfie', 'seed': 7, 'sheet': sh,
                       'outfit': {'top': [0.205, 0.215, 0.235], 'bottom': [0.075, 0.078, 0.085]}}, src)
     cfg['id'] = 'selfie-' + sex
-    cfg['groom'] = None            # pas de coupe aléatoire : la coiffure vient de la fiche (cartes) à la couleur de la photo
-    cfg['hair']['keep_with_identity'] = True
+    # une identité photo reste NEUTRE : ni visage aléatoire, ni expression de portrait dans la base (sinon le visage ajusté
+    # sourit et l'ajustement part d'une base déformée : 21 mm d'erreur au lieu de 6 sur les premiers essais) ; les cibles
+    # de visage sont de toute façon ignorées par build() avec une identité, il ne reste que la carrure de la fiche
+    from photo_id import FACE_DIRS
+    cfg['base']['shape'] = [(rel, k) for rel, k in cfg['base']['shape'] if not rel.startswith(FACE_DIRS + ('expression/',))]
     cfg['base'].pop('sculpt', None)
+    cfg['groom'] = None
+    if sheet and (given.get('hairStyle') if isinstance(given, dict) else None):
+        # coupe choisie dans le créateur : cartes MakeHuman de cette coupe, à la couleur des cheveux de la photo
+        cfg['hair']['keep_with_identity'] = True
+    else:
+        # sinon la coiffure vient de la photo comme pour la base homme (volume mesuré → coquilles, ou mèches avec --strands)
+        cfg['hair'] = copy.deepcopy(B.CONFIG['hair'])
     return cfg
 
 
