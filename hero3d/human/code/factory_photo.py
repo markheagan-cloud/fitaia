@@ -66,15 +66,18 @@ def main():
 
     cfg, sex_args = None, []
     base = os.path.join(a.out, '_base')
-    if a.sex == 'f':
+    # la fiche du créateur (carnation, coupe, barbe) s'applique aux deux sexes, comme sur la voie serveur (photo_avatar_job) ;
+    # sans fiche, un homme garde la base du héros (CONFIG inchangé)
+    if a.sex == 'f' or a.sheet:
         import persons
-        cfg = persons.selfie_config(a.src, 'f', a.sheet)
-        base = os.path.join(a.out, '_base-femme-' + '-'.join(f'{k[:3]}{int(round(w * 100)):02d}' for k, w in sorted(cfg['base']['race'].items())))
-        sex_args = ['--sex', 'f'] + (['--sheet', a.sheet] if a.sheet else [])
+        cfg = persons.selfie_config(a.src, a.sex, a.sheet)
+        base = os.path.join(a.out, '_base-' + ('femme' if a.sex == 'f' else 'homme') + '-'
+                            + '-'.join(f'{k[:3]}{int(round(w * 100)):02d}' for k, w in sorted(cfg['base']['race'].items())))
+        sex_args = ['--sex', a.sex] + (['--sheet', a.sheet] if a.sheet else [])
     os.makedirs(base, exist_ok=True)
     npng, nnpz = os.path.join(base, 'neutral.png'), os.path.join(base, 'neutral.npz')
     if not os.path.exists(nnpz + '.ok'):
-        step('0. Base neutre (une fois)' + (' — femme' if cfg else ''))
+        step('0. Base neutre (une fois)' + (' — fiche ' + ('femme' if a.sex == 'f' else 'homme') if cfg else ''))
         P.render_neutral(a.src, npng, nnpz, cfg=cfg)
         subprocess.run([a.pyenv, os.path.join(HERE, 'landmarks.py'), a.model, npng], check=True)
         open(nnpz + '.ok', 'w').write('ok')
