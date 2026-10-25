@@ -55,15 +55,27 @@ def main():
     ap.add_argument('--states', default=os.path.join(HERE, 'states-hero.json'))
     ap.add_argument('--samples', type=int, default=64)
     ap.add_argument('--strands', action='store_true', help='coiffure en mèches pour les rendus (au lieu de la coupe en coquilles)')
+    ap.add_argument('--sex', choices=['m', 'f'], default='m', help='base de la personne : homme (héros) ou femme (persons.selfie_config)')
+    ap.add_argument('--sheet', default=None, help='fiche du créateur (JSON) : carnation, coupe, carrure (base femme)')
     a = ap.parse_args()
+    # chemins absolus : Blender (render_sheet.py) change de dossier courant ; un --out relatif finissait à la racine du disque
+    a.out = os.path.abspath(a.out)
+    a.src = os.path.abspath(a.src)
+    a.photo = [os.path.abspath(p) for p in a.photo]
     import photo_id as P
 
+    cfg, sex_args = None, []
     base = os.path.join(a.out, '_base')
+    if a.sex == 'f':
+        import persons
+        cfg = persons.selfie_config(a.src, 'f', a.sheet)
+        base = os.path.join(a.out, '_base-femme-' + '-'.join(f'{k[:3]}{int(round(w * 100)):02d}' for k, w in sorted(cfg['base']['race'].items())))
+        sex_args = ['--sex', 'f'] + (['--sheet', a.sheet] if a.sheet else [])
     os.makedirs(base, exist_ok=True)
     npng, nnpz = os.path.join(base, 'neutral.png'), os.path.join(base, 'neutral.npz')
     if not os.path.exists(nnpz + '.ok'):
-        step('0. Base neutre (une fois)')
-        P.render_neutral(a.src, npng, nnpz)
+        step('0. Base neutre (une fois)' + (' — femme' if cfg else ''))
+        P.render_neutral(a.src, npng, nnpz, cfg=cfg)
         subprocess.run([a.pyenv, os.path.join(HERE, 'landmarks.py'), a.model, npng], check=True)
         open(nnpz + '.ok', 'w').write('ok')
 
@@ -80,12 +92,13 @@ def main():
            'samples': a.samples, 'res': [800, 980], 'frame': 'portrait'}
     optp = os.path.join(a.out, 'opt-identite.json')
     json.dump(opt, open(optp, 'w'))
+    verdicts = []
     for ph in a.photo:
         name = os.path.splitext(os.path.basename(ph))[0]
         d = os.path.join(a.out, name)
         os.makedirs(d, exist_ok=True)
         step(f'2. Identité : {name}')
-        idn = P.make_identity(a.src, ph, ph + '.landmarks.json', nnpz, npng + '.landmarks.json', d)
+        idn = P.make_identity(a.src, ph, ph + '.landmarks.json', nnpz, npng + '.landmarks.json', d, cfg=cfg)
         import math
         R = idn['pose']['R']
         yaw = math.degrees(math.atan2(R[0][2], R[2][2]))
@@ -100,7 +113,7 @@ def main():
         for passe in (1, 2):
             step(f'3. Avatar : {name} (passe {passe})')
             subprocess.run([sys.executable, os.path.join(HERE, 'build_premium_avatar.py'), '--src', a.src,
-                            '--out', os.path.join(d, 'avatar.glb'), '--identity', idp] + (['--strands'] if a.strands else []), check=True)
+                            '--out', os.path.join(d, 'avatar.glb'), '--identity', idp] + sex_args + (['--strands'] if a.strands else []), check=True)
             step(f'4. Rendus : {name} (passe {passe})')
             o3 = dict(o2)
             if passe == 1:
@@ -152,7 +165,7 @@ def main():
                     adj['eyes/r-eye-trans-in'] = ev
                 if adj:
                     keep_colors = json.load(open(idp))['colors']
-                    P.make_identity(a.src, ph, ph + '.landmarks.json', nnpz, npng + '.landmarks.json', d, adjust=adj)
+                    P.make_identity(a.src, ph, ph + '.landmarks.json', nnpz, npng + '.landmarks.json', d, adjust=adj, cfg=cfg)
                     idn2 = json.load(open(idp))
                     idn2['colors']['hairline_y'] = keep_colors.get('hairline_y', idn2['colors'].get('hairline_y'))
                     json.dump(idn2, open(idp, 'w'), indent=1)
@@ -169,7 +182,15 @@ def main():
         step(f'6. Planche de ressemblance : {name}')
         subprocess.run([sys.executable, os.path.join(HERE, 'compose_identity.py'), ph, ph + '.landmarks.json',
                         os.path.join(d, 'rendus'), os.path.join(d, 'ressemblance.jpg')], check=True)
-    print('\nUSINE PHOTO OK ->', a.out)
+        ctrl = json.load(open(os.path.join(d, 'controle.json'), encoding='utf-8'))
+        verdicts.append((name, ctrl.get('visual_quality_gate'), bool(ctrl.get('valid_output')), ctrl.get('raisons', [])))
+    # verdict de l'usine = celui du contrôle visuel (biometrie.py), jamais « OK » quand une sortie est refusée
+    refused = [v for v in verdicts if not v[2]]
+    print()
+    for name, gate, ok, raisons in verdicts:
+        print(f"{'ACCEPTÉ' if ok else 'REFUSÉ '} {name} : contrôle visuel {gate}" + (' — ' + ' ; '.join(raisons) if raisons and not ok else ''))
+    print(f'USINE PHOTO {"OK" if not refused else "REFUSÉE (" + str(len(refused)) + "/" + str(len(verdicts)) + " sorties non valides)"} ->', a.out)
+    sys.exit(0 if not refused else 1)
 
 
 if __name__ == '__main__':

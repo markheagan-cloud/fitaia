@@ -46,6 +46,9 @@ STATES = {}
 STATES_LOCK = threading.Lock()
 
 
+JOB_TIMEOUT_S = int(os.environ.get('FITAIA_JOB_TIMEOUT', '300'))
+
+
 def job_command(d, photo, sex, sheet=None):
     return [sys.executable, os.path.join(HERE, 'photo_avatar_job.py'),
             '--src', os.path.join(ROOT, 'assets-src'),
@@ -73,7 +76,13 @@ def run_job(jid, photo_bytes, sex, sheet=None):
             f.write(photo_bytes)
         with LOCK:
             set_state(jid, 'running')
-            r = subprocess.run(job_command(d, photo, sex, sheet), capture_output=True, text=True, env=env, encoding='utf-8', errors='replace')
+            try:
+                r = subprocess.run(job_command(d, photo, sex, sheet), capture_output=True, text=True, env=env, encoding='utf-8',
+                                   errors='replace', timeout=JOB_TIMEOUT_S)
+            except subprocess.TimeoutExpired:
+                # Blender / l'ajustement bloqué : la tâche ne reste pas « running » pour toujours (l'app, elle, abandonne à 60 s)
+                with open(os.path.join(d, 'report.json'), 'w', encoding='utf-8') as f:
+                    json.dump({'ok': False, 'erreur': f'tâche trop longue (> {JOB_TIMEOUT_S} s), abandonnée'}, f, ensure_ascii=False)
     finally:
         # le selfie et ses dérivés ne sont jamais gardés, même si la tâche plante
         for p in (photo, photo + '.landmarks.json', photo + '.seg.png', os.path.join(d, 'face.png')):

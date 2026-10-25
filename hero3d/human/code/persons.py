@@ -166,6 +166,36 @@ def morph_spec(gender):
     return m
 
 
+SELFIE_SHEET = {'appearance': 'fem', 'body': 'athle', 'skin': 's3', 'hairStyle': 'long', 'hairColor': 'brun', 'face': 'ovale',
+                'eyes': 'brun', 'beard': 'aucune', 'extras': []}
+
+
+def selfie_config(src, sex='f', sheet=None):
+    """Configuration de la base d'une PERSONNE (selfie → avatar) : base femme (sex='f') ou homme, carnation / coupe /
+    carrure de sa fiche du créateur. Le visage ne vient PAS de cette config : il est ajusté depuis la photo
+    (photo_id.make_identity avec cfg=cette config) puis appliqué par build_premium_avatar.build (cfg['identity']).
+    Un seul endroit pour la base selfie : serveur (photo_avatar_job.py), usine (factory_photo.py), construction GLB."""
+    sh = dict(SELFIE_SHEET, appearance='fem' if sex == 'f' else 'masc')
+    if sheet:
+        given = json.loads(sheet) if isinstance(sheet, str) else dict(sheet)
+        sh.update({k: given[k] for k in ('body', 'skin', 'hairStyle', 'hairColor', 'eyes', 'beard', 'extras') if k in given})
+    if sh['body'] not in ('mince', 'athle', 'rond', 'costaud'):
+        sh['body'] = 'athle'
+    if sh['skin'] not in RACE:
+        sh['skin'] = 's3'
+    if sh['hairStyle'] not in HAIR_CARDS:
+        sh['hairStyle'] = 'long' if sex == 'f' else 'court'
+    if sh['hairColor'] not in HAIR:
+        sh['hairColor'] = 'brun'
+    cfg = config_for({'key': 'selfie', 'seed': 7, 'sheet': sh,
+                      'outfit': {'top': [0.205, 0.215, 0.235], 'bottom': [0.075, 0.078, 0.085]}}, src)
+    cfg['id'] = 'selfie-' + sex
+    cfg['groom'] = None            # pas de coupe aléatoire : la coiffure vient de la fiche (cartes) à la couleur de la photo
+    cfg['hair']['keep_with_identity'] = True
+    cfg['base'].pop('sculpt', None)
+    return cfg
+
+
 def config_for(person, src):
     sheet = person['sheet']
     gender = 'female' if sheet['appearance'] == 'fem' else 'male'
