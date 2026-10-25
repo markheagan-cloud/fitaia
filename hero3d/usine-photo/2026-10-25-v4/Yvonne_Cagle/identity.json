@@ -1,0 +1,352 @@
+{
+ "targets": [
+  [
+   "head/head-scale-horiz-incr.target.gz",
+   1.0
+  ],
+  [
+   "head/head-scale-vert-incr.target.gz",
+   0.616
+  ],
+  [
+   "head/head-trans-up.target.gz",
+   0.09
+  ],
+  [
+   "forehead/forehead-temple-decr.target.gz",
+   0.176
+  ],
+  [
+   "forehead/forehead-temple-incr.target.gz",
+   0.214
+  ],
+  [
+   "chin/chin-width-incr.target.gz",
+   0.192
+  ],
+  [
+   "chin/chin-height-incr.target.gz",
+   0.244
+  ],
+  [
+   "chin/chin-prominent-decr.target.gz",
+   0.056
+  ],
+  [
+   "chin/chin-bones-incr.target.gz",
+   0.149
+  ],
+  [
+   "chin/chin-prognathism-decr.target.gz",
+   0.121
+  ],
+  [
+   "cheek/l-cheek-bones-incr.target.gz",
+   0.036
+  ],
+  [
+   "nose/nose-scale-horiz-incr.target.gz",
+   0.387
+  ],
+  [
+   "nose/nose-scale-vert-incr.target.gz",
+   0.151
+  ],
+  [
+   "nose/nose-scale-depth-incr.target.gz",
+   0.165
+  ],
+  [
+   "nose/nose-trans-up.target.gz",
+   0.051
+  ],
+  [
+   "nose/nose-trans-out.target.gz",
+   0.123
+  ],
+  [
+   "nose/nose-trans-forward.target.gz",
+   0.185
+  ],
+  [
+   "nose/nose-width3-incr.target.gz",
+   0.138
+  ],
+  [
+   "nose/nose-nostrils-width-incr.target.gz",
+   0.16
+  ],
+  [
+   "nose/nose-base-up.target.gz",
+   0.08
+  ],
+  [
+   "nose/nose-volume-incr.target.gz",
+   0.022
+  ],
+  [
+   "nose/nose-flaring-incr.target.gz",
+   0.028
+  ],
+  [
+   "mouth/mouth-scale-horiz-incr.target.gz",
+   0.449
+  ],
+  [
+   "mouth/mouth-scale-vert-incr.target.gz",
+   0.383
+  ],
+  [
+   "mouth/mouth-trans-down.target.gz",
+   0.156
+  ],
+  [
+   "mouth/mouth-trans-backward.target.gz",
+   0.045
+  ],
+  [
+   "mouth/mouth-upperlip-width-incr.target.gz",
+   0.26
+  ],
+  [
+   "mouth/mouth-lowerlip-width-incr.target.gz",
+   0.128
+  ],
+  [
+   "mouth/mouth-lowerlip-height-incr.target.gz",
+   0.232
+  ],
+  [
+   "eyes/l-eye-scale-incr.target.gz",
+   0.043
+  ],
+  [
+   "eyes/r-eye-scale-decr.target.gz",
+   0.044
+  ],
+  [
+   "eyes/l-eye-trans-up.target.gz",
+   0.246
+  ],
+  [
+   "eyes/l-eye-trans-in.target.gz",
+   0.068
+  ],
+  [
+   "head/head-fat-decr.target.gz",
+   0.193
+  ]
+ ],
+ "pose": {
+  "s": 74.38093623925546,
+  "R": [
+   [
+    0.9513520234009761,
+    -0.06741005081394805,
+    -0.30064133551481015
+   ],
+   [
+    0.050277470443212034,
+    0.9966585539726884,
+    -0.06437315246981083
+   ],
+   [
+    0.3039761561976525,
+    0.04612604299450014,
+    0.9515623387991824
+   ]
+  ],
+  "t": [
+   279.69104987045563,
+   -653.5238494605767,
+   -110.43392145452628
+  ]
+ },
+ "err_mm": 7.02,
+ "silhouette_photo_modele_dm": {
+  "front": [
+   2.689,
+   1.676
+  ],
+  "yeux": [
+   2.729,
+   1.949
+  ]
+ },
+ "adjust": {
+  "chin/chin-width": 0.14100000000000001,
+  "nose/nose-scale-horiz": 0.264,
+  "nose/nose-scale-vert": 0.29400000000000004,
+  "nose/nose-trans-down": -0.132,
+  "head/head-fat": -0.1925
+ },
+ "base": {
+  "gender": "female",
+  "race": {
+   "caucasian": 0.6,
+   "asian": 0.25,
+   "african": 0.15
+  }
+ },
+ "corrections": [
+  {
+   "sourire_neutralise": true
+  },
+  {
+   "ligne_cheveux_dm": 0.015
+  }
+ ],
+ "photo": "C:\\Users\\33766\\Desktop\\FITAIA\\photo-id\\test\\Yvonne_Cagle.jpg",
+ "colors": {
+  "skin": [
+   0.6753,
+   0.4575,
+   0.3399
+  ],
+  "iris": [
+   0.1977,
+   0.1526,
+   0.1121
+  ],
+  "hair": [
+   0.0353,
+   0.0627,
+   0.0353
+  ],
+  "hairline_k": 0.19943220871608963,
+  "hairline_r": 0.4661762732261875,
+  "bald": false,
+  "hair_thickness": 1.0,
+  "exposure_gain": 1.05,
+  "hair_top": [
+   [
+    -0.7,
+    0.518
+   ],
+   [
+    -0.6,
+    0.311
+   ],
+   [
+    -0.5,
+    0.198
+   ],
+   [
+    -0.4,
+    0.166
+   ],
+   [
+    -0.3,
+    0.199
+   ],
+   [
+    -0.2,
+    0.149
+   ],
+   [
+    -0.1,
+    0.104
+   ],
+   [
+    -0.0,
+    0.11
+   ],
+   [
+    0.1,
+    0.115
+   ],
+   [
+    0.2,
+    0.149
+   ],
+   [
+    0.3,
+    0.206
+   ],
+   [
+    0.4,
+    0.217
+   ],
+   [
+    0.5,
+    0.304
+   ],
+   [
+    0.6,
+    0.418
+   ],
+   [
+    0.7,
+    0.561
+   ]
+  ],
+  "hair_side": [
+   [
+    7.9,
+    0.21,
+    0.404
+   ],
+   [
+    8.0,
+    0.264,
+    0.489
+   ],
+   [
+    8.1,
+    0.275,
+    0.532
+   ],
+   [
+    8.2,
+    0.314,
+    0.588
+   ],
+   [
+    8.3,
+    0.408,
+    0.6
+   ],
+   [
+    8.4,
+    0.438,
+    0.573
+   ],
+   [
+    8.5,
+    0.42,
+    0.569
+   ],
+   [
+    8.6,
+    0.381,
+    0.569
+   ],
+   [
+    8.7,
+    0.395,
+    0.587
+   ],
+   [
+    8.8,
+    0.401,
+    0.533
+   ],
+   [
+    8.9,
+    0.36,
+    0.491
+   ]
+  ],
+  "hairline_y": 8.934
+ },
+ "face_texture": "face.png",
+ "expression": {
+  "eyeLookInRight": 0.6214,
+  "eyeLookOutLeft": 0.607,
+  "eyeSquintLeft": 0.3933,
+  "mouthLowerDownLeft": 0.333,
+  "mouthLowerDownRight": 0.3435,
+  "mouthSmileLeft": 0.7251,
+  "mouthSmileRight": 0.7119
+ }
+}

@@ -1,0 +1,88 @@
+{
+ "ok": true,
+ "sex": "f",
+ "non_deductible": [
+  {
+   "trait": "taille",
+   "raison": "une photo ne donne pas d’échelle",
+   "source": "profil"
+  },
+  {
+   "trait": "poids",
+   "raison": "le selfie ne montre que le visage",
+   "source": "profil"
+  },
+  {
+   "trait": "masse grasse et ventre",
+   "raison": "le corps n’est pas visible",
+   "source": "profil (IMC)"
+  },
+  {
+   "trait": "musculature",
+   "raison": "le corps n’est pas visible",
+   "source": "profil (activité)"
+  },
+  {
+   "trait": "profondeur du visage (profil)",
+   "raison": "une photo de face ne montre pas le profil",
+   "source": "base neutre"
+  },
+  {
+   "trait": "âge",
+   "raison": "non estimé volontairement",
+   "source": "profil"
+  }
+ ],
+ "limites": [
+  "Coiffure : volume mesuré sur la photo (coupe courte simplifiée), pas tes cheveux exacts.",
+  "Ressemblance non contrôlée sur ce chemin (le contrôle visuel tourne dans l’usine Blender, pas dans l’app)."
+ ],
+ "etapes": {
+  "reperes_s": 1.5,
+  "base_neutre_s": 4.2,
+  "identite_s": 4.3,
+  "glb_s": 19.0
+ },
+ "traits_photo": {
+  "teint_rgb": [
+   0.8389,
+   0.65,
+   0.5294
+  ],
+  "cheveux_rgb": [
+   0.2627,
+   0.1961,
+   0.1725
+  ],
+  "chauve": false,
+  "iris_rgb": [
+   0.4065,
+   0.3513,
+   0.3482
+  ],
+  "cibles_visage": 35,
+  "erreur_moyenne_mm": 7.38
+ },
+ "glb": {
+  "octets": 3564832,
+  "triangles": 29240,
+  "morphs": [
+   "body_weight",
+   "body_weight_low",
+   "muscle",
+   "muscle_low",
+   "belly_fat",
+   "waist",
+   "hips",
+   "chest",
+   "shoulders",
+   "upper_arm",
+   "forearm",
+   "thigh",
+   "calf",
+   "face_fat",
+   "neck_fat"
+  ]
+ },
+ "secondes": 29.2
+}
