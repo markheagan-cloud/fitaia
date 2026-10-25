@@ -198,9 +198,18 @@ def selfie_config(src, sex='f', sheet=None):
     cfg['base']['shape'] = [(rel, k) for rel, k in cfg['base']['shape'] if not rel.startswith(FACE_DIRS + ('expression/',))]
     cfg['base'].pop('sculpt', None)
     cfg['groom'] = None
+    if sheet and isinstance(given, dict) and given.get('beard') in ('trois', 'courte', 'pleine', 'moustache') and sex == 'm':
+        # barbe déclarée dans la fiche : peinte sur la peau par-dessus la texture cuite de la photo (sinon il ne reste
+        # qu'une ombre diffuse projetée depuis le selfie)
+        cfg['beard_declared'] = True
     if sheet and (given.get('hairStyle') if isinstance(given, dict) else None):
-        # coupe choisie dans le créateur : cartes MakeHuman de cette coupe, à la couleur des cheveux de la photo
+        # coupe choisie dans le créateur : cartes MakeHuman de cette coupe, à la couleur des cheveux de la photo…
         cfg['hair']['keep_with_identity'] = True
+        if given.get('hairColor') in HAIR:
+            # …sauf si la couleur est déclarée dans la fiche : la donnée déclarée l'emporte sur la mesure (une photo
+            # surexposée donne un brun clair pour des cheveux noirs)
+            cfg['hair']['keep_color'] = True
+            cfg['hair_declared'] = dict(HAIR[given['hairColor']])      # rgb linéaire + mélanine, pour les rendus
     else:
         # sinon la coiffure vient de la photo comme pour la base homme (volume mesuré → coquilles, ou mèches avec --strands)
         cfg['hair'] = copy.deepcopy(B.CONFIG['hair'])

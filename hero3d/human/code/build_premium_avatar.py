@@ -1064,8 +1064,8 @@ def build(src, out, preview=False, cfg=None):
     elif cfg['hair'].get('mhclo') and (not ident or cfg['hair'].get('keep_with_identity')):
         # cartes MakeHuman de la coupe (héros sans mèches, ou PERSONNE dont la coupe vient de sa fiche du créateur :
         # base femme du selfie) ; avec une photo, la coupe prend la couleur des cheveux lue sur la photo
-        hopt = {k: v for k, v in cfg['hair'].items() if k not in ('mhclo', 'keep_with_identity')}
-        if ident and ident['colors'].get('hair') and hopt.get('recolor'):
+        hopt = {k: v for k, v in cfg['hair'].items() if k not in ('mhclo', 'keep_with_identity', 'keep_color')}
+        if ident and ident['colors'].get('hair') and hopt.get('recolor') and not cfg['hair'].get('keep_color'):
             # couleur lue sur la photo en sRGB 0..1 → linéaire, même échelle que persons.HAIR (sinon châtain → rose)
             hopt['recolor'] = dict(hopt['recolor'], color=[float(x) ** 2.2 * 2.2 for x in ident['colors']['hair']])
         layers.append(('hair', Mhclo(os.path.join(src, cfg['hair']['mhclo'])), None, {'kind': 'hair', **hopt}))
@@ -1148,7 +1148,8 @@ def build(src, out, preview=False, cfg=None):
         fa = dict(cfg['skin']['face_art'])
         if ident:
             # la photo apporte déjà barbe, sourcils, lèvres, teint : on ne peint que le cuir chevelu (dégradé)
-            fa.update({'beard': 0.0, 'brow': 0.0, 'lips': 0.0, 'red': 0.0, 'under': 0.0, 'lash': 0.0, 'mottle': 0.0,
+            beard_kept = fa.get('beard', 0.0) if cfg.get('beard_declared') else 0.0    # barbe déclarée dans la fiche : gardée
+            fa.update({'beard': beard_kept, 'brow': 0.0, 'lips': 0.0, 'red': 0.0, 'under': 0.0, 'lash': 0.0, 'mottle': 0.0,
                        'hair_color': tuple(ident['colors']['hair'])})
             if not ident['colors'].get('bald') and thick < 0.25:
                 fa.update({'hair': 0.95, 'scalp': 0.0})          # cheveux ras : peints sur le crâne, pas de volume

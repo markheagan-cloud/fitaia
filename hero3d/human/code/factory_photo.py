@@ -124,7 +124,11 @@ def process_photo(a, ph, name, d, cfg, sex_args, nnpz, npng, opt):
         o2['views'] = dict(opt['views'], photo=yaw)
         o2['hair_color'] = [round(float(c) ** 2.2, 4) for c in idn['colors'].get('hair', [0.3, 0.22, 0.15])]
         hrgb = idn['colors'].get('hair', [0.3, 0.22, 0.15])
-        if (max(hrgb) - min(hrgb)) / max(max(hrgb), 1e-6) > 0.12:
+        if cfg and cfg.get('hair_declared'):
+            # couleur déclarée dans la fiche (déjà linéaire, persons.HAIR) : elle l'emporte sur la mesure de la photo
+            o2['hair_color'] = [round(float(c), 4) for c in cfg['hair_declared']['rgb']]
+            o2['hair_melanin'], o2['hair_redness'] = cfg['hair_declared']['melanin'], cfg['hair_declared']['redness']
+        elif (max(hrgb) - min(hrgb)) / max(max(hrgb), 1e-6) > 0.12:
             o2['hair_melanin'], o2['hair_redness'] = hair_melanin(hrgb)
         # cheveux sans teinte (gris, blancs, noirs) : une mélanine moyenne rend du blond-roux, pas du gris ;
         # le shader est alors piloté par la couleur linéaire mesurée (o2['hair_color'])

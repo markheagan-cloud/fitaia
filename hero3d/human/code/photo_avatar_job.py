@@ -112,7 +112,8 @@ def main():
     }
     if cfg is not None:
         if cfg['hair'].get('keep_with_identity'):
-            report['limites'].append('Coiffure : la coupe choisie dans ton créateur, à la couleur lue sur la photo.')
+            report['limites'].append('Coiffure : la coupe choisie dans ton créateur, à la couleur '
+                                     + ('choisie dans ton créateur.' if cfg['hair'].get('keep_color') else 'lue sur la photo.'))
         else:
             report['limites'].append('Coiffure : volume mesuré sur la photo (coupe courte simplifiée), pas tes cheveux exacts.')
     report['limites'].append('Ressemblance non contrôlée sur ce chemin (le contrôle visuel tourne dans l’usine Blender, pas dans l’app).')
