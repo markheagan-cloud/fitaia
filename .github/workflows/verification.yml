@@ -1,0 +1,83 @@
+# Vérification automatique à chaque PR et à chaque push sur main.
+# - tests : suites Node, typecheck et lint de l'app Expo (app/).
+# - ios-simulateur : compile réellement l'app iOS, module natif de pose (Swift) compris,
+#   pour le simulateur, sans signature. Ne demande ni compte Expo ni compte Apple Developer
+#   (runners macOS gratuits sur un dépôt public).
+name: Vérification
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: verification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npx tsc --noEmit
+      - run: npx expo lint
+
+  ios-simulateur:
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Xcode disponible
+        run: xcodebuild -version
+      - name: Génération du projet iOS (expo prebuild)
+        run: npx expo prebuild --platform ios --no-install
+        env:
+          CI: '1'
+      - name: Le module de pose est bien lié
+        run: |
+          npx expo-modules-autolinking resolve --platform apple --json \
+            | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));const m=d.modules.find(x=>x.packageName==='fitaia-pose');if(!m){console.error('fitaia-pose absent de l’autolinking');process.exit(1)}console.log(JSON.stringify(m.pods))"
+      - name: CocoaPods
+        working-directory: app/ios
+        run: pod install
+      - name: Compilation pour le simulateur (sans signature)
+        working-directory: app/ios
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace FITAIA.xcworkspace \
+            -scheme FITAIA \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build | tee xcodebuild.log | grep -E 'error:|warning: .*FitaiaPose|Compiling .*FitaiaPose|\*\* BUILD' || true
+          grep -q '\*\* BUILD SUCCEEDED \*\*' xcodebuild.log
+      - name: Journal de compilation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: app/ios/xcodebuild.log
+          if-no-files-found: ignore
