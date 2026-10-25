@@ -34,7 +34,7 @@ jobs:
       - run: npx expo lint
 
   ios-simulateur:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     defaults:
       run:
@@ -47,8 +47,12 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci --no-audit --no-fund
-      - name: Xcode disponible
-        run: xcodebuild -version
+      - name: Xcode le plus récent du runner
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
       - name: Génération du projet iOS (expo prebuild)
         run: npx expo prebuild --platform ios --no-install
         env:
@@ -73,7 +77,11 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
             build | tee xcodebuild.log | grep -E 'error:|warning: .*FitaiaPose|Compiling .*FitaiaPose|\*\* BUILD' || true
-          grep -q '\*\* BUILD SUCCEEDED \*\*' xcodebuild.log
+          if ! grep -q '\*\* BUILD SUCCEEDED \*\*' xcodebuild.log; then
+            echo '--- erreurs (contexte) ---'
+            grep -n -B3 -A12 -E 'error:|error |Could not resolve|failed with' xcodebuild.log | head -300
+            exit 1
+          fi
       - name: Journal de compilation
         if: always()
         uses: actions/upload-artifact@v4
