@@ -1,0 +1,58 @@
+{
+  "meshes": {
+    "body": {
+      "vertices": 9205,
+      "triangles": 16932
+    },
+    "eyes": {
+      "vertices": 1076,
+      "triangles": 2040
+    },
+    "eyelashes": {
+      "vertices": 250,
+      "triangles": 368
+    },
+    "hair": {
+      "vertices": 15400,
+      "triangles": 13200
+    },
+    "male_casualsuit06": {
+      "vertices": 4035,
+      "triangles": 7168
+    },
+    "shoes05": {
+      "vertices": 1618,
+      "triangles": 2812
+    }
+  },
+  "textures": {
+    "skin": 292684,
+    "eyes": 184843,
+    "eyelashes": 43997,
+    "hair": 60677,
+    "male_casualsuit06": 25984,
+    "male_casualsuit06_normal": 19951,
+    "shoes05": 138499
+  },
+  "bytes": 4096172,
+  "height_m": 1.776,
+  "morphs": [
+    "body_weight",
+    "body_weight_low",
+    "muscle",
+    "muscle_low",
+    "belly_fat",
+    "waist",
+    "hips",
+    "chest",
+    "shoulders",
+    "upper_arm",
+    "forearm",
+    "thigh",
+    "calf",
+    "face_fat",
+    "neck_fat"
+  ],
+  "vertices": 31584,
+  "triangles": 42520
+}
