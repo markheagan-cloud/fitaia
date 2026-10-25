@@ -111,7 +111,11 @@ def main():
         'erreur_moyenne_mm': idn.get('err_mm'),
     }
     if a.sex == 'f':
-        report['limites'].append('Base femme : la coiffure vient de ta fiche du créateur (couleur lue sur la photo), pas de la photo.')
+        if cfg['hair'].get('keep_with_identity'):
+            report['limites'].append('Coiffure : la coupe choisie dans ton créateur, à la couleur lue sur la photo.')
+        else:
+            report['limites'].append('Coiffure : volume mesuré sur la photo (coupe courte simplifiée), pas tes cheveux exacts.')
+    report['limites'].append('Ressemblance non contrôlée sur ce chemin (le contrôle visuel tourne dans l’usine Blender, pas dans l’app).')
 
     t = time.time()
     idp = os.path.join(a.out, 'identity.json')

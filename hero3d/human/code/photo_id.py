@@ -155,11 +155,11 @@ def raster(meshes, size, view):
     return img, zb, tagb, trib, bary
 
 
-def head_meshes(src, obj, shape, cfg=None):
+def head_meshes(src, obj, shape, cfg=None, clip_y=6.3):
     cfg = cfg or B.CONFIG
     body = set(B.group_verts(obj, 'body'))
-    faces = [[vi for vi, _ in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > 6.3]
-    uvf = [[ti for _, ti in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > 6.3]
+    faces = [[vi for vi, _ in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > clip_y]
+    uvf = [[ti for _, ti in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > clip_y]
     # triangles + UV par sommet de coin (on duplique les coins)
     P, UV, F, src_v = [], [], [], []
     for f, uf in zip(faces, uvf):
@@ -192,13 +192,16 @@ def head_meshes(src, obj, shape, cfg=None):
 
 def render_neutral(src, out_png, out_npz, size=1024, cfg=None):
     obj, shape, _ = neutral_shape(src, cfg)
-    meshes, src_v = head_meshes(src, obj, shape, cfg)
-    view = (0.0, 8.05, 1.6)
+    view, clip_y = (0.0, 8.05, 1.6), 6.3
     if (cfg or B.CONFIG)['base'].get('gender', 'male') != 'male':
-        # autre base (femme : plus petite) : même cadrage par rapport au sommet du crâne que la base masculine,
-        # sinon le visage sort du rendu et les repères ne se lient plus à la surface
-        _, shape_m, _ = neutral_shape(src, dict(B.CONFIG, base=dict(B.CONFIG['base'], gender='male')))
-        view = (0.0, round(8.05 + float(shape[:, 1].max() - shape_m[:, 1].max()), 3), 1.6)
+        # autre base (femme) : cadrage et coupe du maillage pris par rapport aux YEUX de cette base (base homme : yeux à
+        # ≈ 8,32 dm → fenêtre centrée 0,27 dm plus bas, maillage coupé 2,0 dm plus bas). Le premier essai cadrait d'après
+        # le sommet du maillage (helpers compris) : la base femme sortait coupée sous le nez, les repères ne se liaient
+        # plus à la surface et l'ajustement partait faux (20 mm d'erreur au lieu de 6).
+        eyes = Mhclo(os.path.join(src, (cfg or B.CONFIG)['face']['eyes'][0]))
+        ye = float(eyes.fit(shape)[:, 1].mean())
+        view, clip_y = (0.0, round(ye - 0.27, 3), 1.6), ye - 2.0
+    meshes, src_v = head_meshes(src, obj, shape, cfg, clip_y=clip_y)
     img, zb, tagb, trib, bary = raster(meshes, size, view)
     img = np.where((tagb < 0)[..., None], np.array([0.62, 0.62, 0.6], np.float32), img)
     Image.fromarray((np.clip(img, 0, 1) ** (1 / 1.4) * 255).astype(np.uint8)).save(out_png)

@@ -97,6 +97,21 @@ def main():
         name = os.path.splitext(os.path.basename(ph))[0]
         d = os.path.join(a.out, name)
         os.makedirs(d, exist_ok=True)
+        try:
+            verdicts.append(process_photo(a, ph, name, d, cfg, sex_args, nnpz, npng, opt))
+        except Exception as e:  # une personne en échec n'empêche pas les suivantes (trace conservée dans le dossier)
+            import traceback
+            tb = traceback.format_exc()
+            open(os.path.join(d, 'ERREUR.txt'), 'w', encoding='utf-8').write(tb)
+            print(tb)
+            verdicts.append((name, 'ERREUR', False, [f'{type(e).__name__}: {e}'[:300]]))
+    report_verdicts(verdicts, a.out)
+
+
+def process_photo(a, ph, name, d, cfg, sex_args, nnpz, npng, opt):
+    """Une personne : identité, avatar, rendus, contrôle (2 passes), planche. Renvoie (nom, verdict, valide, raisons)."""
+    import photo_id as P
+    if True:
         step(f'2. Identité : {name}')
         idn = P.make_identity(a.src, ph, ph + '.landmarks.json', nnpz, npng + '.landmarks.json', d, cfg=cfg)
         import math
@@ -187,13 +202,16 @@ def main():
         subprocess.run([sys.executable, os.path.join(HERE, 'compose_identity.py'), ph, ph + '.landmarks.json',
                         os.path.join(d, 'rendus'), os.path.join(d, 'ressemblance.jpg')], check=True)
         ctrl = json.load(open(os.path.join(d, 'controle.json'), encoding='utf-8'))
-        verdicts.append((name, ctrl.get('visual_quality_gate'), bool(ctrl.get('valid_output')), ctrl.get('raisons', [])))
+        return (name, ctrl.get('visual_quality_gate'), bool(ctrl.get('valid_output')), ctrl.get('raisons', []))
+
+
+def report_verdicts(verdicts, out):
     # verdict de l'usine = celui du contrôle visuel (biometrie.py), jamais « OK » quand une sortie est refusée
     refused = [v for v in verdicts if not v[2]]
     print()
     for name, gate, ok, raisons in verdicts:
         print(f"{'ACCEPTÉ' if ok else 'REFUSÉ '} {name} : contrôle visuel {gate}" + (' — ' + ' ; '.join(raisons) if raisons and not ok else ''))
-    print(f'USINE PHOTO {"OK" if not refused else "REFUSÉE (" + str(len(refused)) + "/" + str(len(verdicts)) + " sorties non valides)"} ->', a.out)
+    print(f'USINE PHOTO {"OK" if not refused else "REFUSÉE (" + str(len(refused)) + "/" + str(len(verdicts)) + " sorties non valides)"} ->', out)
     sys.exit(0 if not refused else 1)
 
 
