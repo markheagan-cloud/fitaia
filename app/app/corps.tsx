@@ -23,7 +23,7 @@ import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { CloseIcon } from '@/components/Icons';
 import { avatarBase } from '@/avatar/identity';
-import { avatar3dConfigured, createAvatar3d } from '@/services/avatar3d';
+import { avatar3dConfigured, createAvatar3d, saveAvatar3dPortrait } from '@/services/avatar3d';
 
 const AMBER_TXT = '#B87A00';
 
@@ -49,6 +49,7 @@ export default function Corps() {
   const mine = useGame((s) => s.avatar3d);
   const selfieUri = useGame((s) => s.selfieUri);
   const setAvatar3d = useGame((s) => s.setAvatar3d);
+  const setAvatar3dPortrait = useGame((s) => s.setAvatar3dPortrait);
   const say = useGame((s) => s.say);
   const [making, setMaking] = useState(false);
   const [makeError, setMakeError] = useState('');
@@ -84,6 +85,32 @@ export default function Corps() {
   const [scroll, setScroll] = useState(true);
   const [reduceMotion, setReduceMotion] = useState(false);
   const rendererRef = useRef<ExpoThreeRenderer | null>(null);
+  const load = snap.load;
+  const portraitFor = useRef<string | null>(null);
+
+  // Avatar personnel affiché et chargé, sans portrait encore : on le prend une fois (corps actuel, vue de face) pour que
+  // Accueil, Mon perso et Communauté montrent la même personne que cet écran.
+  useEffect(() => {
+    if (!usable || usable.portraitUri || load.status !== 'ready' || portraitFor.current === usable.id) return;
+    portraitFor.current = usable.id;
+    const r = rendererRef.current;
+    if (!r) return;
+    const timer = setTimeout(async () => {
+      try {
+        // deux portraits du MÊME avatar : corps d'aujourd'hui, puis corps à l'objectif (le visage ne change pas)
+        fitaiaHumanEngine.setBody(current);
+        const nowUri = await saveAvatar3dPortrait(usable.id, await r.snapshot(), 'now');
+        fitaiaHumanEngine.setBody(target);
+        const goalUri = await saveAvatar3dPortrait(usable.id, await r.snapshot(), 'goal');
+        fitaiaHumanEngine.setBody(lerp(current, target, mix));
+        if (useGame.getState().avatar3d?.id === usable.id) setAvatar3dPortrait(nowUri, goalUri);
+      } catch {
+        fitaiaHumanEngine.setBody(lerp(current, target, mix));
+        portraitFor.current = null; // on réessaiera à la prochaine ouverture
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [usable, load.status, current, target, mix, setAvatar3dPortrait]);
 
   useEffect(() => {
     fitaiaHumanEngine.setBody(current);
@@ -104,7 +131,6 @@ export default function Corps() {
     fitaiaHumanEngine.animateTo(lerp(current, target, v), { from, durationMs: reduceMotion ? 0 : DEFAULT_ANIMATION_MS });
   };
   const back = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/perso'));
-  const load = snap.load;
   const uri = usable?.uri ?? null;
   useEffect(() => {
     if (!uri) return;

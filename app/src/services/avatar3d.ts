@@ -48,15 +48,38 @@ async function saveGlb(id: string, url: string): Promise<string> {
   return dest.uri;
 }
 
-/** Supprime l'ancien GLB personnel du téléphone (remplacé ou retiré). */
-export function deleteAvatar3d(a: Avatar3d | null) {
-  if (!a || Platform.OS === 'web' || !a.uri.startsWith('file:')) return;
+function deleteDeviceFile(uri: string | null | undefined) {
+  if (!uri || Platform.OS === 'web' || !uri.startsWith('file:')) return;
   try {
-    const f = new File(a.uri);
+    const f = new File(uri);
     if (f.exists) f.delete();
   } catch {
     // déjà supprimé
   }
+}
+
+/** Supprime l'ancien GLB personnel du téléphone (remplacé ou retiré), et son portrait. */
+export function deleteAvatar3d(a: Avatar3d | null) {
+  if (!a) return;
+  deleteDeviceFile(a.uri);
+  deleteDeviceFile(a.portraitUri);
+  deleteDeviceFile(a.goalPortraitUri);
+}
+
+export function deleteAvatar3dPortrait(uri: string | null | undefined) {
+  deleteDeviceFile(uri);
+}
+
+/**
+ * Garde le portrait pris sur le GLB personnel. Sur le téléphone : PNG copié dans le dossier privé (persistant, retrouvé
+ * par son nom après une mise à jour). Sur le web : l'image reste en mémoire (data:).
+ */
+export async function saveAvatar3dPortrait(id: string, snapshotUri: string, kind: 'now' | 'goal' = 'now'): Promise<string> {
+  if (Platform.OS === 'web' || !snapshotUri.startsWith('file:')) return snapshotUri;
+  const dest = new File(Paths.document, 'avatar3d-portrait-' + id + (kind === 'goal' ? '-objectif' : '') + '.png');
+  if (dest.exists) dest.delete();
+  await new File(snapshotUri).copy(dest);
+  return dest.uri;
 }
 
 export async function createAvatar3d(selfieUri: string, base: AvatarBase, sheet?: Record<string, unknown>, signal?: AbortSignal): Promise<Avatar3d> {

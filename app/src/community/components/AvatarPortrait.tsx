@@ -8,7 +8,7 @@
  */
 import React from 'react';
 import { Image, View, StyleProp, ViewStyle } from 'react-native';
-import { useHeroSource } from '@/avatar/HeroAvatar';
+import { useAvatarBase, useHeroSource } from '@/avatar/HeroAvatar';
 import { useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
 import { IMG } from '@/data/content';
@@ -68,6 +68,19 @@ function Me({ size, mode, box }: { size: number; mode: PortraitMode; box: StyleP
   const skin = useEquippedSkin();
   const avatar = useGame((s) => s.avatar);
   const ready = useGame((s) => s.characterReady);
+  const mine = useGame((s) => s.avatar3d);
+  const base = useAvatarBase();
+  // avatar 3D personnel (selfie → GLB) : son portrait partout, dans le même cadrage que les autres membres
+  if (mine?.portraitUri && mine.base === base) {
+    const f = PORTRAIT_FRAME[mode];
+    const w = size * f.zoom;
+    const hh = w * 1.3; // le portrait est pris en 4:5 environ, corps entier
+    return (
+      <View style={box}>
+        <Image source={{ uri: mine.portraitUri }} resizeMode="cover" style={{ position: 'absolute', left: (size - w) / 2, top: -hh * f.top, width: w, height: hh }} accessibilityLabel="Ton avatar 3D" />
+      </View>
+    );
+  }
   const personal = (!!avatar && avatar.outfit === skin.id) || ready;
   const rendered = personal ? null : portraitSource('moi', KIND[mode]);
   if (rendered) {
@@ -80,6 +93,13 @@ function Me({ size, mode, box }: { size: number; mode: PortraitMode; box: StyleP
   return <MyPortrait size={size} mode={mode} box={box} />;
 }
 
+/** Cadrage du portrait 3D personnel (corps entier, 4:5) : tête, buste, corps, carte. */
+const PORTRAIT_FRAME: Record<PortraitMode, { zoom: number; top: number }> = {
+  tete: { zoom: 3.2, top: 0.02 },
+  buste: { zoom: 1.9, top: 0.0 },
+  corps: { zoom: 1.25, top: 0 },
+  carte: { zoom: 1.05, top: 0 },
+};
 const FRAME: Record<PortraitMode, { zoom: number; top: number }> = {
   tete: { zoom: 2.25, top: 0.1 },
   buste: { zoom: 1.45, top: 0.06 },

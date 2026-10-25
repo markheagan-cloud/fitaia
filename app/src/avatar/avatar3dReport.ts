@@ -8,6 +8,10 @@ export type Avatar3d = {
   uri: string;
   base: AvatarBase;
   at: number;
+  /** Portrait (PNG) pris sur le GLB personnel dans « Mon corps en 3D » : c'est lui que montrent Accueil, Mon perso et Communauté. */
+  portraitUri?: string | null;
+  /** Même avatar, corps à l'objectif (pour « prochain palier ») : la personne garde son visage. */
+  goalPortraitUri?: string | null;
   /** Lu sur la photo. */
   fromPhoto: { skin: string | null; hair: string | null; bald: boolean; faceTargets: number; errorMm: number | null };
   /** Impossible à déduire d'un selfie : vient du profil (taille, poids…). */

@@ -8,7 +8,7 @@ import { useEquippedSkin } from '@/avatar/outfits';
 import { transactionLabel, useEco } from '@/store/useEco';
 import { Bar } from '@/fx/Bar';
 import { WeightSheet, ProfileSheet } from '@/components/BodySheets';
-import { HeroAvatar, useHeroStage } from '@/avatar/HeroAvatar';
+import { HeroAvatar, useHeroSource, useHeroStage } from '@/avatar/HeroAvatar';
 import { BODY_STAGES } from '@/avatar/bodyStages';
 import { fmt, fmtKg } from '@/data/content';
 import { Screen, Card } from '@/components/Screen';
@@ -34,6 +34,10 @@ export default function Perso() {
   const [profileOpen, setProfileOpen] = useState(false);
   const tier = body.tier;
   const stage = useHeroStage();
+  const hero = useHeroSource();
+  const goalPortraitUri = useGame((s) => s.avatar3d?.goalPortraitUri ?? null);
+  // avatar personnel : le prochain palier montre SON corps à l'objectif, jamais le héros générique
+  const goalPortrait = hero.personal ? goalPortraitUri : null;
 
   const stats = [
     { name: 'Force', lvl: body.stats.force.level, pct: body.stats.force.pct },
@@ -55,7 +59,7 @@ export default function Perso() {
           </View>
         </Press>
         <View style={[styles.next, { backgroundColor: t.surf, borderColor: t.line }, shadow.md]}>
-          <Image source={avatar && avatar.outfit === skin.id ? { uri: avatar.uri } : stage !== null ? BODY_STAGES[Math.min(2, stage + 1)].img : previewImage(sheet)} accessibilityLabel="Prochain palier" style={{ width: 64, height: 86, borderRadius: 14, opacity: stage !== null ? 0.6 : 0.35 }} resizeMode="cover" />
+          <Image source={goalPortrait ? { uri: goalPortrait } : avatar && avatar.outfit === skin.id ? { uri: avatar.uri } : stage !== null ? BODY_STAGES[Math.min(2, stage + 1)].img : previewImage(sheet)} accessibilityLabel="Prochain palier" style={{ width: 64, height: 86, borderRadius: 14, opacity: goalPortrait || stage !== null ? 0.6 : 0.35 }} resizeMode="cover" />
           <Txt size={12} weight="semibold" num color={t.ink2} lineHeight={16} style={{ textAlign: 'center' }}>
             {tier.reached ? 'Niveau ' + body.level : 'Palier ' + Math.min(5, tier.current + 1) + '\n' + 'dans ' + fmtKg(tier.toNext) + ' kg'}
           </Txt>

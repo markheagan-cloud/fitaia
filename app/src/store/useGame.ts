@@ -5,7 +5,7 @@
  */
 import { create } from 'zustand';
 import { defaultSheetFor } from '@/avatar/identity';
-import { deleteAvatar3d, type Avatar3d } from '@/services/avatar3d';
+import { deleteAvatar3d, deleteAvatar3dPortrait, type Avatar3d } from '@/services/avatar3d';
 import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -103,6 +103,8 @@ type Actions = {
   setGoal: (kcal: number) => void;
   setSelfieUri: (u: string | null) => void;
   setAvatar3d: (a: Avatar3d | null) => void;
+  /** Portrait pris sur le GLB personnel (null : à reprendre). */
+  setAvatar3dPortrait: (uri: string | null, goalUri?: string | null) => void;
   stopTimers: () => void;
 };
 
@@ -389,6 +391,13 @@ export const useGame = create<GameState>()(
           if (old && old.uri !== a?.uri) deleteAvatar3d(old);
           set({ avatar3d: a });
         },
+        setAvatar3dPortrait: (uri, goalUri = null) => {
+          const a = get().avatar3d;
+          if (!a) return;
+          if (a.portraitUri && a.portraitUri !== uri) deleteAvatar3dPortrait(a.portraitUri);
+          if (a.goalPortraitUri && a.goalPortraitUri !== goalUri) deleteAvatar3dPortrait(a.goalPortraitUri);
+          set({ avatar3d: { ...a, portraitUri: uri, goalPortraitUri: goalUri } });
+        },
         setCharacter: (c) => set({ character: c, characterReady: true }),
         setProfile: (patch) => {
           const S = get();
@@ -530,10 +539,12 @@ export const useGame = create<GameState>()(
         // l'app sur iPhone ; on retrouve le fichier sous son nom, ou on oublie l'adresse s'il a disparu
         const selfie = findDeviceFile(state.selfieUri);
         const glb = findDeviceFile(state.avatar3d?.uri);
+        const portrait = findDeviceFile(state.avatar3d?.portraitUri);
+        const goalPortrait = findDeviceFile(state.avatar3d?.goalPortraitUri);
         useGame.setState({
           hydrated: true,
           selfieUri: selfie,
-          avatar3d: state.avatar3d && glb ? (glb === state.avatar3d.uri ? state.avatar3d : { ...state.avatar3d, uri: glb }) : null,
+          avatar3d: state.avatar3d && glb ? { ...state.avatar3d, uri: glb, portraitUri: portrait, goalPortraitUri: goalPortrait } : null,
         });
         // registre Phase 2 : amorçage (tenue de départ) et conversion unique de l'ancienne économie
         void useEco
