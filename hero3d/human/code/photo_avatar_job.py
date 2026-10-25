@@ -88,12 +88,12 @@ def main():
     import photo_id as P
     t = time.time()
     cfg, base_dir = None, a.base
-    if a.sex == 'f':
-        # base FEMME : même ajustement du visage depuis la photo que pour la base homme, sur la base neutre féminine
-        # (persons.selfie_config : macros femme, carnation / coupe / carrure de la fiche). La base neutre est rendue une
-        # fois par carnation (les macros d'origine changent la forme du crâne) et réutilisée.
+    if a.sex == 'f' or a.sheet:
+        # base de la PERSONNE (persons.selfie_config) : femme, ou homme avec une fiche du créateur (carnation, coupe,
+        # barbe, carrure) ; sans fiche, un homme garde la base du héros (chemin d'origine, inchangé). La base neutre est
+        # rendue une fois par carnation (les macros d'origine changent la forme du crâne) et réutilisée.
         import persons
-        cfg = persons.selfie_config(a.src, 'f', a.sheet)
+        cfg = persons.selfie_config(a.src, a.sex, a.sheet)
         base_dir, created = neutral_base_for(cfg, a.base, a.src, a.pyenv, a.model)
         if created:
             report['etapes']['base_neutre_s'] = round(time.time() - t, 1)
@@ -110,7 +110,7 @@ def main():
         'cibles_visage': len(idn.get('targets') or []),
         'erreur_moyenne_mm': idn.get('err_mm'),
     }
-    if a.sex == 'f':
+    if cfg is not None:
         if cfg['hair'].get('keep_with_identity'):
             report['limites'].append('Coiffure : la coupe choisie dans ton créateur, à la couleur lue sur la photo.')
         else:
