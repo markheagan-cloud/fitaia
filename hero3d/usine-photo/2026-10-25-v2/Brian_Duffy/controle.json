@@ -1,0 +1,304 @@
+{
+ "score_geometrie": 96.7,
+ "sourire_photo": true,
+ "mesures": [
+  {
+   "mesure": "largeur_visage",
+   "photo": 1.542,
+   "avatar": 1.526,
+   "ecart_pct": -1.0,
+   "ignore": false
+  },
+  {
+   "mesure": "hauteur_visage",
+   "photo": 1.856,
+   "avatar": 1.832,
+   "ecart_pct": -1.3,
+   "ignore": false
+  },
+  {
+   "mesure": "largeur_machoire",
+   "photo": 1.231,
+   "avatar": 1.208,
+   "ecart_pct": -1.9,
+   "ignore": false
+  },
+  {
+   "mesure": "largeur_nez",
+   "photo": 0.472,
+   "avatar": 0.464,
+   "ecart_pct": -1.7,
+   "ignore": false
+  },
+  {
+   "mesure": "longueur_nez",
+   "photo": 0.521,
+   "avatar": 0.507,
+   "ecart_pct": -2.6,
+   "ignore": false
+  },
+  {
+   "mesure": "largeur_bouche",
+   "photo": 0.679,
+   "avatar": 0.642,
+   "ecart_pct": -5.4,
+   "ignore": true
+  },
+  {
+   "mesure": "yeux_bouche",
+   "photo": 0.671,
+   "avatar": 0.751,
+   "ecart_pct": 11.9,
+   "ignore": true
+  },
+  {
+   "mesure": "nez_bouche",
+   "photo": 0.185,
+   "avatar": 0.252,
+   "ecart_pct": 36.3,
+   "ignore": true
+  },
+  {
+   "mesure": "menton",
+   "photo": 0.356,
+   "avatar": 0.383,
+   "ecart_pct": 7.6,
+   "ignore": true
+  },
+  {
+   "mesure": "largeur_oeil",
+   "photo": 0.302,
+   "avatar": 0.304,
+   "ecart_pct": 0.5,
+   "ignore": false
+  },
+  {
+   "mesure": "front",
+   "photo": 0.771,
+   "avatar": 0.791,
+   "ecart_pct": 2.5,
+   "ignore": false
+  }
+ ],
+ "automated_similarity_score": 96.7,
+ "visual_quality_gate": "FAIL",
+ "raisons": [
+  "contour des cheveux (IoU photo ↔ avatar) : 0.58 (seuil 0.6)",
+  "largeur réelle du bas du visage (silhouette, menton) : -12 % (seuil ±8 %)",
+  "sourire visible sur l'avatar (MediaPipe) : 0.32 (seuil 0.25)"
+ ],
+ "mesures_strictes": [
+  {
+   "mesure": "largeur_machoire",
+   "libelle": "largeur de mâchoire",
+   "photo": 1.231,
+   "avatar": 1.208,
+   "ecart": -0.019,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "largeur_bas_visage_bouche",
+   "libelle": "largeur du bas du visage (niveau bouche)",
+   "photo": 1.363,
+   "avatar": 1.347,
+   "ecart": -0.012,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "largeur_bas_visage_menton",
+   "libelle": "largeur du bas du visage (niveau menton)",
+   "photo": 1.079,
+   "avatar": 1.051,
+   "ecart": -0.026,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "hauteur_bas_visage",
+   "libelle": "hauteur du bas du visage (nez → menton)",
+   "photo": 0.794,
+   "avatar": 0.774,
+   "ecart": -0.025,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "NON MESURÉ"
+  },
+  {
+   "mesure": "yeux_nez",
+   "libelle": "distance verticale yeux → nez",
+   "photo": 0.486,
+   "avatar": 0.499,
+   "ecart": 0.025,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "nez_bouche",
+   "libelle": "distance nez → bouche",
+   "photo": 0.185,
+   "avatar": 0.252,
+   "ecart": 0.363,
+   "seuil": 0.12,
+   "type": "rel",
+   "statut": "NON MESURÉ"
+  },
+  {
+   "mesure": "bouche_menton",
+   "libelle": "distance bouche → menton",
+   "photo": 0.453,
+   "avatar": 0.516,
+   "ecart": 0.139,
+   "seuil": 0.1,
+   "type": "rel",
+   "statut": "NON MESURÉ"
+  },
+  {
+   "mesure": "proportion_bas_visage",
+   "libelle": "proportion du bas du visage (largeur / hauteur)",
+   "photo": 1.036,
+   "avatar": 1.051,
+   "ecart": 0.014,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "largeur_nez",
+   "libelle": "largeur du nez",
+   "photo": 0.472,
+   "avatar": 0.464,
+   "ecart": -0.017,
+   "seuil": 0.1,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "longueur_nez",
+   "libelle": "longueur du nez",
+   "photo": 0.521,
+   "avatar": 0.507,
+   "ecart": -0.026,
+   "seuil": 0.1,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "largeur_oeil",
+   "libelle": "largeur des yeux",
+   "photo": 0.302,
+   "avatar": 0.304,
+   "ecart": 0.005,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "ouverture_oeil",
+   "libelle": "ouverture des yeux",
+   "photo": 0.069,
+   "avatar": 0.084,
+   "ecart": 0.206,
+   "seuil": 0.25,
+   "type": "rel",
+   "statut": "NON MESURÉ"
+  },
+  {
+   "mesure": "contour_visage",
+   "libelle": "forme du contour du visage (écart moyen)",
+   "photo": null,
+   "avatar": 0.032,
+   "ecart": 0.032,
+   "seuil": 0.06,
+   "type": "max",
+   "statut": "OK"
+  },
+  {
+   "mesure": "iou_cheveux",
+   "libelle": "contour des cheveux (IoU photo ↔ avatar)",
+   "photo": null,
+   "avatar": 0.585,
+   "ecart": 0.585,
+   "seuil": 0.6,
+   "type": "min",
+   "statut": "ÉCHEC"
+  },
+  {
+   "mesure": "cheveux_reconnus",
+   "libelle": "coiffure reconnue comme des cheveux (pas un casque)",
+   "photo": null,
+   "avatar": 1.0,
+   "ecart": 1.0,
+   "seuil": 0.6,
+   "type": "min",
+   "statut": "OK"
+  },
+  {
+   "mesure": "silhouette_bas_visage_bouche",
+   "libelle": "largeur réelle du bas du visage (silhouette, bouche)",
+   "photo": 1.329,
+   "avatar": 1.337,
+   "ecart": 0.006,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "OK"
+  },
+  {
+   "mesure": "silhouette_bas_visage_menton",
+   "libelle": "largeur réelle du bas du visage (silhouette, menton)",
+   "photo": 1.063,
+   "avatar": 0.939,
+   "ecart": -0.117,
+   "seuil": 0.08,
+   "type": "rel",
+   "statut": "ÉCHEC"
+  },
+  {
+   "mesure": "iou_silhouette_tete",
+   "libelle": "silhouette du haut de la tête (IoU)",
+   "photo": null,
+   "avatar": 0.87,
+   "ecart": 0.87,
+   "seuil": 0.8,
+   "type": "min",
+   "statut": "OK"
+  },
+  {
+   "mesure": "sourire_rendu",
+   "libelle": "sourire visible sur l'avatar (MediaPipe)",
+   "photo": null,
+   "avatar": 0.325,
+   "ecart": 0.325,
+   "seuil": 0.25,
+   "type": "max",
+   "statut": "ÉCHEC"
+  },
+  {
+   "mesure": "coins_bouche_rendu",
+   "libelle": "coins de la bouche relevés sur l'avatar",
+   "photo": null,
+   "avatar": 0.008,
+   "ecart": 0.008,
+   "seuil": 0.035,
+   "type": "max",
+   "statut": "OK"
+  },
+  {
+   "mesure": "ouverture_bouche_rendu",
+   "libelle": "bouche entrouverte sur l'avatar",
+   "photo": null,
+   "avatar": 0.006,
+   "ecart": 0.006,
+   "seuil": 0.06,
+   "type": "max",
+   "statut": "OK"
+  }
+ ],
+ "human_review": null,
+ "valid_output": false
+}
