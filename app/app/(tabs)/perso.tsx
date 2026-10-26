@@ -36,8 +36,9 @@ export default function Perso() {
   const stage = useHeroStage();
   const hero = useHeroSource();
   const goalPortraitUri = useGame((s) => s.avatar3d?.goalPortraitUri ?? null);
+  const caricatureGoal = useGame((s) => s.caricature?.bodies.athletique ?? null);
   // avatar personnel : le prochain palier montre SON corps à l'objectif, jamais le héros générique
-  const goalPortrait = hero.personal ? goalPortraitUri : null;
+  const goalPortrait = hero.personal ? caricatureGoal ?? goalPortraitUri : null;
 
   const stats = [
     { name: 'Force', lvl: body.stats.force.level, pct: body.stats.force.pct },

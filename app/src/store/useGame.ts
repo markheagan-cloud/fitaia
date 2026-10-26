@@ -4,8 +4,9 @@
  * calculés ici : chaque action est déclarée au backend (useEco), qui décide (règles, plafonds, idempotence).
  */
 import { create } from 'zustand';
-import { defaultSheetFor } from '@/avatar/identity';
+import { avatarBase, defaultSheetFor } from '@/avatar/identity';
 import { deleteAvatar3d, deleteAvatar3dPortrait, type Avatar3d } from '@/services/avatar3d';
+import { caricatureConfigured, createCaricature, deleteCaricature, type Caricature } from '@/services/caricature';
 import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -38,6 +39,7 @@ type Persisted = {
   extraDone: Record<string, string[]>; // jour → ids des défis bonus validés
   avatar: { uri: string; outfit: string; createdAt: number } | null; // perso dessiné depuis le selfie
   avatar3d: Avatar3d | null; // avatar 3D personnel (GLB construit depuis le selfie, enregistré sur le téléphone)
+  caricature: Caricature | null; // perso caricature personnel (selfie → portrait + 3 bustes, enregistrés sur le téléphone)
   character: CharacterSheet; // fiche du créateur (gratuit, illimité)
   characterReady: boolean; // le perso FITAIA Studio (vectoriel) remplace l'image par défaut
   profile: Profile; // sexe, âge, taille, poids de départ, objectif, activité, rythme
@@ -105,6 +107,11 @@ type Actions = {
   setAvatar3d: (a: Avatar3d | null) => void;
   /** Portrait pris sur le GLB personnel (null : à reprendre). */
   setAvatar3dPortrait: (uri: string | null, goalUri?: string | null) => void;
+  setCaricature: (c: Caricature | null) => void;
+  /** Création du perso caricature en arrière-plan (non persisté) : l'app reste utilisable pendant les minutes de calcul. */
+  caricatureJob: { state: 'idle' | 'queued' | 'running' | 'saving' | 'failed'; error: string };
+  /** Lance la création depuis le selfie gardé ; sans effet si elle tourne déjà ou si le serveur n'est pas configuré. */
+  createMyCaricature: () => Promise<void>;
   stopTimers: () => void;
 };
 
@@ -195,6 +202,8 @@ export const useGame = create<GameState>()(
         extraDone: {},
         avatar: null,
         avatar3d: null,
+        caricature: null,
+        caricatureJob: { state: 'idle', error: '' },
         character: DEFAULT_SHEET,
         characterReady: false,
         profile: DEFAULT_PROFILE,
@@ -398,6 +407,28 @@ export const useGame = create<GameState>()(
           if (a.goalPortraitUri && a.goalPortraitUri !== goalUri) deleteAvatar3dPortrait(a.goalPortraitUri);
           set({ avatar3d: { ...a, portraitUri: uri, goalPortraitUri: goalUri } });
         },
+        setCaricature: (c) => {
+          const old = get().caricature;
+          if (old && old.id !== c?.id) deleteCaricature(old);
+          set({ caricature: c });
+        },
+        createMyCaricature: async () => {
+          const s = get();
+          const selfie = s.selfieUri;
+          if (!caricatureConfigured || !selfie || s.caricatureJob.state === 'queued' || s.caricatureJob.state === 'running' || s.caricatureJob.state === 'saving') return;
+          const base = avatarBase(s.profile.sex, { appearance: s.character.appearance }, s.characterReady);
+          set({ caricatureJob: { state: 'queued', error: '' } });
+          try {
+            const c = await createCaricature(selfie, base, s.character as unknown as Record<string, unknown>, (state) => set({ caricatureJob: { state, error: '' } }));
+            get().setCaricature(c);
+            set({ caricatureJob: { state: 'idle', error: '' } });
+            get().say('Ton perso à ton image est prêt', 'ok');
+          } catch (e) {
+            const error = e instanceof Error ? e.message : 'Création du perso impossible.';
+            set({ caricatureJob: { state: 'failed', error } });
+            get().say('Perso à ton image : ' + error, 'bad');
+          }
+        },
         setCharacter: (c) => set({ character: c, characterReady: true }),
         setProfile: (patch) => {
           const S = get();
@@ -446,7 +477,7 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 13,
+      version: 14,
       // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         // champs des anciennes versions, lus seulement pour les convertir
@@ -503,6 +534,7 @@ export const useGame = create<GameState>()(
           s.character = defaultSheetFor(s.profile.sex);
         }
         if (version < 13) s.avatar3d = s.avatar3d ?? null;
+        if (version < 14) s.caricature = s.caricature ?? null;
         return s as Persisted;
       },
       storage: createJSONStorage(() => AsyncStorage),
@@ -521,6 +553,7 @@ export const useGame = create<GameState>()(
         extraDone: s.extraDone,
         avatar: s.avatar,
         avatar3d: s.avatar3d,
+        caricature: s.caricature,
         character: s.character,
         characterReady: s.characterReady,
         profile: s.profile,
@@ -541,10 +574,18 @@ export const useGame = create<GameState>()(
         const glb = findDeviceFile(state.avatar3d?.uri);
         const portrait = findDeviceFile(state.avatar3d?.portraitUri);
         const goalPortrait = findDeviceFile(state.avatar3d?.goalPortraitUri);
+        // caricature : les quatre PNG doivent être là, sinon on oublie le perso (jamais un perso à moitié)
+        const c = state.caricature;
+        const cPortrait = findDeviceFile(c?.portraitUri);
+        const cBodies = c ? { surpoids: findDeviceFile(c.bodies.surpoids), actuel: findDeviceFile(c.bodies.actuel), athletique: findDeviceFile(c.bodies.athletique) } : null;
+        const caricature = c && cPortrait && cBodies && cBodies.surpoids && cBodies.actuel && cBodies.athletique
+          ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique } }
+          : null;
         useGame.setState({
           hydrated: true,
           selfieUri: selfie,
           avatar3d: state.avatar3d && glb ? { ...state.avatar3d, uri: glb, portraitUri: portrait, goalPortraitUri: goalPortrait } : null,
+          caricature,
         });
         // registre Phase 2 : amorçage (tenue de départ) et conversion unique de l'ancienne économie
         void useEco

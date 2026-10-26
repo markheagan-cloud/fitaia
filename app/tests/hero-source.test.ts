@@ -7,6 +7,7 @@ const t = createCheck();
 const preview = (s: { appearance: string }) => ({ uri: 'preview-' + s.appearance });
 const base: HeroInput = {
   base: 'm',
+  caricature: null,
   avatar3d: null,
   drawing: null,
   skin: { id: 'origine', name: 'Origine', img: { uri: 'skin-origine' } },
@@ -28,6 +29,11 @@ t.equal(src(heroSourceFor({ ...mine, drawing: { outfit: 'origine', uri: 'dessin-
 
 t.equal(src(heroSourceFor({ ...base, avatar3d: { base: 'm', portraitUri: null } })), 'usine-surpoids', 'GLB sans portrait encore pris : image générique (rien d’inventé)');
 t.equal(src(heroSourceFor({ ...base, avatar3d: { base: 'f', portraitUri: 'p-f' } })), 'usine-surpoids', 'portrait d’une autre base : ignoré');
+
+const toon = { ...mine, caricature: { base: 'm' as const, portraitUri: 'file:///doc/caricature-1-portrait.png' } };
+t.equal(src(heroSourceFor(toon)), 'file:///doc/caricature-1-portrait.png', 'caricature personnelle : prioritaire sur le portrait du GLB');
+t.ok(heroSourceFor(toon).personal, '… et marquée personnelle');
+t.equal(src(heroSourceFor({ ...toon, caricature: { base: 'f', portraitUri: 'c-f' } })), 'file:///doc/avatar3d-portrait-1.png', 'caricature d’une autre base : ignorée');
 
 t.equal(src(heroSourceFor({ ...base, drawing: { outfit: 'origine', uri: 'dessin-ia' } })), 'dessin-ia', 'dessin IA de la tenue équipée');
 t.equal(src(heroSourceFor({ ...base, drawing: { outfit: 'cargo', uri: 'dessin-ia' } })), 'usine-surpoids', 'dessin d’une autre tenue : ignoré');

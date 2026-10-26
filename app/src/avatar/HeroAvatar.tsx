@@ -32,12 +32,14 @@ export function useHeroSource(): HeroChoice {
   const skin = useEquippedSkin();
   const avatar = useGame((s) => s.avatar);
   const avatar3d = useGame((s) => s.avatar3d);
+  const caricature = useGame((s) => s.caricature);
   const ready = useGame((s) => s.characterReady);
   const sheet = useGame((s) => s.character);
   const stage = useHeroStage();
   const base = useAvatarBase();
   return heroSourceFor({
     base,
+    caricature,
     avatar3d,
     drawing: avatar,
     skin,
@@ -51,6 +53,7 @@ export function useHeroSource(): HeroChoice {
 
 /**
  * Le perso affiché partout (Accueil, Mon perso) :
+ * 0) la caricature personnelle (selfie) si elle existe ;
  * 1) le portrait de l'avatar 3D personnel (selfie) s'il existe ;
  * 2) le dessin IA « HD » s'il existe pour la tenue équipée ;
  * 3) sinon le rendu réaliste le plus proche de la fiche (créateur validé) ;

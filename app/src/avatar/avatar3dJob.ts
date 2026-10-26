@@ -21,7 +21,11 @@ export type JobBody = {
   status?: string;
   glb?: string;
   error?: string;
-  report?: ServerReport;
+  /** Rapport du serveur : avatar 3D (ServerReport) ou caricature (voir src/avatar/caricature.ts). */
+  report?: ServerReport | Record<string, unknown>;
+  /** Caricature (serve_caricature.py) : portrait et bustes, chemins relatifs au serveur. */
+  portrait?: string;
+  corps?: Record<string, string>;
 };
 
 export type JobOptions = {
@@ -53,11 +57,15 @@ async function readJson(res: { json(): Promise<unknown> }): Promise<JobBody> {
 }
 
 function finished(body: JobBody): JobResult | null {
-  return body.ok && body.id && body.glb && body.report ? { id: body.id, glb: body.glb, report: body.report } : null;
+  return body.ok && body.id && body.glb && body.report ? { id: body.id, glb: body.glb, report: body.report as ServerReport } : null;
 }
 
-/** Envoie la photo puis suit la tâche jusqu'au GLB. Lève une erreur lisible en cas d'échec. */
-export async function runAvatarJob(endpoint: string, payload: unknown, o: JobOptions): Promise<JobResult> {
+/**
+ * Protocole commun « envoi (202 + identifiant) puis suivi » des serveurs FITAIA (avatar 3D, caricature).
+ * `path` : route d'envoi (ex. '/v1/avatar') ; `done` : lit le résultat final dans la réponse, ou null si elle est incomplète ;
+ * `what` : nom de la chose créée dans les messages d'erreur (« avatar 3D », « perso »).
+ */
+export async function runServerJob<T>(endpoint: string, path: string, payload: unknown, o: JobOptions, done: (body: JobBody) => T | null, what: string): Promise<T> {
   const sleep = o.sleep ?? defaultSleep;
   const now = o.now ?? Date.now;
   const pollMs = o.pollMs ?? 3000;
@@ -66,21 +74,22 @@ export async function runAvatarJob(endpoint: string, payload: unknown, o: JobOpt
   const headers = { 'Content-Type': 'application/json', ...o.headers };
   // appel sans `this` : le fetch natif du navigateur refuse d'être appelé comme méthode d'un autre objet (« Illegal invocation »)
   const request = o.fetch;
+  const unreachable = 'Serveur d’avatar injoignable. Vérifie ta connexion.';
 
   let res: Awaited<ReturnType<JobFetch>>;
   try {
-    res = await request(endpoint + '/v1/avatar', { method: 'POST', headers, body: JSON.stringify(payload), signal: o.signal });
+    res = await request(endpoint + path, { method: 'POST', headers, body: JSON.stringify(payload), signal: o.signal });
   } catch {
     aborted(o.signal);
-    throw new Error('Serveur d’avatar injoignable. Vérifie ta connexion.');
+    throw new Error(unreachable);
   }
   const first = await readJson(res);
-  if (!res.ok || !first.ok || !first.id) throw new Error(first.error || 'Création de l’avatar 3D impossible (' + res.status + ').');
+  if (!res.ok || !first.ok || !first.id) throw new Error(first.error || 'Création de l’' + what + ' impossible (' + res.status + ').');
   // ancien serveur (réponse synchrone) : le résultat est déjà là
-  const direct = finished(first);
+  const direct = done(first);
   if (direct && res.status === 200) return direct;
 
-  const statusUrl = endpoint + (first.status ?? '/v1/avatar/' + first.id);
+  const statusUrl = endpoint + (first.status ?? path + '/' + first.id);
   const start = now();
   let networkErrors = 0;
   let last: string | undefined;
@@ -95,21 +104,26 @@ export async function runAvatarJob(endpoint: string, payload: unknown, o: JobOpt
     } catch {
       aborted(o.signal);
       // réseau coupé un instant (écran verrouillé, Wi-Fi qui change) : la tâche continue sur le serveur
-      if (++networkErrors > maxNetworkErrors) throw new Error('Serveur d’avatar injoignable. Vérifie ta connexion.');
+      if (++networkErrors > maxNetworkErrors) throw new Error(unreachable);
       continue;
     }
     networkErrors = 0;
     const body = await readJson(r);
     if (r.status === 404) throw new Error('Le serveur a perdu la création (redémarré ?). Relance-la.');
-    if (!r.ok || body.ok === false || body.state === 'failed') throw new Error(body.error || 'Création de l’avatar 3D impossible (' + r.status + ').');
+    if (!r.ok || body.ok === false || body.state === 'failed') throw new Error(body.error || 'Création de l’' + what + ' impossible (' + r.status + ').');
     if (body.state === 'done') {
-      const done = finished(body);
-      if (!done) throw new Error('Réponse incomplète du serveur d’avatar.');
-      return done;
+      const result = done(body);
+      if (!result) throw new Error('Réponse incomplète du serveur d’avatar.');
+      return result;
     }
     if ((body.state === 'queued' || body.state === 'running') && body.state !== last) {
       last = body.state;
       o.onState?.(body.state);
     }
   }
+}
+
+/** Envoie la photo puis suit la tâche jusqu'au GLB. Lève une erreur lisible en cas d'échec. */
+export function runAvatarJob(endpoint: string, payload: unknown, o: JobOptions): Promise<JobResult> {
+  return runServerJob(endpoint, '/v1/avatar', payload, o, finished, 'avatar 3D');
 }
