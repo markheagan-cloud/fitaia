@@ -1061,8 +1061,14 @@ def build(src, out, preview=False, cfg=None):
         hs = HairShell(obj, shape, group_verts, vertex_normals(shape, btv), thickness=max(thick, 0.25))
         hc = tuple(np.clip(np.array(ident['colors']['hair']) * 0.85, 0.02, 0.8)) if ident else tuple(cfg['hair']['shell'].get('color', (0.085, 0.062, 0.045)))
         layers.append(('hair', hs, None, {'kind': 'hair', 'texture_image': shell_texture(hc)}))
-    elif not ident and cfg['hair'].get('mhclo'):
-        layers.append(('hair', Mhclo(os.path.join(src, cfg['hair']['mhclo'])), None, {'kind': 'hair', **{k: v for k, v in cfg['hair'].items() if k != 'mhclo'}}))
+    elif cfg['hair'].get('mhclo') and (not ident or cfg['hair'].get('keep_with_identity')):
+        # cartes MakeHuman de la coupe (héros sans mèches, ou PERSONNE dont la coupe vient de sa fiche du créateur :
+        # base femme du selfie) ; avec une photo, la coupe prend la couleur des cheveux lue sur la photo
+        hopt = {k: v for k, v in cfg['hair'].items() if k not in ('mhclo', 'keep_with_identity', 'keep_color')}
+        if ident and ident['colors'].get('hair') and hopt.get('recolor') and not cfg['hair'].get('keep_color'):
+            # couleur lue sur la photo en sRGB 0..1 → linéaire, même échelle que persons.HAIR (sinon châtain → rose)
+            hopt['recolor'] = dict(hopt['recolor'], color=[float(x) ** 2.2 * 2.2 for x in ident['colors']['hair']])
+        layers.append(('hair', Mhclo(os.path.join(src, cfg['hair']['mhclo'])), None, {'kind': 'hair', **hopt}))
     gen = cfg.get('generated_clothes')
     gen_ok = bool(gen) and os.path.exists(os.path.join(src, gen['dir'], 'garments_out.json'))
     for c in cfg['clothes']:
@@ -1142,7 +1148,8 @@ def build(src, out, preview=False, cfg=None):
         fa = dict(cfg['skin']['face_art'])
         if ident:
             # la photo apporte déjà barbe, sourcils, lèvres, teint : on ne peint que le cuir chevelu (dégradé)
-            fa.update({'beard': 0.0, 'brow': 0.0, 'lips': 0.0, 'red': 0.0, 'under': 0.0, 'lash': 0.0, 'mottle': 0.0,
+            beard_kept = fa.get('beard', 0.0) if cfg.get('beard_declared') else 0.0    # barbe déclarée dans la fiche : gardée
+            fa.update({'beard': beard_kept, 'brow': 0.0, 'lips': 0.0, 'red': 0.0, 'under': 0.0, 'lash': 0.0, 'mottle': 0.0,
                        'hair_color': tuple(ident['colors']['hair'])})
             if not ident['colors'].get('bald') and thick < 0.25:
                 fa.update({'hair': 0.95, 'scalp': 0.0})          # cheveux ras : peints sur le crâne, pas de volume
@@ -1404,17 +1411,24 @@ if __name__ == '__main__':
     src = sys.argv[sys.argv.index('--src') + 1] if '--src' in sys.argv else os.path.join(ROOT, '..', 'mhsrc')
     out = sys.argv[sys.argv.index('--out') + 1] if '--out' in sys.argv else os.path.join(ROOT, 'src', 'human-engine', 'assets', 'premium-male-01.glb')
     os.makedirs(os.path.dirname(out), exist_ok=True)
+    cfg = CONFIG
+    if '--sex' in sys.argv:
+        # base d'une PERSONNE (selfie) : femme ou homme, fiche du créateur (--sheet JSON) ; voir persons.selfie_config
+        import persons
+        cfg = persons.selfie_config(src, sys.argv[sys.argv.index('--sex') + 1],
+                                    sys.argv[sys.argv.index('--sheet') + 1] if '--sheet' in sys.argv else None)
     if '--identity' in sys.argv:
         ip = sys.argv[sys.argv.index('--identity') + 1]
         idj = json.load(open(ip))
         idj['_dir'] = os.path.dirname(os.path.abspath(ip))
-        CONFIG['identity'] = idj
-        CONFIG['groom'] = None           # la coupe du héros ne s'applique pas à une personne (sa coiffure vient de sa photo)
-        CONFIG['groom_save'] = True
-        if '--strands' in sys.argv and not idj.get('colors', {}).get('bald') and idj.get('colors', {}).get('hair_thickness', 0.6) >= 0.25:
+        cfg['identity'] = idj
+        cfg['groom'] = None           # la coupe du héros ne s'applique pas à une personne (sa coiffure vient de sa photo)
+        cfg['groom_save'] = True
+        if '--strands' in sys.argv and not cfg['hair'].get('keep_with_identity') and not idj.get('colors', {}).get('bald') \
+                and idj.get('colors', {}).get('hair_thickness', 0.6) >= 0.25:
             # rendus hors ligne : coiffure en mèches (longueurs mesurées sur la photo) à la place de la coupe en coquilles
             # dense (90 000), un peu de volume sur le dessus, cuir chevelu teinté de la couleur des cheveux (pas de crâne clair
             # visible entre les mèches)
-            CONFIG['groom'] = {'seed': 5, 'hair': {'style': 'crop', 'identity': True, 'forward': -0.35, 'sweep': 0.35, 'mess': 0.25,
-                                                   'count': 90000, 'lift': 1.0, 'scalp_paint': 0.6}}
-    build(src, out, '--preview' in sys.argv)
+            cfg['groom'] = {'seed': 5, 'hair': {'style': 'crop', 'identity': True, 'forward': -0.35, 'sweep': 0.35, 'mess': 0.25,
+                                                'count': 90000, 'lift': 1.0, 'scalp_paint': 0.6}}
+    build(src, out, '--preview' in sys.argv, cfg=cfg)

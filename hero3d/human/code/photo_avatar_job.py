@@ -9,7 +9,7 @@ FITAIA — tâche « selfie → avatar GLB » rapide (sans rendu Blender), appel
 15 morphs du corps que le héros. Écrit <out>/avatar.glb et <out>/report.json :
   - traits lus sur la photo (teint, cheveux, mesures du visage) ;
   - traits impossibles à déduire d'un seul selfie (taille, poids, masse grasse, musculature) : pris dans le profil ;
-  - limites honnêtes (ex. base féminine : visage non ajusté, voir report['limites']).
+  - limites honnêtes (report['limites'] : ex. base féminine, la coiffure vient de la fiche, pas de la photo).
 Le contrôle de ressemblance complet (rendus + biométrie) reste dans factory_photo.py : il prend plusieurs minutes.
 """
 import argparse
@@ -30,6 +30,22 @@ NOT_FROM_PHOTO = [
     {'trait': 'profondeur du visage (profil)', 'raison': 'une photo de face ne montre pas le profil', 'source': 'base neutre'},
     {'trait': 'âge', 'raison': 'non estimé volontairement', 'source': 'profil'},
 ]
+
+
+def neutral_base_for(cfg, base_root, src, pyenv, model):
+    """Base neutre (rendu + repères MediaPipe) de la configuration cfg, mise en cache sous <base_root>/<id>-<carnation>.
+    Renvoie (dossier, créée_maintenant)."""
+    import photo_id as P
+    race = '-'.join(f'{k[:3]}{int(round(w * 100)):02d}' for k, w in sorted(cfg['base']['race'].items()))
+    d = os.path.join(base_root, f"{cfg['id']}-{race}")
+    npng, nnpz = os.path.join(d, 'neutral.png'), os.path.join(d, 'neutral.npz')
+    if os.path.exists(nnpz + '.ok'):
+        return d, False
+    os.makedirs(d, exist_ok=True)
+    P.render_neutral(src, npng, nnpz, cfg=cfg)
+    subprocess.run([pyenv, os.path.join(HERE, 'landmarks.py'), model, npng], check=True)
+    open(nnpz + '.ok', 'w').write('ok')
+    return d, True
 
 
 def main():
@@ -71,8 +87,19 @@ def main():
     import build_premium_avatar as B
     import photo_id as P
     t = time.time()
-    npng = os.path.join(a.base, 'neutral.png')
-    idn = P.make_identity(a.src, a.photo, lmp, os.path.join(a.base, 'neutral.npz'), npng + '.landmarks.json', a.out)
+    cfg, base_dir = None, a.base
+    if a.sex == 'f' or a.sheet:
+        # base de la PERSONNE (persons.selfie_config) : femme, ou homme avec une fiche du créateur (carnation, coupe,
+        # barbe, carrure) ; sans fiche, un homme garde la base du héros (chemin d'origine, inchangé). La base neutre est
+        # rendue une fois par carnation (les macros d'origine changent la forme du crâne) et réutilisée.
+        import persons
+        cfg = persons.selfie_config(a.src, a.sex, a.sheet)
+        base_dir, created = neutral_base_for(cfg, a.base, a.src, a.pyenv, a.model)
+        if created:
+            report['etapes']['base_neutre_s'] = round(time.time() - t, 1)
+            t = time.time()
+    npng = os.path.join(base_dir, 'neutral.png')
+    idn = P.make_identity(a.src, a.photo, lmp, os.path.join(base_dir, 'neutral.npz'), npng + '.landmarks.json', a.out, cfg=cfg)
     report['etapes']['identite_s'] = round(time.time() - t, 1)
     colors = idn.get('colors', {})
     report['traits_photo'] = {
@@ -83,28 +110,21 @@ def main():
         'cibles_visage': len(idn.get('targets') or []),
         'erreur_moyenne_mm': idn.get('err_mm'),
     }
-    if a.sex == 'f':
-        # l'ajustement du visage est calibré sur la base neutre masculine : il n'est pas encore validé sur la base féminine
-        report['limites'].append('Base femme : ton visage n’est pas encore construit depuis la photo. Teint et cheveux viennent de ta fiche du créateur.')
-        report['traits_photo'] = {'teint_rgb': None, 'cheveux_rgb': None, 'chauve': False, 'iris_rgb': None, 'cibles_visage': 0, 'erreur_moyenne_mm': None}
+    if cfg is not None:
+        if cfg['hair'].get('keep_with_identity'):
+            report['limites'].append('Coiffure : la coupe choisie dans ton créateur, à la couleur '
+                                     + ('choisie dans ton créateur.' if cfg['hair'].get('keep_color') else 'lue sur la photo.'))
+        else:
+            report['limites'].append('Coiffure : volume mesuré sur la photo (coupe courte simplifiée), pas tes cheveux exacts.')
+    report['limites'].append('Ressemblance non contrôlée sur ce chemin (le contrôle visuel tourne dans l’usine Blender, pas dans l’app).')
 
     t = time.time()
     idp = os.path.join(a.out, 'identity.json')
     idj = json.load(open(idp))
     idj['_dir'] = a.out
-    cfg = None
-    if a.sex == 'f':
-        import persons
-        sheet = {'appearance': 'fem', 'body': 'athle', 'skin': 's3', 'hairStyle': 'long', 'hairColor': 'brun', 'face': 'ovale',
-                 'eyes': 'brun', 'beard': 'aucune', 'extras': []}
-        if a.sheet:
-            given = json.loads(a.sheet)
-            sheet.update({k: given[k] for k in ('body', 'skin', 'hairStyle', 'hairColor', 'eyes') if k in given})
-            if sheet['body'] not in ('mince', 'athle', 'rond', 'costaud'):
-                sheet['body'] = 'athle'
-        cfg = persons.config_for({'key': 'selfie', 'seed': 7, 'sheet': sheet,
-                                   'outfit': {'top': [0.205, 0.215, 0.235], 'bottom': [0.075, 0.078, 0.085]}}, a.src)
-        cfg['groom'] = None          # GLB temps réel : cheveux en cartes (cfg['hair']) ; les mèches ne servent qu'aux rendus
+    if cfg is not None:
+        cfg['identity'] = idj
+        cfg['groom_save'] = True
     else:
         B.CONFIG['identity'] = idj
         B.CONFIG['groom'] = None

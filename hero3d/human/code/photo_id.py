@@ -72,15 +72,18 @@ def target_files(src):
 
 
 def neutral_shape(src, cfg=None):
-    """Base neutre : macros + cibles de corps de la config, SANS les cibles de visage du héros."""
+    """Base neutre : macros + cibles de corps de la config, SANS les cibles de visage du héros.
+    cfg['base']['gender'] ('male' par défaut, 'female' : persons.selfie_config) choisit les macros MakeHuman du bon sexe,
+    exactement comme build_premium_avatar.build — la base ajustée ici est celle qui sera construite."""
     cfg = cfg or B.CONFIG
+    gender = cfg['base'].get('gender', 'male')
     obj = Obj(B.find_base_obj(src))
     nv = len(obj.v)
     T = lambda rel: load_target(os.path.join(src, 'mh/targets', rel), nv)  # noqa: E731
     shape = obj.v.copy()
     for race, w in cfg['base']['race'].items():
-        shape += w * T(f'macrodetails/{race}-male-young.target.gz')
-    shape += cfg['base']['proportions'] * T('macrodetails/proportions/male-young-averagemuscle-averageweight-idealproportions.target.gz')
+        shape += w * T(f'macrodetails/{race}-{gender}-young.target.gz')
+    shape += cfg['base']['proportions'] * T(f'macrodetails/proportions/{gender}-young-averagemuscle-averageweight-idealproportions.target.gz')
     for rel, k in cfg['base'].get('shape', []):
         if not rel.startswith(FACE_DIRS):
             shape += k * T(rel)
@@ -152,11 +155,11 @@ def raster(meshes, size, view):
     return img, zb, tagb, trib, bary
 
 
-def head_meshes(src, obj, shape, cfg=None):
+def head_meshes(src, obj, shape, cfg=None, clip_y=6.3):
     cfg = cfg or B.CONFIG
     body = set(B.group_verts(obj, 'body'))
-    faces = [[vi for vi, _ in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > 6.3]
-    uvf = [[ti for _, ti in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > 6.3]
+    faces = [[vi for vi, _ in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > clip_y]
+    uvf = [[ti for _, ti in f] for f, g in zip(obj.faces, obj.groups) if g == 'body' and shape[f[0][0], 1] > clip_y]
     # triangles + UV par sommet de coin (on duplique les coins)
     P, UV, F, src_v = [], [], [], []
     for f, uf in zip(faces, uvf):
@@ -187,11 +190,18 @@ def head_meshes(src, obj, shape, cfg=None):
     return meshes, np.array(src_v)
 
 
-def render_neutral(src, out_png, out_npz, size=1024):
-    obj, shape, _ = neutral_shape(src)
-    meshes, src_v = head_meshes(src, obj, shape)
-    hv = shape[list(set(B.group_verts(obj, 'body')))]
-    view = (0.0, 8.05, 1.6)
+def render_neutral(src, out_png, out_npz, size=1024, cfg=None):
+    obj, shape, _ = neutral_shape(src, cfg)
+    view, clip_y = (0.0, 8.05, 1.6), 6.3
+    if (cfg or B.CONFIG)['base'].get('gender', 'male') != 'male':
+        # autre base (femme) : cadrage et coupe du maillage pris par rapport aux YEUX de cette base (base homme : yeux à
+        # ≈ 8,32 dm → fenêtre centrée 0,27 dm plus bas, maillage coupé 2,0 dm plus bas). Le premier essai cadrait d'après
+        # le sommet du maillage (helpers compris) : la base femme sortait coupée sous le nez, les repères ne se liaient
+        # plus à la surface et l'ajustement partait faux (20 mm d'erreur au lieu de 6).
+        eyes = Mhclo(os.path.join(src, (cfg or B.CONFIG)['face']['eyes'][0]))
+        ye = float(eyes.fit(shape)[:, 1].mean())
+        view, clip_y = (0.0, round(ye - 0.27, 3), 1.6), ye - 2.0
+    meshes, src_v = head_meshes(src, obj, shape, cfg, clip_y=clip_y)
     img, zb, tagb, trib, bary = raster(meshes, size, view)
     img = np.where((tagb < 0)[..., None], np.array([0.62, 0.62, 0.6], np.float32), img)
     Image.fromarray((np.clip(img, 0, 1) ** (1 / 1.4) * 255).astype(np.uint8)).save(out_png)
@@ -268,9 +278,9 @@ def similarity(A, Bp, w=None):
     return s, R, t
 
 
-def fit_identity(src, lm_photo, binding, reg=0.08, iters=6, zw=0.2, seg_path=None, sil_w=3.0, adjust=None):
+def fit_identity(src, lm_photo, binding, reg=0.08, iters=6, zw=0.2, seg_path=None, sil_w=3.0, adjust=None, cfg=None):
     from scipy.optimize import lsq_linear
-    obj, shape, T = neutral_shape(src)
+    obj, shape, T = neutral_shape(src, cfg)
     refs, wts, ok = binding
     pairs = target_files(src)
     D = []
@@ -726,19 +736,22 @@ def hair_volume(lm, segp, ident, S, obj):
     return {'hair_top': top, 'hair_side': side}
 
 
-def make_identity(src, photo, lm_photo_json, bind_npz, lm_neutral_json, out_dir, adjust=None):
-    """Photo → identity.json + face.png (texture de peau personnalisée)."""
+def make_identity(src, photo, lm_photo_json, bind_npz, lm_neutral_json, out_dir, adjust=None, cfg=None):
+    """Photo → identity.json + face.png (texture de peau personnalisée).
+    cfg : configuration de la base (None = héros masculin B.CONFIG ; femme = persons.selfie_config) — la base neutre
+    (bind_npz / lm_neutral_json) doit avoir été rendue avec la MÊME configuration (render_neutral(..., cfg=cfg))."""
     os.makedirs(out_dir, exist_ok=True)
     lm = json.load(open(lm_photo_json))
     if not lm.get('found'):
         raise SystemExit('aucun visage détecté sur ' + photo)
     binding = bind_landmarks(lm_neutral_json, bind_npz)
-    ident, S, obj = fit_identity(src, lm, binding, seg_path=photo + '.seg.png', adjust=adjust)
+    ident, S, obj = fit_identity(src, lm, binding, seg_path=photo + '.seg.png', adjust=adjust, cfg=cfg)
     ident['adjust'] = adjust or {}
-    cfg = B.CONFIG
+    cfg = cfg or B.CONFIG
+    ident['base'] = {'gender': cfg['base'].get('gender', 'male'), 'race': cfg['base']['race']}
     skin = B.read_mhmat(os.path.join(src, cfg['skin']['mhmat']))
     skin_im = B.load_rgb(os.path.join(skin['_dir'], skin['diffuseTexture']), cfg['skin']['size'])
-    tex, colors = bake_face(src, photo, lm, ident, S, obj, skin_im, binding=binding)
+    tex, colors = bake_face(src, photo, lm, ident, S, obj, skin_im, cfg=cfg, binding=binding)
     tex.save(os.path.join(out_dir, 'face.png'))
     # ligne de cheveux de la personne → repère canonique du visage (utilisé par la coupe 3D et le cuir chevelu peint)
     # volume de la coiffure lu sur la photo : épaisseur des cheveux au-dessus du crâne (par position gauche-droite)

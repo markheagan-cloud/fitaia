@@ -33,6 +33,7 @@ def main():
     opts = vision.FaceLandmarkerOptions(base_options=mpt.BaseOptions(model_asset_path=model),
                                         output_face_blendshapes=True, output_facial_transformation_matrixes=True,
                                         num_faces=1)
+    missing = []
     with vision.FaceLandmarker.create_from_options(opts) as det:
         for path in images:
             img = mp.Image.create_from_file(path)
@@ -51,6 +52,11 @@ def main():
                 except Exception as e:  # la segmentation est un plus : jamais bloquante
                     print('segmentation impossible', path, e)
             print(path, 'visage' if out['found'] else 'AUCUN VISAGE')
+            if not out['found']:
+                missing.append(path)
+    if missing:
+        # un appelant qui ne lit pas le JSON (usine, check=True) ne doit pas continuer comme si tout allait bien
+        sys.exit(4)
 
 
 if __name__ == '__main__':

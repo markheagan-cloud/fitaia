@@ -16,7 +16,8 @@ import sys
 import bpy
 
 argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-GLB, OUT = argv[0], argv[1]
+# chemins absolus : Blender change de dossier courant, un --out relatif finissait à la racine du disque (C:\hero3d\...)
+GLB, OUT = os.path.abspath(argv[0]), os.path.abspath(argv[1])
 OPT = (json.load(open(argv[2])) if argv[2].endswith('.json') else json.loads(argv[2])) if len(argv) > 2 else {}
 os.makedirs(OUT, exist_ok=True)
 
