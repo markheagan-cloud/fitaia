@@ -45,6 +45,19 @@ export function finishedCaricature(body: JobBody): CaricatureJobResult | null {
   return { id: body.id, portrait: body.portrait, bodies, report: r };
 }
 
+/** Réponse JSON du Space Hugging Face (images en base64) → même résultat que le serveur local, ou null si incomplète. */
+export function finishedSpaceCaricature(json: string, id: string): CaricatureJobResult | null {
+  let r: { ok?: boolean; error?: string; portrait?: string; corps?: Record<string, string>; report?: CaricatureReport };
+  try {
+    r = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!r || typeof r !== 'object') return null;
+  if (r.ok === false) throw new Error(typeof r.error === 'string' && r.error ? r.error : 'Création du perso impossible.');
+  return finishedCaricature({ ok: Boolean(r.ok), id, portrait: r.portrait, corps: r.corps, report: r.report as Record<string, unknown> });
+}
+
 /** Nom du fichier gardé sur le téléphone (retrouvé par son nom après une mise à jour de l'app). */
 export function caricatureFileName(id: string, which: 'portrait' | BodyKey): string {
   return 'caricature-' + id + '-' + which + '.png';

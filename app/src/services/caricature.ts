@@ -5,19 +5,26 @@
  * Le calcul prend plusieurs minutes sur le PC de test : la création tourne en arrière-plan (état dans le store), l'app
  * reste utilisable, et le perso apparaît partout dès qu'il est prêt. Les quatre PNG sont enregistrés sur le téléphone.
  *
- * Sans EXPO_PUBLIC_CARICATURE_ENDPOINT, `caricatureConfigured` est faux et l'app le dit : aucun résultat simulé.
+ * Deux serveurs possibles, même résultat :
+ *  - EXPO_PUBLIC_CARICATURE_SPACE : Space Hugging Face (hero3d/caricature/space, ZeroGPU gratuit, < 1 min) ;
+ *  - EXPO_PUBLIC_CARICATURE_ENDPOINT : serveur local sur le PC (hero3d/caricature/serve_caricature.py, port 8791).
+ * Sans aucun des deux, `caricatureConfigured` est faux et l'app le dit : aucun résultat simulé.
  */
 import * as ImageManipulator from 'expo-image-manipulator';
 import { File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import type { AvatarBase } from '@/avatar/identity';
 import { runServerJob, type JobFetch } from '@/avatar/avatar3dJob';
-import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, type BodyKey, type Caricature } from '@/avatar/caricature';
+import { base64ToBytes, callGradio, type GradioFetch } from '@/avatar/gradioCall';
+import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
 
 const ENDPOINT = (process.env.EXPO_PUBLIC_CARICATURE_ENDPOINT ?? '').replace(/\/+$/, '');
+const SPACE = (process.env.EXPO_PUBLIC_CARICATURE_SPACE ?? '').replace(/\/+$/, '');
 const TOKEN = process.env.EXPO_PUBLIC_CARICATURE_TOKEN ?? '';
 
-export const caricatureConfigured = ENDPOINT.length > 0;
+export const caricatureConfigured = SPACE.length > 0 || ENDPOINT.length > 0;
+/** D'où vient le dessin : Space Hugging Face en priorité, sinon le serveur local. */
+export const caricatureSource: 'space' | 'local' | 'none' = SPACE ? 'space' : ENDPOINT ? 'local' : 'none';
 
 export type { Caricature } from '@/avatar/caricature';
 
@@ -42,6 +49,16 @@ async function savePng(id: string, which: 'portrait' | BodyKey, url: string): Pr
   if (dest.exists) dest.delete();
   dest.create();
   dest.write(bytes);
+  return dest.uri;
+}
+
+/** Image reçue en base64 (Space) → fichier du téléphone ; sur le web, adresse data: gardée en mémoire. */
+async function saveB64Png(id: string, which: 'portrait' | BodyKey, b64: string): Promise<string> {
+  if (Platform.OS === 'web') return 'data:image/png;base64,' + b64;
+  const dest = new File(Paths.document, caricatureFileName(id, which));
+  if (dest.exists) dest.delete();
+  dest.create();
+  dest.write(base64ToBytes(b64));
   return dest.uri;
 }
 
@@ -72,6 +89,18 @@ export async function createCaricature(selfieUri: string, base: AvatarBase, shee
   if (!caricatureConfigured) throw new Error('La création du perso à ton image n’est pas encore disponible.');
   const photo = await selfieJpegBase64(selfieUri);
   const headers: Record<string, string> = TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {};
+  if (SPACE) {
+    onState?.('running');
+    const id = String(Date.now().toString(36)) + Math.random().toString(36).slice(2, 8);
+    const json = await callGradio(SPACE, 'caricature', [photo, base, JSON.stringify(sheet ?? {})], { fetch: fetch as unknown as GradioFetch, headers, signal });
+    const r: CaricatureJobResult | null = finishedSpaceCaricature(json, id);
+    if (!r) throw new Error('Réponse incomplète du serveur de dessin.');
+    onState?.('saving');
+    const portrait = await saveB64Png(id, 'portrait', r.portrait);
+    const bodies = {} as Record<BodyKey, string>;
+    for (const k of BODY_KEYS) bodies[k] = await saveB64Png(id, k, r.bodies[k]);
+    return buildCaricature(r, base, { portrait, bodies });
+  }
   // ≈ 10 min sur le PC de test (GTX 1650) ; le serveur refuse au-delà de 20 min
   const r = await runServerJob(ENDPOINT, '/v1/caricature', { photo, sex: base, sheet }, { fetch: fetch as unknown as JobFetch, headers, signal, timeoutMs: 25 * 60_000, pollMs: 5000, onState }, finishedCaricature, 'perso');
   onState?.('saving');
