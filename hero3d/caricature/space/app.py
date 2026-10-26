@@ -16,15 +16,14 @@ import base64
 import io
 import json
 import os
-import time
 
 import gradio as gr
 from PIL import Image
 
+import api
 import recette
 
 STUB = os.environ.get('FITAIA_STUB') == '1'
-MAX_PHOTO = 6 * 1024 * 1024
 
 if not STUB:
     import spaces
@@ -44,40 +43,12 @@ if not STUB:
         corps = {k: pipe(prompt=p_corps[k], image=portrait, generator=gen(), **common).images[0] for k in ('surpoids', 'actuel', 'athletique')}
         return portrait, corps
 else:
-    def generate_all(selfie, sex, sheet):
-        colours = {'portrait': (230, 90, 70), 'surpoids': (200, 140, 60), 'actuel': (120, 160, 90), 'athletique': (70, 120, 200)}
-        imgs = {k: Image.new('RGB', (recette.SIZE, recette.SIZE), c) for k, c in colours.items()}
-        time.sleep(0.2)
-        return imgs['portrait'], {k: imgs[k] for k in ('surpoids', 'actuel', 'athletique')}
-
-
-def to_b64(img):
-    buf = io.BytesIO()
-    img.save(buf, format='PNG')
-    return base64.b64encode(buf.getvalue()).decode('ascii')
+    generate_all = api.stub_generate_all
 
 
 def caricature(selfie_b64, sex='m', sheet_json=''):
     """Point d'entrée de l'API (api_name « caricature »). Retourne une chaîne JSON, jamais de résultat partiel."""
-    t = time.time()
-    try:
-        if sex not in ('m', 'f'):
-            raise ValueError('sex doit valoir "m" ou "f"')
-        raw = base64.b64decode(selfie_b64 or '', validate=True)
-        if not raw or len(raw) > MAX_PHOTO:
-            raise ValueError('photo absente ou trop lourde')
-        selfie = Image.open(io.BytesIO(raw)).convert('RGB')
-        selfie.thumbnail((768, 768))
-        try:
-            sheet = json.loads(sheet_json) if sheet_json else None
-        except ValueError:
-            sheet = None
-        portrait, corps = generate_all(selfie, sex, sheet)
-        limites = list(recette.LIMITES) + (['SIMULATION : aplats de couleur, aucun modèle chargé.'] if STUB else [])
-        return json.dumps({'ok': True, 'portrait': to_b64(portrait), 'corps': {k: to_b64(v) for k, v in corps.items()},
-                           'report': {'limites': limites, 'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}})
-    except Exception as e:  # message lisible pour l'app, jamais de trace
-        return json.dumps({'ok': False, 'error': str(e)[:200]})
+    return json.dumps(api.caricature_dict(selfie_b64, sex, sheet_json, generate_all, STUB))
 
 
 def caricature_ui(selfie, sex):

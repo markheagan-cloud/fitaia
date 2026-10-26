@@ -6,7 +6,8 @@
  * reste utilisable, et le perso apparaît partout dès qu'il est prêt. Les quatre PNG sont enregistrés sur le téléphone.
  *
  * Deux serveurs possibles, même résultat :
- *  - EXPO_PUBLIC_CARICATURE_SPACE : Space Hugging Face (hero3d/caricature/space, ZeroGPU gratuit, < 1 min) ;
+ *  - EXPO_PUBLIC_CARICATURE_URL : service Modal (hero3d/caricature/space/modal_app.py, une requête JSON, < 1 min) ;
+ *  - EXPO_PUBLIC_CARICATURE_SPACE : Space Hugging Face (hero3d/caricature/space, ZeroGPU gratuit, quota 5 min/jour) ;
  *  - EXPO_PUBLIC_CARICATURE_ENDPOINT : serveur local sur le PC (hero3d/caricature/serve_caricature.py, port 8791).
  * Sans aucun des deux, `caricatureConfigured` est faux et l'app le dit : aucun résultat simulé.
  */
@@ -15,16 +16,18 @@ import { File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import type { AvatarBase } from '@/avatar/identity';
 import { runServerJob, type JobFetch } from '@/avatar/avatar3dJob';
+import { callDirect } from '@/avatar/directCall';
 import { base64ToBytes, callGradio, type GradioFetch } from '@/avatar/gradioCall';
 import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
 
 const ENDPOINT = (process.env.EXPO_PUBLIC_CARICATURE_ENDPOINT ?? '').replace(/\/+$/, '');
 const SPACE = (process.env.EXPO_PUBLIC_CARICATURE_SPACE ?? '').replace(/\/+$/, '');
+const URL_DIRECT = (process.env.EXPO_PUBLIC_CARICATURE_URL ?? '').trim();
 const TOKEN = process.env.EXPO_PUBLIC_CARICATURE_TOKEN ?? '';
 
-export const caricatureConfigured = SPACE.length > 0 || ENDPOINT.length > 0;
-/** D'où vient le dessin : Space Hugging Face en priorité, sinon le serveur local. */
-export const caricatureSource: 'space' | 'local' | 'none' = SPACE ? 'space' : ENDPOINT ? 'local' : 'none';
+export const caricatureConfigured = URL_DIRECT.length > 0 || SPACE.length > 0 || ENDPOINT.length > 0;
+/** D'où vient le dessin : service direct (Modal) en priorité, puis Space Hugging Face, sinon le serveur local. */
+export const caricatureSource: 'direct' | 'space' | 'local' | 'none' = URL_DIRECT ? 'direct' : SPACE ? 'space' : ENDPOINT ? 'local' : 'none';
 
 export type { Caricature } from '@/avatar/caricature';
 
@@ -89,10 +92,12 @@ export async function createCaricature(selfieUri: string, base: AvatarBase, shee
   if (!caricatureConfigured) throw new Error('La création du perso à ton image n’est pas encore disponible.');
   const photo = await selfieJpegBase64(selfieUri);
   const headers: Record<string, string> = TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {};
-  if (SPACE) {
+  if (URL_DIRECT || SPACE) {
     onState?.('running');
     const id = String(Date.now().toString(36)) + Math.random().toString(36).slice(2, 8);
-    const json = await callGradio(SPACE, 'caricature', [photo, base, JSON.stringify(sheet ?? {})], { fetch: fetch as unknown as GradioFetch, headers, signal });
+    const json = URL_DIRECT
+      ? await callDirect(URL_DIRECT, { photo, sex: base, sheet: sheet ?? {} }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 })
+      : await callGradio(SPACE, 'caricature', [photo, base, JSON.stringify(sheet ?? {})], { fetch: fetch as unknown as GradioFetch, headers, signal });
     const r: CaricatureJobResult | null = finishedSpaceCaricature(json, id);
     if (!r) throw new Error('Réponse incomplète du serveur de dessin.');
     onState?.('saving');
