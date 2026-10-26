@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { ImageSourcePropType, ImageStyle, StyleProp, ViewStyle } from 'react-native';
+import { ImageStyle, StyleProp, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useBody, useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
 import { previewImage } from '@/data/character';
 import { BODY_STAGES, sheetMatchesHero, stageIndex } from './bodyStages';
+import { heroSourceFor, type HeroChoice } from './heroSource';
 import { avatarBase, defaultSheetFor, type AvatarBase } from './identity';
 
 /** Base du perso (homme / femme), la même pour la 2D et la 3D. */
@@ -26,29 +27,34 @@ export function useHeroStage(): number | null {
   return stageIndex(body.tier);
 }
 
-/** Image du perso actuellement affichée (même règle partout : Accueil, Mon perso, Communauté). */
-export function useHeroSource(): { source: ImageSourcePropType; label: string } {
+/** Image du perso actuellement affichée (même règle partout : Accueil, Mon perso, Communauté), voir heroSource.ts. */
+export function useHeroSource(): HeroChoice {
   const skin = useEquippedSkin();
   const avatar = useGame((s) => s.avatar);
+  const avatar3d = useGame((s) => s.avatar3d);
   const ready = useGame((s) => s.characterReady);
   const sheet = useGame((s) => s.character);
   const stage = useHeroStage();
   const base = useAvatarBase();
-  const label = 'Ton perso en tenue ' + skin.name;
-  if (avatar && avatar.outfit === skin.id) return { source: { uri: avatar.uri }, label };
-  // tenue de départ : le corps rendu par l'usine, au palier atteint (départ, en route, objectif)
-  if (stage !== null) return { source: BODY_STAGES[stage].img, label: 'Ton perso, étape ' + BODY_STAGES[stage].label.toLowerCase() };
-  if (ready) return { source: previewImage(sheet), label };
-  // les illustrations de tenue montrent un homme : une femme voit sa base réaliste, pas un autre personnage
-  if (base === 'f') return { source: previewImage(defaultSheetFor('f')), label: 'Ton perso' };
-  return { source: skin.img, label };
+  return heroSourceFor({
+    base,
+    avatar3d,
+    drawing: avatar,
+    skin,
+    stage: stage === null ? null : BODY_STAGES[stage],
+    ready,
+    sheet,
+    previewImage,
+    defaultSheetFor,
+  });
 }
 
 /**
  * Le perso affiché partout (Accueil, Mon perso) :
- * 1) dessin IA « HD » s'il existe pour la tenue équipée ;
- * 2) sinon le rendu réaliste le plus proche de la fiche (créateur validé) ;
- * 3) sinon l'illustration par défaut de la tenue.
+ * 1) le portrait de l'avatar 3D personnel (selfie) s'il existe ;
+ * 2) le dessin IA « HD » s'il existe pour la tenue équipée ;
+ * 3) sinon le rendu réaliste le plus proche de la fiche (créateur validé) ;
+ * 4) sinon l'illustration par défaut de la tenue.
  */
 export function HeroAvatar({ width, height, style, idle = true }: { width: number; height: number; style?: StyleProp<ViewStyle & ImageStyle>; idle?: boolean }) {
   const imgStyle = style as StyleProp<ImageStyle>;

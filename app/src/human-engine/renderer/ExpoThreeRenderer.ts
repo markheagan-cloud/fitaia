@@ -6,7 +6,7 @@
  * (corps, caméra) — c'est le mode prévu en production pour économiser la batterie.
  */
 import * as THREE from 'three';
-import type { ExpoWebGLRenderingContext } from 'expo-gl';
+import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { Platform } from 'react-native';
 import { now, type FitaiaHumanEngine } from '../core/FitaiaHumanEngine';
 
@@ -270,6 +270,40 @@ export class ExpoThreeRenderer {
   private baseY = 0;
 
   /**
+   * Portrait du perso : vue de face légèrement tournée, une image dessinée puis lue dans le tampon GL (PNG).
+   * Le point de vue de la personne est rétabli juste après. Sur le téléphone : fichier temporaire (file:) ;
+   * sur le web : image en mémoire (data:). Sert à montrer le même avatar personnel sur Accueil, Mon perso, Communauté.
+   */
+  async snapshot(): Promise<string> {
+    const keep = { yaw: this.yaw, pitch: this.pitch, distance: this.distance, scale: this.avatar?.scale.clone(), y: this.avatar?.position.y };
+    this.yaw = 0.22;
+    this.pitch = 0.04;
+    this.distance = Math.max(1.2, keep.distance * 0.8); // corps entier qui remplit le cadre 4:5
+    if (this.avatar) {
+      this.avatar.scale.set(1, 1, 1);
+      this.avatar.position.y = this.baseY;
+    }
+    this.placeCamera();
+    this.engine.update(now());
+    this.renderer.render(this.scene, this.camera);
+    this.gl.endFrameEXP?.();
+    try {
+      const shot = await GLView.takeSnapshotAsync(this.gl, { format: 'png' });
+      if (!shot.uri) throw new Error('Portrait vide.');
+      return await snapshotUri(shot.uri);
+    } finally {
+      this.yaw = keep.yaw;
+      this.pitch = keep.pitch;
+      this.distance = keep.distance;
+      if (this.avatar && keep.scale) {
+        this.avatar.scale.copy(keep.scale);
+        this.avatar.position.y = keep.y ?? this.baseY;
+      }
+      this.placeCamera();
+    }
+  }
+
+  /**
    * Banc d'essai : dessine `frames` images d'affilée en faisant varier le corps à chaque image, puis attend la fin
    * du travail GPU (lecture d'un pixel). Donne le coût moyen réel d'une image, indépendamment du rythme de l'écran
    * (utile quand l'écran est caché ou bridé, et pour comparer GPU / CPU sur iPhone).
@@ -304,4 +338,15 @@ export class ExpoThreeRenderer {
     });
     this.renderer.dispose();
   }
+}
+
+/** expo-gl rend un chemin de fichier sur le téléphone et un Blob sur le web : on normalise en adresse d'image. */
+function snapshotUri(uri: string | Blob): Promise<string> {
+  if (typeof uri === 'string') return Promise.resolve(uri);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Lecture du portrait impossible.'));
+    reader.readAsDataURL(uri);
+  });
 }
