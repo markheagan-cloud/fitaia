@@ -1,0 +1,196 @@
+{
+ "unet": {
+  "class_type": "UnetLoaderGGUF",
+  "inputs": {
+   "unet_name": "flux-2-klein-4b-Q4_K_M.gguf"
+  }
+ },
+ "clip": {
+  "class_type": "CLIPLoaderGGUF",
+  "inputs": {
+   "clip_name": "Qwen3-4B-Q4_K_M.gguf",
+   "type": "flux2"
+  }
+ },
+ "vae": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "flux2-vae.safetensors"
+  }
+ },
+ "pos": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "{{PROMPT}}",
+   "clip": [
+    "clip",
+    0
+   ]
+  }
+ },
+ "neg": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "",
+   "clip": [
+    "clip",
+    0
+   ]
+  }
+ },
+ "img0": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "{{REF0}}"
+  }
+ },
+ "scl0": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "img0",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "megapixels": 0.5,
+   "resolution_steps": 16
+  }
+ },
+ "enc0": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "scl0",
+    0
+   ],
+   "vae": [
+    "vae",
+    0
+   ]
+  }
+ },
+ "rp0": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "pos",
+    0
+   ],
+   "latent": [
+    "enc0",
+    0
+   ]
+  }
+ },
+ "rn0": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "neg",
+    0
+   ],
+   "latent": [
+    "enc0",
+    0
+   ]
+  }
+ },
+ "lat": {
+  "class_type": "EmptyFlux2LatentImage",
+  "inputs": {
+   "width": 512,
+   "height": 512,
+   "batch_size": 1
+  }
+ },
+ "sch": {
+  "class_type": "Flux2Scheduler",
+  "inputs": {
+   "steps": 4,
+   "width": 512,
+   "height": 512
+  }
+ },
+ "smp": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "euler"
+  }
+ },
+ "noi": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": "{{SEED}}"
+  }
+ },
+ "gui": {
+  "class_type": "CFGGuider",
+  "inputs": {
+   "model": [
+    "unet",
+    0
+   ],
+   "positive": [
+    "rp0",
+    0
+   ],
+   "negative": [
+    "rn0",
+    0
+   ],
+   "cfg": 1.0
+  }
+ },
+ "run": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "noi",
+    0
+   ],
+   "guider": [
+    "gui",
+    0
+   ],
+   "sampler": [
+    "smp",
+    0
+   ],
+   "sigmas": [
+    "sch",
+    0
+   ],
+   "latent_image": [
+    "lat",
+    0
+   ]
+  }
+ },
+ "dec": {
+  "class_type": "VAEDecodeTiled",
+  "inputs": {
+   "samples": [
+    "run",
+    0
+   ],
+   "vae": [
+    "vae",
+    0
+   ],
+   "tile_size": 512,
+   "overlap": 64,
+   "temporal_size": 64,
+   "temporal_overlap": 8
+  }
+ },
+ "out": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "dec",
+    0
+   ],
+   "filename_prefix": "{{OUT}}"
+  }
+ }
+}

@@ -41,3 +41,7 @@ __pycache__/
 *.key
 *.mobileprovision
 secrets/
+
+/prive/
+!/hero3d/caricature/workflows/*.json
+/hero3d/caricature/out/
