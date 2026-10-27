@@ -11,6 +11,7 @@ import {
 } from '@/data/character';
 import { fmt } from '@/data/content';
 import { AvatarStep, avatarConfigured, avatarMode, generateAvatar, readSelfieBase64 } from '@/services/avatar';
+import { caricatureConfigured } from '@/services/caricature';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
@@ -58,6 +59,11 @@ export default function Creator() {
   const setCharacter = useGame((s) => s.setCharacter);
   const setAvatar = useGame((s) => s.setAvatar);
   const selfieUri = useGame((s) => s.selfieUri);
+  const caricature = useGame((s) => s.caricature);
+  const caricatureJob = useGame((s) => s.caricatureJob);
+  const createMyCaricature = useGame((s) => s.createMyCaricature);
+  const drawing = caricatureJob.state === 'queued' || caricatureJob.state === 'running' || caricatureJob.state === 'saving';
+  const CARICATURE_STEP: Record<string, string> = { queued: 'Ton perso attend son tour…', running: 'Ton perso se dessine (quelques minutes)…', saving: 'Enregistrement de ton perso…' };
   const say = useGame((s) => s.say);
   const skin = useEquippedSkin();
   const [busy, setBusy] = useState<AvatarStep | null>(null);
@@ -161,13 +167,33 @@ export default function Creator() {
           <Txt size={14} weight="semibold">{busy ? STEP[busy] : 'Dessiner mon perso à mon image'}</Txt>
         </Press>
       ) : null}
-      {avatarMode === 'server' ? (
+      {caricatureConfigured ? (
+        <Press
+          haptic="medium"
+          disabled={drawing}
+          onPress={selfieUri ? () => void createMyCaricature() : () => router.push('/selfie')}
+          style={[styles.ghost, { borderColor: t.ink, backgroundColor: drawing ? t.surf : 'transparent' }]}
+        >
+          <Txt size={14} weight="semibold">
+            {drawing ? CARICATURE_STEP[caricatureJob.state] : !selfieUri ? 'Ajouter mon selfie (ton visage)' : caricature ? 'Redessiner mon perso à mon image' : 'Dessiner mon perso à mon image'}
+          </Txt>
+        </Press>
+      ) : null}
+      {caricatureJob.state === 'failed' && caricatureJob.error ? <Txt size={13} color="#B4342A" style={{ paddingHorizontal: 4 }}>{caricatureJob.error}</Txt> : null}
+      {caricatureConfigured && selfieUri && !drawing ? (
+        <Press onPress={() => router.push('/selfie')} style={[styles.ghost, { borderColor: t.line }]}>
+          <Txt size={14} weight="semibold">Reprendre mon selfie</Txt>
+        </Press>
+      ) : null}
+      {avatarMode === 'server' && !caricatureConfigured ? (
         <Press onPress={() => router.push('/selfie')} style={[styles.ghost, { borderColor: t.line }]}>
           <Txt size={14} weight="semibold">{selfieUri ? 'Reprendre mon selfie' : 'Ajouter mon selfie (ton visage)'}</Txt>
         </Press>
       ) : null}
       <Txt size={12} lineHeight={17} color={t.ink2} style={{ paddingHorizontal: 4 }}>
-        {avatarMode === 'none'
+        {caricatureConfigured
+          ? 'Ton perso est dessiné d’après ton selfie (caricature), puis montré en surpoids, aujourd’hui et athlétique. Ton selfie reste sur ton téléphone.'
+          : avatarMode === 'none'
           ? 'Ta fiche choisit le rendu le plus proche parmi nos persos de base.'
           : avatarMode === 'huggingface'
             ? 'Dessin réaliste à partir de ta fiche (mode développement).'

@@ -2,6 +2,8 @@
  * Quelle image du perso montrer (Accueil, Mon perso, Communauté) : UNE règle, pure, testée (tests/hero-source.test.ts).
  *
  * Ordre :
+ *  0) la CARICATURE personnelle (selfie → portrait validé, voir src/avatar/caricature.ts), si elle existe pour la base
+ *     affichée : c'est le perso à l'image de la personne, celui que Mark a validé ;
  *  1) le portrait pris sur l'avatar 3D PERSONNEL (selfie → GLB, « Mon corps en 3D »), s'il existe pour la base affichée :
  *     c'est la seule image qui est vraiment la personne ; elle passe avant tout le reste ;
  *  2) le dessin IA de la tenue équipée, s'il existe ;
@@ -18,6 +20,7 @@ export type HeroChoice = { source: ImageSourcePropType; label: string; personal:
 
 export type HeroInput = {
   base: AvatarBase;
+  caricature: { base: AvatarBase; portraitUri: string } | null;
   avatar3d: { base: AvatarBase; portraitUri?: string | null } | null;
   drawing: { outfit: string; uri: string } | null;
   skin: { id: string; name: string; img: ImageSourcePropType };
@@ -30,6 +33,9 @@ export type HeroInput = {
 
 export function heroSourceFor(i: HeroInput): HeroChoice {
   const label = 'Ton perso en tenue ' + i.skin.name;
+  if (i.caricature?.portraitUri && i.caricature.base === i.base) {
+    return { source: { uri: i.caricature.portraitUri }, label: 'Ton perso, dessiné depuis ton selfie', personal: true };
+  }
   if (i.avatar3d?.portraitUri && i.avatar3d.base === i.base) {
     return { source: { uri: i.avatar3d.portraitUri }, label: 'Ton avatar 3D, créé depuis ton selfie', personal: true };
   }

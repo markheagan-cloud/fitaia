@@ -8,6 +8,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, AMBER, RED, shadow } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
 import { avatarConfigured, discardSelfie, keepSelfie, prepareSelfie } from '@/services/avatar';
+import { caricatureConfigured } from '@/services/caricature';
 import { Screen } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { Txt } from '@/components/Txt';
@@ -21,6 +22,7 @@ export default function Selfie() {
   const say = useGame((s) => s.say);
   const setSelfieUri = useGame((s) => s.setSelfieUri);
   const existing = useGame((s) => s.selfieUri);
+  const createMyCaricature = useGame((s) => s.createMyCaricature);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [preview, setPreview] = useState<string | null>(null);
@@ -59,7 +61,13 @@ export default function Selfie() {
       const uri = await keepSelfie(tmpRef.current);
       tmpRef.current = null;
       setSelfieUri(uri);
-      say('Selfie enregistré sur ton téléphone', 'ok');
+      if (caricatureConfigured) {
+        // le perso à son image se dessine en arrière-plan (plusieurs minutes) : on ne bloque pas l'écran
+        say('Selfie enregistré. Ton perso se dessine, ça prend quelques minutes', 'ok');
+        void createMyCaricature();
+      } else {
+        say('Selfie enregistré sur ton téléphone', 'ok');
+      }
       router.replace('/creator');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Enregistrement impossible.');
@@ -94,7 +102,7 @@ export default function Selfie() {
 
       <Txt size={13} lineHeight={19} color={t.ink2} style={{ paddingHorizontal: 4, opacity: 0.85 }}>
         Ton selfie reste sur ton téléphone. Il n’est jamais stocké sur nos serveurs : il est envoyé seulement le temps de dessiner ton perso, puis oublié.
-        {!avatarConfigured ? ' Le dessin à partir du selfie n’est pas encore disponible : ton perso garde la base choisie dans le créateur.' : ''}
+        {!avatarConfigured && !caricatureConfigured ? ' Le dessin à partir du selfie n’est pas encore disponible : ton perso garde la base choisie dans le créateur.' : ''}
       </Txt>
 
       <Press haptic="medium" onPress={phase === 'idle' ? capture : phase === 'captured' ? keep : retake} style={[styles.btn, { backgroundColor: LIME }, shadow.btn]}>

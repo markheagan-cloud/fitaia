@@ -7,6 +7,8 @@
 /assets-src/
 /hero/
 /.claude/
+# photos sources et rendus personnels : jamais publiés
+/prive/
 *.zip
 *.plugin
 *.7z
@@ -23,6 +25,9 @@ verification.txt)
 !/hero3d/**/*.bat
 !/hero3d/**/*.ps1
 !/hero3d/**/*.txt
+# serveur caricature : les workflows ComfyUI (JSON) font partie du code, pas les sorties
+!/hero3d/caricature/workflows/*.json
+/hero3d/caricature/out/
 __pycache__/
 
 # --- Teaser Remotion : code seulement ---

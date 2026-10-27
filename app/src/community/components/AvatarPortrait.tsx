@@ -69,7 +69,18 @@ function Me({ size, mode, box }: { size: number; mode: PortraitMode; box: StyleP
   const avatar = useGame((s) => s.avatar);
   const ready = useGame((s) => s.characterReady);
   const mine = useGame((s) => s.avatar3d);
+  const caricature = useGame((s) => s.caricature);
   const base = useAvatarBase();
+  // caricature personnelle (selfie) : portrait carré de face, tête au centre
+  if (caricature && caricature.base === base) {
+    const f = PORTRAIT_FRAME[mode];
+    const w = size * f.zoom;
+    return (
+      <View style={box}>
+        <Image source={{ uri: caricature.portraitUri }} resizeMode="cover" style={{ position: 'absolute', left: (size - w) / 2, top: Math.min(0, (size - w) / 2), width: w, height: w }} accessibilityLabel="Ton perso, dessiné depuis ton selfie" />
+      </View>
+    );
+  }
   // avatar 3D personnel (selfie → GLB) : son portrait partout, dans le même cadrage que les autres membres
   if (mine?.portraitUri && mine.base === base) {
     const f = PORTRAIT_FRAME[mode];
