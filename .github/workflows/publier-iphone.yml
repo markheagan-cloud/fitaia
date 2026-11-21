@@ -1,0 +1,147 @@
+# Publier FITAIA sur iPhone (TestFlight), en un clic, sans Mac ni PC.
+#
+# 1. avatar : met en ligne le service « selfie → caricature » sur Modal (FLUX.2 klein 4B, recette validée),
+#    puis le teste sur des portraits publics de la NASA (domaine public) : planches + chronos en pièce jointe du run.
+#    Aucun selfie privé ne passe ici (le dépôt et ses journaux sont publics).
+# 2. iphone : fabrique l'app iOS chez Expo (EAS Build) avec l'adresse du service intégrée, puis l'envoie
+#    sur App Store Connect → TestFlight. Les certificats Apple sont créés et gardés par Expo grâce à la clé
+#    App Store Connect (aucun mot de passe Apple, aucun code à 2 facteurs).
+#
+# Secrets du dépôt (Settings → Secrets and variables → Actions), jamais dans le code ni dans un chat :
+#   MODAL_TOKEN_ID, MODAL_TOKEN_SECRET          (modal.com → Settings → API Tokens)
+#   EXPO_TOKEN                                  (expo.dev → Account settings → Access tokens)
+#   ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8       (App Store Connect → Utilisateurs et accès → Intégrations → API)
+# Identifiants non secrets dans app/eas.json → submit.production.ios : appleTeamId, ascAppId.
+name: Publier sur iPhone (TestFlight)
+
+on:
+  workflow_dispatch:
+    inputs:
+      etapes:
+        description: 'Quoi faire'
+        type: choice
+        default: tout
+        options: [tout, avatar, iphone]
+
+concurrency:
+  group: publier-iphone
+  cancel-in-progress: false
+
+jobs:
+  avatar:
+    if: inputs.etapes != 'iphone'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      COLUMNS: '300'
+    defaults:
+      run:
+        working-directory: hero3d/caricature/space
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Les clés Modal sont là
+        run: |
+          if [ -z "$MODAL_TOKEN_ID" ] || [ -z "$MODAL_TOKEN_SECRET" ]; then
+            echo "::error::Il manque MODAL_TOKEN_ID ou MODAL_TOKEN_SECRET dans les secrets du dépôt."; exit 1; fi
+      - run: pip install -q modal pillow
+      - name: Jeton de l'app (dérivé de la clé Modal, jamais affiché)
+        run: |
+          TOK=$(printf %s "$MODAL_TOKEN_SECRET" | sha256sum | cut -c1-40)
+          echo "::add-mask::$TOK"
+          echo "FITAIA_CARICATURE_TOKEN=$TOK" >> "$GITHUB_ENV"
+      - name: Secret Modal fitaia-caricature
+        run: modal secret create fitaia-caricature "FITAIA_CARICATURE_TOKEN=$FITAIA_CARICATURE_TOKEN" --force > /dev/null
+      - name: Mise en ligne
+        id: deploy
+        run: |
+          set -o pipefail
+          modal deploy modal_app.py 2>&1 | tee deploy.log
+          URL=$(python -c "import modal; m=modal.Cls.from_name('fitaia-caricature', 'CaricatureModel')(); print(m.caricature.get_web_url())" 2>/dev/null || true)
+          [ -z "$URL" ] && URL=$(tr -d '\n' < deploy.log | grep -oE 'https://[a-z0-9-]+caric[a-z0-9-]*\.modal\.run' | grep -v health | head -1)
+          if [ -z "$URL" ]; then echo "::error::Adresse du service introuvable dans la sortie de modal deploy."; exit 1; fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Service : $URL"
+      - name: Portraits de test (NASA, domaine public, Wikimedia Commons)
+        run: |
+          mkdir -p photos
+          UA='fitaia-ci/1.0 (test de generation; github.com/markheagan-cloud/fitaia)'
+          for pair in m_brian_duffy:Brian_Duffy.jpg f_ellen_ochoa:Ellen_Ochoa.jpg f_yvonne_cagle:Yvonne_Cagle.jpg \
+                      f_mae_jemison:Mae_Carol_Jemison.jpg m_leland_melvin:Leland_Melvin_NASA_portrait.jpg \
+                      m_jose_hernandez:Jose_Hernandez_v2.jpg; do
+            n=${pair%%:*}; f=${pair#*:}
+            curl -sfL -A "$UA" -o "photos/$n.jpg" "https://commons.wikimedia.org/wiki/Special:FilePath/$f?width=800" \
+              && python -c "from PIL import Image; Image.open('photos/$n.jpg').verify()" \
+              && echo "ok $n" || { echo "absent $n"; rm -f "photos/$n.jpg"; }
+          done
+          ls photos
+      - name: Premier vrai test (chrono à froid puis à chaud)
+        run: python test_modal.py "${{ steps.deploy.outputs.url }}" resultats photos/*.jpg
+      - name: Planches et chronos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: avatar-test-nasa
+          path: hero3d/caricature/space/resultats
+          if-no-files-found: ignore
+
+  iphone:
+    needs: avatar
+    if: always() && inputs.etapes != 'avatar' && (needs.avatar.result == 'success' || needs.avatar.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    defaults:
+      run:
+        working-directory: app
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Les clés Expo et Apple sont là
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          manque=""
+          for v in EXPO_TOKEN EXPO_ASC_KEY_ID EXPO_ASC_ISSUER_ID ASC_KEY_P8; do [ -z "${!v}" ] && manque="$manque $v"; done
+          if [ -n "$manque" ]; then echo "::error::Secrets manquants :$manque"; exit 1; fi
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "EXPO_ASC_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+          TEAM=$(node -p "require('./eas.json').submit.production.ios.appleTeamId || ''")
+          ASC=$(node -p "require('./eas.json').submit.production.ios.ascAppId || ''")
+          if [ -z "$TEAM" ] || [ -z "$ASC" ]; then echo "::error::appleTeamId ou ascAppId vide dans app/eas.json"; exit 1; fi
+          echo "EXPO_APPLE_TEAM_ID=$TEAM" >> "$GITHUB_ENV"
+      - run: npm ci --no-audit --no-fund
+      - name: Adresse du service avatar intégrée à l'app
+        env:
+          URL: ${{ needs.avatar.outputs.url }}
+        run: |
+          if [ -z "$URL" ]; then
+            URL=$(node -p "(require('./eas.json').build.production.env || {}).EXPO_PUBLIC_CARICATURE_URL || ''")
+          fi
+          if [ -z "$URL" ]; then echo "::error::Pas d'adresse de service avatar : lance d'abord l'étape avatar."; exit 1; fi
+          TOK=$(printf %s "$MODAL_TOKEN_SECRET" | sha256sum | cut -c1-40)
+          echo "::add-mask::$TOK"
+          node -e "
+            const fs=require('fs');const e=JSON.parse(fs.readFileSync('eas.json','utf8'));
+            e.build.production.env={...(e.build.production.env||{}),EXPO_PUBLIC_CARICATURE_URL:process.argv[1],EXPO_PUBLIC_CARICATURE_TOKEN:process.argv[2]};
+            fs.writeFileSync('eas.json',JSON.stringify(e,null,2));" "$URL" "$TOK"
+          echo "Service avatar : $URL"
+      - name: Projet Expo (créé ou relié)
+        run: npx --yes eas-cli@latest init --non-interactive --force
+      - name: Fabrication iOS chez Expo puis envoi sur TestFlight
+        run: npx --yes eas-cli@latest build --platform ios --profile production --non-interactive --auto-submit --wait

@@ -1,10 +1,13 @@
 # Politique de confidentialité — FITAIA
 
-Dernière mise à jour : 2 octobre 2026
+Dernière mise à jour : 21 novembre 2026
 
 ## Ce que FITAIA enregistre
-- Ton profil (sexe, âge, taille, poids, objectif, activité), ton journal (repas, pesées, défis, crédits) et ton perso sont stockés **uniquement sur ton téléphone** (stockage local de l'app). Aucune donnée n'est envoyée à nos serveurs tant que tu n'actives pas une fonction en ligne.
-- Ton selfie reste sur ton téléphone. Il n'est transmis que si tu demandes un « dessin HD » de ton perso, le temps du dessin, puis supprimé du serveur ; seul le dessin est conservé (stockage privé, lien signé à durée limitée).
+- Ton profil (sexe, âge, taille, poids, objectif, activité), ton journal (repas, pesées, défis, crédits) et ton perso sont stockés **uniquement sur ton téléphone** (stockage local de l'app). FITAIA n'a pas de compte utilisateur et ne garde aucune de ces données sur un serveur.
+
+## Ton selfie
+- Ton selfie sert uniquement à dessiner ton perso. Il est envoyé, chiffré (HTTPS), à notre service de dessin hébergé chez Modal (États-Unis), gardé en mémoire le temps du dessin, puis effacé : il n'est jamais écrit sur disque ni conservé.
+- Les dessins de ton perso reviennent sur ton téléphone et y restent. Tu peux les effacer à tout moment en refaisant ton perso ou en supprimant l'app.
 
 ## Caméra et mouvement
 - La caméra sert à compter tes répétitions (analyse sur l'appareil, aucune image n'est enregistrée ni envoyée), à scanner les codes-barres et à prendre ton selfie.
@@ -12,11 +15,11 @@ Dernière mise à jour : 2 octobre 2026
 
 ## Services tiers
 - Open Food Facts (base ouverte, licence ODbL) : les recherches d'aliments et les codes-barres sont envoyés à openfoodfacts.org pour obtenir les valeurs nutritionnelles. Aucun identifiant personnel n'est transmis.
-- Paiements : gérés par Apple (App Store) ou Google (Play) via RevenueCat. FITAIA ne voit jamais tes données bancaires.
-- Pas de publicité, pas de revente de données, pas de traqueurs publicitaires.
+- Modal (modal.com) : héberge le service de dessin du perso décrit plus haut.
+- Pas d'achat dans l'app, pas de publicité, pas de revente de données, pas de traqueur publicitaire.
 
 ## Tes droits
-- Tu peux supprimer toutes tes données en désinstallant l'app. Pour toute question : support@fitaia.app (adresse à activer avant publication).
+- Tu peux supprimer toutes tes données en supprimant l'app. Pour toute question : {{EMAIL_SUPPORT}}.
 - FITAIA ne s'adresse pas aux enfants de moins de 13 ans.
 
 ## Avertissement santé
