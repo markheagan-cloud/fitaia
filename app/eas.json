@@ -18,12 +18,9 @@
   "submit": {
     "production": {
       "ios": {
-        "_comment": "À REMPLIR après création de l'app dans App Store Connect (jamais inventé)",
-        "ascAppId": "",
         "appleTeamId": "DDWD67FKMU"
       },
       "android": {
-        "_comment": "Clé de service Google Play à fournir — chemin hors du repo",
         "serviceAccountKeyPath": "../secrets/google-play-service-account.json",
         "track": "internal"
       }
