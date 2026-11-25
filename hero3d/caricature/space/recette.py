@@ -14,31 +14,31 @@ NOMS = ('portrait', 'surpoids', 'actuel', 'athletique')
 # (« Redraw this exact man… »), gardent la peau, les cheveux et la barbe de la photo.
 PORTRAIT = ('Redraw this exact {qui} as a cool caricature painting: bigger head, small shoulders, soft painted shading, '
             'no black outlines, {couleurs}plain cream background, head and shoulders, front view.')
-MEME = 'Same character, same face, same hair, {barbe}same painted caricature style.'
+MEME = 'Same character, same face, same hair, {barbe}same painted caricature style, soft coloured edges, no black outlines.'
 CORPS = {
     'surpoids': 'Show {lui} from head to waist with an overweight body: big round belly, heavy chest, thick arms, rounder '
                 'cheeks, red t-shirt. Big head, plain cream background.',
-    'actuel': 'Show {lui} from head to waist with an average, slightly soft body, red t-shirt. Big head, plain cream background.',
+    'actuel': 'Show {lui} from head to waist with {silhouette}, red t-shirt. Big head, plain cream background.',
     'athletique': 'Show {lui} from head to waist with an athletic fit body: broad shoulders, defined chest and arms, flat '
                   'stomach, fitted red t-shirt. Big head, plain cream background.',
 }
 # Tenues de la boutique (créations FITAIA), portées par le perso de la personne. Clés = identifiants de SKINS côté app.
 TENUES = {
-    'origine': 'Full body, relaxed standing pose, big head on a small body. {Il} wears the starter outfit: red crew-neck '
+    'origine': 'Full body, relaxed standing pose, very big head, one third of the figure, on a small body. {Il} wears the starter outfit: red crew-neck '
                't-shirt, black jogging pants with a lime side stripe, white sneakers. Plain cream background.',
-    'cargo': 'Full body, standing confident pose, big head on a small body. {Il} wears a streetwear outfit: olive bomber '
+    'cargo': 'Full body, standing confident pose, very big head, one third of the figure, on a small body. {Il} wears a streetwear outfit: olive bomber '
              'jacket with orange lining, black hoodie, sand cargo pants with straps, chunky white sneakers. Soft grey-blue '
              'background.',
-    'olive': 'Full body, dynamic walking pose, big head on a small body. {Il} wears a techwear outfit: olive waterproof '
+    'olive': 'Full body, dynamic walking pose, very big head, one third of the figure, on a small body. {Il} wears a techwear outfit: olive waterproof '
              'shell jacket with taped seams, black utility vest, tapered black pants, trail running shoes, small chest '
              'bag. Deep green background with a soft light halo.',
-    'creme': 'Full body, hands in pockets, big head on a small body. {Il} wears an epic designer outfit: cream oversized '
+    'creme': 'Full body, hands in pockets, very big head, one third of the figure, on a small body. {Il} wears an epic designer outfit: cream oversized '
              'varsity jacket with violet sleeves and chenille patches, cream wide pants, violet high-top sneakers, '
              'headphones around the neck. Violet background with a soft glow behind {lui}.',
-    'titane': 'Full body, heroic pose, big head on a small body. {Il} wears a legendary futuristic sports suit: brushed '
+    'titane': 'Full body, heroic pose, very big head, one third of the figure, on a small body. {Il} wears a legendary futuristic sports suit: brushed '
               'titanium armour plates over a black bodysuit, glowing cyan neon lines, glowing visor pushed up on the '
               'forehead, neon-soled sneakers. Dark blue background with cyan glow behind {lui}.',
-    'atelier': 'Full body, arms crossed, big head on a small body. {Il} wears a legendary luxury outfit: black tailored long '
+    'atelier': 'Full body, arms crossed, very big head, one third of the figure, on a small body. {Il} wears a legendary luxury outfit: black tailored long '
                'coat with gold embroidery, black turtleneck, gold chain, black trousers, black and gold sneakers. Dark '
                'background with golden light rays behind {lui}.',
 }
@@ -51,6 +51,29 @@ LIMITES = [
 ]
 
 
+# Silhouette du corps « actuel » et des tenues d'après la taille et le poids du profil (IMC). Illustration, pas une mesure.
+SILHOUETTES = [
+    (18.5, 'a slim, thin body with narrow shoulders'),
+    (23.0, 'a lean, normal body'),
+    (27.0, 'an average, slightly soft body'),
+    (31.0, 'a heavyset body with a visible belly and thick arms'),
+    (36.0, 'an overweight body with a big round belly, heavy chest and thick arms'),
+    (999.0, 'a very overweight body with a very large round belly, heavy chest, thick arms and rounder cheeks'),
+]
+
+
+def silhouette(sheet):
+    """Description du corps d'après {heightCm, weightKg} ; corps moyen si les mesures manquent ou sont aberrantes."""
+    try:
+        h, w = float(sheet.get('heightCm')) / 100.0, float(sheet.get('weightKg'))
+        if not (1.2 <= h <= 2.3 and 30 <= w <= 300):
+            raise ValueError
+        imc = w / (h * h)
+    except (TypeError, ValueError, AttributeError):
+        return 'an average, slightly soft body'
+    return next(d for lim, d in SILHOUETTES if imc < lim)
+
+
 def _mots(sex):
     f = sex == 'f'
     return dict(qui='woman' if f else 'man', lui='her' if f else 'him', Il='She' if f else 'He',
@@ -58,19 +81,18 @@ def _mots(sex):
 
 
 def prompts(sex, sheet=None):
-    """(prompt du portrait, {corps: prompt}). La fiche ne sert que pour la couleur des cheveux et de la peau, si donnée."""
+    """(prompt du portrait, {corps: prompt}). Le visage, la peau et les cheveux viennent de la photo seule ; la fiche ne
+    sert qu'à la silhouette du corps « actuel » (taille et poids du profil)."""
     sheet = sheet if isinstance(sheet, dict) else {}
     m = _mots(sex)
-    cheveux = CHEVEUX.get(str(sheet.get('hairColor', '')).lower(), '')
-    peau = PEAU.get(str(sheet.get('skin', '')).lower(), '')
-    couleurs = ''.join([f'{peau} skin, ' if peau else '', f'{cheveux} hair, ' if cheveux else ''])
-    portrait = PORTRAIT.format(qui=m['qui'], couleurs=couleurs)
+    portrait = PORTRAIT.format(qui=m['qui'], couleurs='')
     meme = MEME.format(barbe=m['barbe'])
-    return portrait, {k: meme + ' ' + v.format(**m) for k, v in CORPS.items()}
+    return portrait, {k: meme + ' ' + v.format(silhouette=silhouette(sheet), **m) for k, v in CORPS.items()}
 
 
-def prompts_tenues(sex):
-    """{tenue: prompt} : chaque tenue de la boutique portée par le perso (image de référence = son portrait)."""
+def prompts_tenues(sex, sheet=None):
+    """{tenue: prompt} : chaque tenue de la boutique portée par le perso (image de référence = son portrait), à sa silhouette."""
     m = _mots(sex)
     meme = MEME.format(barbe=m['barbe'])
-    return {k: meme + ' ' + v.format(**m) for k, v in TENUES.items()}
+    corps = ' ' + m['Il'] + ' has ' + silhouette(sheet if isinstance(sheet, dict) else {}) + '.'
+    return {k: meme + corps + ' ' + v.format(**m) for k, v in TENUES.items()}

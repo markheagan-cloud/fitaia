@@ -110,7 +110,7 @@ export async function createCaricature(selfieUri: string, base: AvatarBase, shee
     // valable et la boutique garde ses images de présentation : jamais de tenue à moitié.
     if (URL_DIRECT) {
       try {
-        const tj = await callDirect(URL_DIRECT, { portrait: r.portrait, sex: base }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 });
+        const tj = await callDirect(URL_DIRECT, { portrait: r.portrait, sex: base, sheet: sheet ?? {} }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 });
         const tenues = finishedOutfits(tj);
         if (tenues) {
           const outfits: Record<string, string> = {};

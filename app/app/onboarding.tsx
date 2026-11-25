@@ -1,3 +1,4 @@
+import { caricatureConfigured } from '@/services/caricature';
 import React, { useState } from 'react';
 import { View, StyleSheet, TextInput, ScrollView, KeyboardAvoidingView, Platform, Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -71,7 +72,8 @@ export default function Onboarding() {
     if (step < 2) setStep(step + 1);
     else {
       finish(profile, K);
-      router.replace('/creator');
+      // dès l'arrivée : le selfie à la caméra, pour que le perso soit celui de la personne (puis le créateur)
+      router.replace(caricatureConfigured ? '/selfie' : '/creator');
     }
   };
   const canNext = step === 0 ? ok1 : step === 1 ? ok2 : true;

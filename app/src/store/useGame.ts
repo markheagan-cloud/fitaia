@@ -430,7 +430,9 @@ export const useGame = create<GameState>()(
           const base = avatarBase(s.profile.sex, { appearance: s.character.appearance }, s.characterReady);
           set({ caricatureJob: { state: 'queued', error: '' } });
           try {
-            const c = await createCaricature(selfie, base, s.character as unknown as Record<string, unknown>, (state) => set({ caricatureJob: { state, error: '' } }));
+            // taille et poids du profil : le corps « actuel » et les tenues suivent la silhouette de la personne
+            const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
+            const c = await createCaricature(selfie, base, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, (state) => set({ caricatureJob: { state, error: '' } }));
             get().setCaricature(c);
             set({ caricatureJob: { state: 'idle', error: '' } });
             get().say('Ton perso à ton image est prêt', 'ok');

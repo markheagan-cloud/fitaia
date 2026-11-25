@@ -60,13 +60,13 @@ class CaricatureModel:
         corps = {k: self.pipe(prompt=p_corps[k], image=portrait, generator=gen(), **common).images[0] for k in ('surpoids', 'actuel', 'athletique')}
         return portrait, corps
 
-    def generate_tenues(self, portrait, sex):
+    def generate_tenues(self, portrait, sex, sheet=None):
         import recette
 
         torch = self.torch
         common = dict(height=recette.SIZE, width=recette.SIZE, guidance_scale=recette.GUIDANCE, num_inference_steps=recette.STEPS)
         return {k: self.pipe(prompt=p, image=portrait, generator=torch.Generator(device='cuda').manual_seed(recette.SEED), **common).images[0]
-                for k, p in recette.prompts_tenues(sex).items()}
+                for k, p in recette.prompts_tenues(sex, sheet).items()}
 
     @modal.fastapi_endpoint(method='POST')
     async def caricature(self, request: Request):
@@ -100,7 +100,7 @@ class CaricatureModel:
         if expected and authorization != 'Bearer ' + expected:
             return {'ok': False, 'error': 'jeton refusé'}
         if body.get('portrait'):  # second appel de l'app : les tenues de la boutique sur le perso déjà dessiné
-            return api.tenues_dict(body.get('portrait', ''), body.get('sex', 'm'), self.generate_tenues)
+            return api.tenues_dict(body.get('portrait', ''), body.get('sex', 'm'), self.generate_tenues, body.get('sheet'))
         return api.caricature_dict(body.get('photo', ''), body.get('sex', 'm'), body.get('sheet'), self.generate_all)
 
 
