@@ -7,6 +7,7 @@ import { CUR_NAMES, RARITY, RarityKey, fmt } from '@/data/content';
 import { useGame } from '@/store/useGame';
 import { useEco } from '@/store/useEco';
 import { displayableOutfits, skinOf } from '@/avatar/outfits';
+import { useAvatarBase } from '@/avatar/HeroAvatar';
 import { buildParcours } from '@/progression/parcours';
 import { STAGES } from '@/progression/progressionRules';
 import type { CosmeticItem, Rarity } from '@/inventory/types';
@@ -23,6 +24,10 @@ export default function Boutique() {
   const a = alert(t);
   const say = useGame((s) => s.say);
   const { ready, error, account, statuses, catalog, inventory, wallet, buy, equip } = useEco();
+  // tenues dessinées sur le perso de la personne (selfie) : c'est elles qu'on montre, pas un mannequin
+  const base = useAvatarBase();
+  const caricature = useGame((s) => s.caricature);
+  const mine = caricature && caricature.base === base ? caricature.outfits : undefined;
   const [busy, setBusy] = useState<string | null>(null);
   const outfits = useMemo(() => displayableOutfits(catalog), [catalog]);
   const parcours = useMemo(() => (account ? buildParcours(account, statuses, STAGES, catalog) : null), [account, statuses, catalog]);
@@ -106,7 +111,7 @@ export default function Boutique() {
               style={[styles.skin, { backgroundColor: t.surf, borderColor: eq ? LIME : 'transparent', opacity: busy && busy !== item.id ? 0.6 : 1 }, shadow.card]}
             >
               <View style={styles.skinImgWrap}>
-                <Image source={sk.img} style={styles.skinImg} resizeMode="cover" />
+                <Image source={mine?.[sk.id] ? { uri: mine[sk.id] } : sk.img} style={styles.skinImg} resizeMode="cover" />
                 <View style={[styles.skinBar, { backgroundColor: r.c }]} />
               </View>
               <View style={{ gap: 2, paddingHorizontal: 6, paddingBottom: 6 }}>
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   skin: { width: '48%', flexGrow: 1, borderRadius: 24, borderWidth: 2, padding: 6, gap: 8 },
-  skinImgWrap: { height: 164, borderRadius: 18, overflow: 'hidden', backgroundColor: '#DAD7D1' },
-  skinImg: { width: '100%', height: 164 },
+  skinImgWrap: { height: 190, borderRadius: 18, overflow: 'hidden', backgroundColor: '#DAD7D1' },
+  skinImg: { width: '100%', height: 190 },
   skinBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 4 },
 });

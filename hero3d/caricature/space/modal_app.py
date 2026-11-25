@@ -12,6 +12,7 @@ Modal affiche l'adresse https://<espace>--fitaia-caricature-caricaturemodel-cari
     EXPO_PUBLIC_CARICATURE_TOKEN=<même valeur que le secret Modal FITAIA_CARICATURE_TOKEN, facultatif>
 
 API : POST <url>  {"photo": "<jpeg base64>", "sex": "m"|"f", "sheet": {...}}  → même JSON que le Space (api.py).
+      POST <url>  {"portrait": "<png base64>", "sex": "m"|"f"}  → {"ok", "tenues": {origine, cargo, olive, creme, titane, atelier}}.
 Le selfie reste en mémoire le temps de la requête, rien n'est écrit sur disque.
 """
 import os
@@ -37,7 +38,7 @@ volume = modal.Volume.from_name('fitaia-hf-cache', create_if_missing=True)
 secrets = [modal.Secret.from_name('fitaia-caricature', required_keys=[])] if os.environ.get('FITAIA_MODAL_SECRET', '1') == '1' else []
 
 
-@app.cls(gpu='L4', volumes={CACHE: volume}, secrets=secrets, timeout=600, scaledown_window=300)
+@app.cls(gpu=['L4', 'A10G'], volumes={CACHE: volume}, secrets=secrets, timeout=600, scaledown_window=60)
 class CaricatureModel:
     @modal.enter()
     def load(self):
@@ -59,6 +60,14 @@ class CaricatureModel:
         corps = {k: self.pipe(prompt=p_corps[k], image=portrait, generator=gen(), **common).images[0] for k in ('surpoids', 'actuel', 'athletique')}
         return portrait, corps
 
+    def generate_tenues(self, portrait, sex):
+        import recette
+
+        torch = self.torch
+        common = dict(height=recette.SIZE, width=recette.SIZE, guidance_scale=recette.GUIDANCE, num_inference_steps=recette.STEPS)
+        return {k: self.pipe(prompt=p, image=portrait, generator=torch.Generator(device='cuda').manual_seed(recette.SEED), **common).images[0]
+                for k, p in recette.prompts_tenues(sex).items()}
+
     @modal.fastapi_endpoint(method='POST')
     async def caricature(self, request: Request):
         body = await request.json()
@@ -66,12 +75,32 @@ class CaricatureModel:
             return {'ok': False, 'error': 'corps JSON attendu'}
         return self._handle(body, request.headers.get('authorization', ''))
 
+    @modal.method()
+    def direct(self, body: dict, authorization: str = ''):
+        """Même traitement que l'adresse web, appelable par le client Modal (tests sans accès à *.modal.run)."""
+        return self._handle(body, authorization)
+
+    @modal.method()
+    def essai(self, photos_b64: list, prompts: list, size: int = 512, steps: int = 4, seed: int = 11):
+        """Mise au point de la recette : une image par prompt, à partir des photos de référence données."""
+        import base64, io
+        from PIL import Image
+        refs = [Image.open(io.BytesIO(base64.b64decode(p))).convert('RGB') for p in photos_b64]
+        out = []
+        for p in prompts:
+            g = self.torch.Generator(device='cuda').manual_seed(seed)
+            im = self.pipe(prompt=p, image=refs if len(refs) > 1 else refs[0], generator=g, height=size, width=size, guidance_scale=1.0, num_inference_steps=steps).images[0]
+            b = io.BytesIO(); im.save(b, format='PNG'); out.append(base64.b64encode(b.getvalue()).decode())
+        return out
+
     def _handle(self, body, authorization):
         import api
 
         expected = os.environ.get('FITAIA_CARICATURE_TOKEN', '')
         if expected and authorization != 'Bearer ' + expected:
             return {'ok': False, 'error': 'jeton refusé'}
+        if body.get('portrait'):  # second appel de l'app : les tenues de la boutique sur le perso déjà dessiné
+            return api.tenues_dict(body.get('portrait', ''), body.get('sex', 'm'), self.generate_tenues)
         return api.caricature_dict(body.get('photo', ''), body.get('sex', 'm'), body.get('sheet'), self.generate_all)
 
 

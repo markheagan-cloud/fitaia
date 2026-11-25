@@ -18,7 +18,7 @@ import type { AvatarBase } from '@/avatar/identity';
 import { runServerJob, type JobFetch } from '@/avatar/avatar3dJob';
 import { callDirect } from '@/avatar/directCall';
 import { base64ToBytes, callGradio, type GradioFetch } from '@/avatar/gradioCall';
-import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
+import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedOutfits, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
 
 const ENDPOINT = (process.env.EXPO_PUBLIC_CARICATURE_ENDPOINT ?? '').replace(/\/+$/, '');
 const SPACE = (process.env.EXPO_PUBLIC_CARICATURE_SPACE ?? '').replace(/\/+$/, '');
@@ -56,7 +56,7 @@ async function savePng(id: string, which: 'portrait' | BodyKey, url: string): Pr
 }
 
 /** Image reçue en base64 (Space) → fichier du téléphone ; sur le web, adresse data: gardée en mémoire. */
-async function saveB64Png(id: string, which: 'portrait' | BodyKey, b64: string): Promise<string> {
+async function saveB64Png(id: string, which: string, b64: string): Promise<string> {
   if (Platform.OS === 'web') return 'data:image/png;base64,' + b64;
   const dest = new File(Paths.document, caricatureFileName(id, which));
   if (dest.exists) dest.delete();
@@ -80,6 +80,7 @@ export function deleteCaricature(c: Caricature | null) {
   if (!c) return;
   deleteDeviceFile(c.portraitUri);
   for (const k of BODY_KEYS) deleteDeviceFile(c.bodies[k]);
+  for (const uri of Object.values(c.outfits ?? {})) deleteDeviceFile(uri);
 }
 
 export type CaricatureProgress = (state: 'queued' | 'running' | 'saving') => void;
@@ -104,7 +105,23 @@ export async function createCaricature(selfieUri: string, base: AvatarBase, shee
     const portrait = await saveB64Png(id, 'portrait', r.portrait);
     const bodies = {} as Record<BodyKey, string>;
     for (const k of BODY_KEYS) bodies[k] = await saveB64Png(id, k, r.bodies[k]);
-    return buildCaricature(r, base, { portrait, bodies });
+    const made = buildCaricature(r, base, { portrait, bodies });
+    // Tenues de la boutique portées par ce perso (service direct seulement). Si ce second appel échoue, le perso reste
+    // valable et la boutique garde ses images de présentation : jamais de tenue à moitié.
+    if (URL_DIRECT) {
+      try {
+        const tj = await callDirect(URL_DIRECT, { portrait: r.portrait, sex: base }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 });
+        const tenues = finishedOutfits(tj);
+        if (tenues) {
+          const outfits: Record<string, string> = {};
+          for (const [k, b64] of Object.entries(tenues)) outfits[k] = await saveB64Png(id, 'tenue-' + k, b64);
+          made.outfits = outfits;
+        }
+      } catch {
+        // tenues indisponibles pour l'instant
+      }
+    }
+    return made;
   }
   // ≈ 10 min sur le PC de test (GTX 1650) ; le serveur refuse au-delà de 20 min
   const r = await runServerJob(ENDPOINT, '/v1/caricature', { photo, sex: base, sheet }, { fetch: fetch as unknown as JobFetch, headers, signal, timeoutMs: 25 * 60_000, pollMs: 5000, onState }, finishedCaricature, 'perso');

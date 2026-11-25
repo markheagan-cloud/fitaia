@@ -163,6 +163,17 @@ function answer(S: GameState, q: string): string {
   );
 }
 
+/** Tenues du perso retrouvées sur le téléphone (celles dont le fichier a disparu sont oubliées). */
+function foundOutfits(o: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!o) return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, uri] of Object.entries(o)) {
+    const f = findDeviceFile(uri);
+    if (f) out[k] = f;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => {
@@ -579,7 +590,7 @@ export const useGame = create<GameState>()(
         const cPortrait = findDeviceFile(c?.portraitUri);
         const cBodies = c ? { surpoids: findDeviceFile(c.bodies.surpoids), actuel: findDeviceFile(c.bodies.actuel), athletique: findDeviceFile(c.bodies.athletique) } : null;
         const caricature = c && cPortrait && cBodies && cBodies.surpoids && cBodies.actuel && cBodies.athletique
-          ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique } }
+          ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique }, outfits: foundOutfits(c.outfits) }
           : null;
         useGame.setState({
           hydrated: true,

@@ -63,7 +63,7 @@ export default function Selfie() {
       setSelfieUri(uri);
       if (caricatureConfigured) {
         // le perso à son image se dessine en arrière-plan (plusieurs minutes) : on ne bloque pas l'écran
-        say('Selfie enregistré. Ton perso se dessine, ça prend quelques minutes', 'ok');
+        say('Selfie enregistré. Ton perso se dessine, il arrive dans moins d’une minute', 'ok');
         void createMyCaricature();
       } else {
         say('Selfie enregistré sur ton téléphone', 'ok');
