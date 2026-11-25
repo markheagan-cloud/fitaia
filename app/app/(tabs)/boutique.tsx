@@ -72,7 +72,7 @@ export default function Boutique() {
           </Txt>
         ) : null}
         <Txt size={13} lineHeight={19} color="#B7BBC2">
-          Tout le jeu est gratuit : défis, niveaux et récompenses ne s’achètent pas. Les tenues, tu les vois portées par ton perso, pas par un mannequin.
+          Défis, niveaux et récompenses sont gratuits. Chaque tenue est dessinée sur ton perso, avec ta tête. Les éditions spéciales se débloquent avec tes Fitcoins.
         </Txt>
       </View>
 
@@ -86,7 +86,7 @@ export default function Boutique() {
           <View key={k} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View style={{ width: 9, height: 9, borderRadius: 3, backgroundColor: RARITY[k].c }} />
             <Txt size={12} color={t.ink2}>
-              {RARITY[k].label + (k === 'epique' || k === 'legendaire' ? ', App Store' : ', en ' + CUR_NAMES[0])}
+              {RARITY[k].label + (k === 'epique' || k === 'legendaire' ? ', édition spéciale' : '')}
             </Txt>
           </View>
         ))}
@@ -101,15 +101,22 @@ export default function Boutique() {
           const eq = inventory?.equipped.FULL_OUTFIT === item.id;
           const price = item.priceFitcoins;
           const showPrice = !eq && !isOwned && price !== null;
+          const special = item.source === 'LIMITED' || item.source === 'STORE';
           const cta = eq ? 'Équipée' : isOwned ? 'Équiper' : item.source === 'STORE' ? 'Bientôt' : price === null ? 'Récompense' : fmt(price) + ' ' + CUR_NAMES[0];
           return (
-            <Press
+            <LinearGradient
               key={item.id}
+              colors={eq ? [LIME, LIME] : special ? ['#FF4FA3', '#FFC93C', '#27E0D0'] : ['transparent', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.frame, special && !eq ? styles.glow : null]}
+            >
+            <Press
               accessibilityLabel={item.name + ', ' + r.label + ', ' + cta}
               onPress={() => act(item)}
               disabled={busy !== null}
               pressScale={0.97}
-              style={[styles.skin, { backgroundColor: t.surf, borderColor: eq ? LIME : 'transparent', opacity: busy && busy !== item.id ? 0.6 : 1 }, shadow.card]}
+              style={[styles.skin, { backgroundColor: t.surf, opacity: busy && busy !== item.id ? 0.6 : 1 }, shadow.card]}
             >
               <View style={styles.skinImgWrap}>
                 {mine?.[sk.id] ? (
@@ -122,6 +129,16 @@ export default function Boutique() {
                   <Image source={sk.img} style={styles.skinImg} resizeMode="cover" />
                 )}
                 <View style={[styles.skinBar, { backgroundColor: r.c }]} />
+                {special ? (
+                  <LinearGradient colors={['#FF4FA3', '#FFC93C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.badge}>
+                    <Txt size={10} weight="bold" color={OBSIDIAN}>ÉDITION SPÉCIALE</Txt>
+                  </LinearGradient>
+                ) : null}
+                {eq ? (
+                  <View style={[styles.badge, { left: undefined, right: 8, backgroundColor: LIME }]}>
+                    <Txt size={10} weight="bold" color={OBSIDIAN}>PORTÉE</Txt>
+                  </View>
+                ) : null}
               </View>
               <View style={{ gap: 2, paddingHorizontal: 6, paddingBottom: 6 }}>
                 <Txt size={14} weight="bold">{item.name}</Txt>
@@ -131,8 +148,10 @@ export default function Boutique() {
                   {busy === item.id ? <ActivityIndicator size="small" color={t.ink2} /> : showPrice ? <CoinIcon size={13} /> : null}
                   <Txt size={13} weight="semibold" num color={eq ? a.limeInk : t.ink} numberOfLines={1}>{showPrice ? fmt(price) : cta}</Txt>
                 </View>
+                {special && !isOwned ? <Txt size={11} color={t.ink2}>Achat en euros : bientôt sur l’App Store</Txt> : null}
               </View>
             </Press>
+            </LinearGradient>
           );
         })}
       </View>
@@ -144,7 +163,10 @@ const styles = StyleSheet.create({
   pass: { borderRadius: 30, padding: 18, gap: 12, overflow: 'hidden', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  skin: { width: '48%', flexGrow: 1, borderRadius: 24, borderWidth: 2, padding: 6, gap: 8 },
+  frame: { width: '48%', flexGrow: 1, borderRadius: 26, padding: 2.5 },
+  glow: { shadowColor: '#FF4FA3', shadowOpacity: 0.45, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
+  skin: { flex: 1, borderRadius: 24, padding: 6, gap: 8 },
+  badge: { position: 'absolute', left: 8, top: 8, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 8 },
   skinImgWrap: { height: 190, borderRadius: 18, overflow: 'hidden', backgroundColor: '#DAD7D1' },
   skinImg: { width: '100%', height: 190 },
   skinBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 4 },

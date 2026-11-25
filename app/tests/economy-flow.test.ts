@@ -57,10 +57,10 @@ runSuite('parcours économique de l’app', async (t) => {
   const again = await repo.economy.spendFitcoins({ itemId: 'outfit_olive', requestId: '33333333-3333-4333-8333-333333333333' });
   t.ok(!again.ok && again.code === 'INSUFFICIENT_FUNDS', 'Olive Tech refusée sans fonds suffisants');
 
-  // tenues App Store : jamais payables en Fitcoins
+  // éditions spéciales : en vente en Fitcoins (décision du 25/11/2026), refusées seulement faute de fonds
   for (const id of ['outfit_creme', 'outfit_titane', 'outfit_atelier']) {
     const r = await repo.economy.spendFitcoins({ itemId: id, requestId: '44444444-4444-4444-8444-44444444444' + id.length });
-    t.ok(!r.ok && r.code === 'NOT_FOR_SALE', id + ' : pas en vente en Fitcoins');
+    t.ok(!r.ok && r.code === 'INSUFFICIENT_FUNDS', id + ' : en vente en Fitcoins, refusée sans fonds suffisants');
   }
 
   // le lendemain (jour serveur Europe/Paris), la récompense quotidienne revient

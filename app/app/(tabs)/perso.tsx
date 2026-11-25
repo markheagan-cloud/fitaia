@@ -14,12 +14,14 @@ import { BODY_STAGES } from '@/avatar/bodyStages';
 import { fmt, fmtKg } from '@/data/content';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
+import { useSound } from '@/services/sound';
 import { Txt } from '@/components/Txt';
 import { CoinIcon } from '@/components/Icons';
 import { previewImage } from '@/data/character';
 
 export default function Perso() {
   const t = useTheme();
+  const sound = useSound();
   const router = useRouter();
   const { width } = useWindowDimensions();
   const heroW = Math.max(0, width - 32 - 8 - 96);
@@ -107,6 +109,27 @@ export default function Perso() {
           </View>
         ))}
       </View>
+
+      <Card style={{ gap: 10 }}>
+        <Txt size={14} weight="bold">Son</Txt>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {([['music', 'Musique'], ['sfx', 'Bruitages'], ['voice', 'Voix du coach']] as const).map(([k, label]) => {
+            const on = sound[k];
+            return (
+              <Press
+                key={k}
+                haptic="medium"
+                accessibilityState={{ selected: on }}
+                onPress={() => sound.set(k, !on)}
+                style={{ flex: 1, height: 46, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', borderColor: on ? LIME : t.line, backgroundColor: on ? LIME : 'transparent' }}
+              >
+                <Txt size={13} weight={on ? 'bold' : 'semibold'} color={on ? OBSIDIAN : t.ink2}>{label}</Txt>
+              </Press>
+            );
+          })}
+        </View>
+        <Txt size={11} color={t.ink2}>Vert = activé. Le bouton silencieux de l’iPhone coupe musique et bruitages, et ta propre musique n’est jamais coupée.</Txt>
+      </Card>
 
       {recent.length ? (
         <Card style={{ gap: 10 }}>

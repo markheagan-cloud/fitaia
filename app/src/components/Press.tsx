@@ -3,6 +3,7 @@ import { Pressable, PressableProps, Platform, StyleProp, ViewStyle } from 'react
 import * as Haptics from 'expo-haptics';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { motion } from '@/theme/tokens';
+import { playSfx } from '@/services/sound';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const ease = Easing.bezier(motion.bezier[0], motion.bezier[1], motion.bezier[2], motion.bezier[3]);
@@ -42,6 +43,7 @@ export function Press({ style, pressScale = 0.95, haptic = 'light', onPress, onP
         if (haptic !== 'none' && Platform.OS !== 'web') {
           Haptics.impactAsync(haptic === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         }
+        if (haptic === 'medium') playSfx('tap');
         onPress?.(e);
       }}
       style={[style, disabled && { opacity: 0.55 }, anim]}

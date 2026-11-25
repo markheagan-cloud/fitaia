@@ -74,6 +74,7 @@ export function GlassTabBar({ state, descriptors, navigation }: GlassTabBarProps
           >
             {Icon ? <Icon color={color} /> : null}
             <Txt size={11} weight={focused ? 'bold' : 'medium'} color={color}>{label}</Txt>
+            <View style={{ width: 18, height: 4, borderRadius: 2, marginTop: 2, backgroundColor: focused ? LIME : 'transparent' }} />
           </Press>
         );
       })}

@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { Toast } from '@/components/Toast';
+import { startMusic } from '@/services/sound';
 import { RewardBurst } from '@/fx/RewardBurst';
 import { CoachSheet } from '@/components/CoachSheet';
 import { useGame } from '@/store/useGame';
@@ -35,6 +36,7 @@ function Root() {
       if (st === 'active') useGame.getState().rollover();
     });
     // l'app peut rester ouverte au passage de minuit : on vérifie le jour chaque minute (rollover ne fait rien le même jour)
+    startMusic();
     const tick = setInterval(() => useGame.getState().rollover(), 60_000);
     return () => {
       clearInterval(tick);

@@ -33,9 +33,10 @@ export const COSMETIC_CATALOG: readonly CosmeticItem[] = [
   item('outfit_origine', 'Origine', 'FULL_OUTFIT', 'COMMON', 'REWARD', null),
   item('outfit_cargo', 'Cargo Urbain', 'FULL_OUTFIT', 'RARE', 'SHOP', 400),
   item('outfit_olive', 'Olive Tech', 'FULL_OUTFIT', 'RARE', 'SHOP', 650),
-  item('outfit_creme', 'Crème Studio', 'FULL_OUTFIT', 'EPIC', 'STORE', null),
-  item('outfit_titane', 'Titane Néon', 'FULL_OUTFIT', 'LEGENDARY', 'STORE', null),
-  item('outfit_atelier', 'Atelier Noir', 'FULL_OUTFIT', 'LEGENDARY', 'STORE', null),
+  item('outfit_creme', 'Crème Studio', 'FULL_OUTFIT', 'EPIC', 'LIMITED', 900),
+  item('outfit_titane', 'Titane Néon', 'FULL_OUTFIT', 'LEGENDARY', 'LIMITED', 1500),
+  item('outfit_atelier', 'Atelier Noir', 'FULL_OUTFIT', 'LEGENDARY', 'LIMITED', 1800),
+  // ↑ Éditions spéciales (LIMITED) : payables en Fitcoins, et en euros quand les achats intégrés Apple seront ouverts.
   // Pièces séparées : en attente de leurs vêtements 3D (non affichées en boutique tant qu'elles n'ont pas de rendu).
   item('outfit_urban_001', 'Tenue Urbaine', 'FULL_OUTFIT', 'COMMON', 'SHOP', 250),
   item('top_tee_graphite', 'Tee Essentiel Graphite', 'TOP', 'COMMON', 'SHOP', 120),

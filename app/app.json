@@ -60,7 +60,13 @@
         }
       ],
       "./plugins/sans-push-distant",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

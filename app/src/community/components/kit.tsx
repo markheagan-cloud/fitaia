@@ -302,7 +302,7 @@ export function Choice<T extends string>({ value, options, onChange }: { value: 
             accessibilityLabel={o.label}
             onPress={() => onChange(o.id)}
             pressScale={0.97}
-            style={[styles.choice, { backgroundColor: on ? t.strong : t.surf, borderColor: on ? t.strong : t.line }, on && shadow.md]}
+            style={[styles.choice, { backgroundColor: on ? t.strong : t.surf, borderColor: on ? LIME : t.line, borderWidth: on ? 2 : 1 }, on && shadow.md]}
           >
             <Icon name={o.icon} size={20} color={on ? LIME : t.ink2} />
             <Txt size={13} weight={on ? 'bold' : 'semibold'} color={on ? t.strongInk : t.ink} style={{ textAlign: 'center' }} numberOfLines={2}>{o.label}</Txt>

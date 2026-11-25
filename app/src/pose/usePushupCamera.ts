@@ -11,6 +11,9 @@ export const poseReady = isPoseAvailable && Platform.OS === 'ios';
  * Pilote le défi « 5 pompes » avec la caméra : branche les événements de pose sur le compteur
  * et le compteur sur le store (reps, retours, validation, crédits).
  */
+import { playSfx, setFocus, speak } from '@/services/sound';
+import { rejectPhrase, repPhrase, startPhrase } from '@/coach/repVoice';
+
 export function usePushupCamera(target = 5) {
   const running = useGame((s) => s.running);
   const pushDone = useGame((s) => s.pushDone);
@@ -23,10 +26,13 @@ export function usePushupCamera(target = 5) {
   const [lastPose, setLastPose] = useState<PoseEvent | null>(null);
 
   useEffect(() => {
+    setFocus(running);
+    if (running) speak(startPhrase);
     if (!running) {
       counter.current.reset();
       rejected.current = 0;
     }
+    return () => setFocus(false);
   }, [running]);
 
   const onPose = useCallback(
@@ -38,10 +44,13 @@ export function usePushupCamera(target = 5) {
       const events = counter.current.update({ shoulder: p.shoulder, elbow: p.elbow, wrist: p.wrist, hip: p.hip, knee: p.knee, ankle: p.ankle });
       for (const x of events) {
         if (x.type === 'rep') {
+          playSfx('rep');
+          speak(repPhrase(x.count, target));
           if (x.count >= target) finish(rejected.current);
           else update(x.count, 'Pompe ' + x.count + ' validée, amplitude complète.', 'good');
         } else if (x.type === 'rejected') {
           rejected.current++;
+          speak(rejectPhrase(rejected.current));
           update(counter.current.count, x.reason, 'bad');
         } else if (x.type === 'tracking') {
           update(counter.current.count, x.ok ? 'Corps détecté, 19 points suivis. Vas-y.' : (x.reason ?? 'Corps non détecté.'), x.ok ? 'info' : 'bad');

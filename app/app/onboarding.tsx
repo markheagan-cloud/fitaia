@@ -34,7 +34,7 @@ function Chips<T extends string>({ options, value, onChange }: { options: { id: 
       {options.map((o) => {
         const on = o.id === value;
         return (
-          <Press key={o.id} accessibilityState={{ selected: on }} onPress={() => onChange(o.id)} style={[styles.chip, { backgroundColor: on ? t.ink : t.surf, borderColor: on ? t.ink : t.line }]}>
+          <Press key={o.id} accessibilityState={{ selected: on }} onPress={() => onChange(o.id)} style={[styles.chip, { backgroundColor: on ? t.ink : t.surf, borderColor: on ? LIME : t.line, borderWidth: on ? 2 : 1 }]}>
             <Txt size={13} weight="semibold" color={on ? t.bg : t.ink}>{o.label}</Txt>
             {o.hint ? <Txt size={11} color={on ? t.track : t.ink2}>{o.hint}</Txt> : null}
           </Press>

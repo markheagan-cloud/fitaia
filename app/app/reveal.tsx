@@ -16,6 +16,7 @@ import { SKINS, RARITY } from '@/data/content';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { scheduleDailyMissions } from '@/services/reminders';
+import { playSfx } from '@/services/sound';
 
 const STEP: Record<string, string> = { queued: 'Envoi de ton selfie…', running: 'Ton perso se dessine…', saving: 'Dernières touches…' };
 
@@ -52,6 +53,7 @@ export default function Reveal() {
   useEffect(() => {
     if (!done) return;
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    playSfx('revelation');
     Animated.sequence([
       Animated.spring(pop, { toValue: 1, friction: 5, tension: 60, useNativeDriver: true }),
       Animated.timing(rise, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),

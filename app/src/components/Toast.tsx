@@ -6,6 +6,7 @@ import { useGame } from '@/store/useGame';
 import { RED, OBSIDIAN, motion, shadow } from '@/theme/tokens';
 import { NAV_H, NAV_BOTTOM } from './GlassTabBar';
 import { Txt } from './Txt';
+import { playSfx } from '@/services/sound';
 
 const ease = Easing.bezier(motion.bezier[0], motion.bezier[1], motion.bezier[2], motion.bezier[3]);
 
@@ -28,6 +29,7 @@ export function Toast() {
 
   useEffect(() => {
     if (toast) {
+      playSfx(toastKind === 'bad' ? 'erreur' : /\+\d/.test(toast) ? 'pieces' : 'succes');
       progress.set(0);
       progress.set(withTiming(1, { duration: motion.toast, easing: ease }));
     } else {
