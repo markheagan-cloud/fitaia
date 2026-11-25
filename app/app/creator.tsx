@@ -29,10 +29,10 @@ function Chips({ options, value, onChange, multi }: { options: Option[]; value: 
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             onPress={() => onChange(o.id)}
-            style={[styles.chip, { backgroundColor: on ? t.ink : t.surf, borderColor: on ? LIME : t.line, borderWidth: on ? 2 : 1 }]}
+            style={[styles.chip, { backgroundColor: on ? LIME : t.surf, borderColor: on ? LIME : t.line, borderWidth: on ? 2 : 1 }]}
           >
             {o.color ? <View style={[styles.swatch, { backgroundColor: o.color, borderColor: on ? t.bg : 'rgba(0,0,0,0.08)' }]} /> : null}
-            <Txt size={13} weight="semibold" color={on ? t.bg : t.ink}>{o.label}</Txt>
+            <Txt size={13} weight="semibold" color={on ? OBSIDIAN : t.ink}>{o.label}</Txt>
           </Press>
         );
       })}
