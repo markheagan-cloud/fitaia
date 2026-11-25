@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { Breathe } from '@/fx/Breathe';
 import { fenetre, forme } from '@/coach/forme';
+import { useWatchTiles } from '@/services/watch';
 import { streak } from '@/store/economy';
 import { challengeTarget } from '@/coach/challengeTarget';
 import { poseReady } from '@/pose/usePushupCamera';
@@ -45,6 +46,7 @@ export default function Home() {
   const pushTotal = useGame((x) => x.pushTotal);
   const jauges = forme(pushTotal, history, streak(history));
   const win = fenetre(pushDone);
+  const montre = useWatchTiles();
   const remainingShown = useCountUp(Math.abs(cal.remaining));
 
   const barColor = cal.over ? RED : cal.near ? AMBER : LIME;
@@ -121,6 +123,21 @@ export default function Home() {
           <Txt size={13} weight="semibold" color={win.open ? OBSIDIAN : t.ink} style={{ flex: 1 }}>{win.text}</Txt>
         </Press>
       </Card>
+
+      {/* Montre connectée : mesures du jour lues dans Santé (rien d'affiché tant qu'il n'y a pas de vraie mesure) */}
+      {montre.length ? (
+        <Card radius={26} style={{ padding: 16, gap: 10 }}>
+          <Txt size={12} weight="semibold" color={t.ink2}>Ta montre aujourd’hui</Txt>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {montre.map((m) => (
+              <View key={m.id} style={{ flex: 1, gap: 2 }}>
+                <Txt size={16} weight="bold" num numberOfLines={1} adjustsFontSizeToFit>{m.value}</Txt>
+                <Txt size={10} color={t.ink2} numberOfLines={1}>{m.label}{m.hint ? ' · ' + m.hint : ''}</Txt>
+              </View>
+            ))}
+          </View>
+        </Card>
+      ) : null}
 
       {/* Calories */}
       <Card radius={26} style={{ paddingTop: 18, paddingHorizontal: 16, paddingBottom: 16, gap: 14 }}>

@@ -13,6 +13,7 @@ Dernière mise à jour : 21 novembre 2026
 - Tes photos de repas servent uniquement à estimer les aliments et les calories. Elles sont envoyées, chiffrées (HTTPS), au même service chez Modal, gardées en mémoire le temps du calcul, puis effacées.
 - La caméra sert à compter tes répétitions (analyse sur l'appareil, aucune image n'est enregistrée ni envoyée), à scanner les codes-barres, à photographier tes repas et à prendre ton selfie.
 - Le podomètre sert au défi « Marcher 6 000 pas ». Les pas ne quittent pas ton téléphone.
+- Si tu coches « Montre connectée », FITAIA lit dans Santé tes pas, calories actives, rythme cardiaque et séances du jour (mesurés par ton Apple Watch) pour les afficher. Lecture seule : rien n'est écrit dans Santé, rien ne quitte ton téléphone, et ces données ne servent ni à la publicité ni à un quelconque profilage.
 
 ## Services tiers
 - Open Food Facts (base ouverte, licence ODbL) : les recherches d'aliments et les codes-barres sont envoyés à openfoodfacts.org pour obtenir les valeurs nutritionnelles. Aucun identifiant personnel n'est transmis.

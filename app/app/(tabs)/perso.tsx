@@ -15,6 +15,7 @@ import { fmt, fmtKg } from '@/data/content';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { useSound } from '@/services/sound';
+import { connectWatch, useWatch, watchSupported } from '@/services/watch';
 import { Txt } from '@/components/Txt';
 import { CoinIcon } from '@/components/Icons';
 import { previewImage } from '@/data/character';
@@ -22,6 +23,8 @@ import { previewImage } from '@/data/character';
 export default function Perso() {
   const t = useTheme();
   const sound = useSound();
+  const watch = useWatch();
+  const [watchNote, setWatchNote] = useState('');
   const router = useRouter();
   const { width } = useWindowDimensions();
   const heroW = Math.max(0, width - 32 - 8 - 96);
@@ -129,6 +132,38 @@ export default function Perso() {
           })}
         </View>
         <Txt size={11} color={t.ink2}>Vert = activé. Le bouton silencieux de l’iPhone coupe musique et bruitages, et ta propre musique n’est jamais coupée.</Txt>
+      </Card>
+
+      <Card style={{ gap: 10 }}>
+        <Press
+          haptic="medium"
+          accessibilityRole="switch"
+          accessibilityState={{ checked: watch.on }}
+          onPress={async () => {
+            if (watch.on) {
+              watch.setOn(false);
+              setWatchNote('');
+              return;
+            }
+            if (!watchSupported) {
+              setWatchNote('Disponible sur iPhone, dans la version installée depuis TestFlight ou l’App Store.');
+              return;
+            }
+            const ok = await connectWatch();
+            setWatchNote(ok ? '' : 'Santé n’a pas répondu. Réessaie, ou autorise FITAIA dans Réglages › Santé › Accès aux données.');
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+        >
+          <View style={{ width: 26, height: 26, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', borderColor: watch.on ? LIME : t.line, backgroundColor: watch.on ? LIME : 'transparent' }}>
+            {watch.on ? <Txt size={15} weight="bold" color={OBSIDIAN}>✓</Txt> : null}
+          </View>
+          <Txt size={14} weight="bold" style={{ flex: 1 }}>Montre connectée</Txt>
+        </Press>
+        <Txt size={11} color={t.ink2}>
+          {watchNote || (watch.on
+            ? 'Tes pas, calories actives, rythme cardiaque et séances du jour s’affichent sur l’accueil. Si rien n’apparaît, vérifie l’accès dans Réglages › Santé › Accès aux données › FITAIA.'
+            : 'Coche pour afficher sur l’accueil ce que ton Apple Watch mesure (pas, calories actives, cœur, séances), via Santé. Lecture seule, rien ne quitte ton iPhone.')}
+        </Txt>
       </Card>
 
       {recent.length ? (
