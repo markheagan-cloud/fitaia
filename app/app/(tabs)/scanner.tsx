@@ -133,10 +133,9 @@ export default function Scanner() {
               <View style={{ gap: 3 }}>
                 <Txt size={13} color={t.ink2}>{m.name}</Txt>
                 <Display wide size={34} num lineHeight={34} letterSpacing={-1.7}>
-                  {fmt(m.kcal)}
-                  <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal estimées</Display>
+                  {'≈ ' + fmt(m.kcal)}
+                  <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal</Display>
                 </Display>
-                <Txt size={11} color={t.ink2}>Estimation d’après ta photo. Choisis ta portion, ou corrige à la main.</Txt>
               </View>
               <View style={{ gap: 6 }}>
                 {m.items.map((it) => (
