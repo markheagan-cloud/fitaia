@@ -7,6 +7,7 @@ import { CUR_NAMES, RARITY, RarityKey, fmt } from '@/data/content';
 import { useGame } from '@/store/useGame';
 import { useDailyCoins, useEco } from '@/store/useEco';
 import { useRouter } from 'expo-router';
+import { useCelebrate } from '@/fx/celebrate';
 import { displayableOutfits, skinOf } from '@/avatar/outfits';
 import { useAvatarBase } from '@/avatar/HeroAvatar';
 import { caricatureConfigured } from '@/services/caricature';
@@ -35,6 +36,7 @@ export default function Boutique() {
   const parcours = useMemo(() => (account ? buildParcours(account, statuses, STAGES, catalog) : null), [account, statuses, catalog]);
   const balance = wallet?.balance ?? 0;
   const router = useRouter();
+  const celebrate = useCelebrate((s) => s.celebrate);
   const todayCoins = useDailyCoins('daily_challenge') + useDailyCoins('daily_meal');
   // tenues pas encore dessinées sur ce perso (nouvelles tenues) : on les complète en arrière-plan
   const completeMyOutfits = useGame((s) => s.completeMyOutfits);
@@ -59,7 +61,9 @@ export default function Boutique() {
     setBusy(item.id);
     try {
       const r = owned ? await equip(item.id) : await buy(item.id);
-      say(r.ok ? item.name + (owned ? ' équipée' : ' débloquée et équipée') : r.message, r.ok ? 'ok' : 'bad');
+      const sk = skinOf(item.id);
+      if (r.ok && !owned) celebrate({ title: item.name + ' débloquée', sub: 'Elle est sur ton perso.', image: sk ? mine?.[sk.id] : undefined });
+      else say(r.ok ? item.name + ' équipée' : r.message, r.ok ? 'ok' : 'bad');
     } catch {
       say('Action impossible pour le moment, réessaie', 'bad');
     } finally {

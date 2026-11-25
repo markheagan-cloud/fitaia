@@ -3,6 +3,7 @@ import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
+import { Breathe } from '@/fx/Breathe';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
 import { RARITY, fmt, fmtKg } from '@/data/content';
@@ -67,7 +68,9 @@ export default function Home() {
           <Path d="M358 220 L230 372 H300 L358 300 Z" fill="#E3E1DC" />
           <Path d="M250 0 H358 V90 Z" fill="#D2CFC8" />
         </Svg>
-        <HeroAvatar width={298} height={372} style={styles.heroImg} />
+        <Breathe style={styles.heroImg}>
+          <HeroAvatar width={298} height={372} />
+        </Breathe>
         <View style={styles.heroTag}>
           <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: RARITY[skin.rarity].c }} />
           <Txt size={12} weight="semibold" color="#F5F4F1">{skin.name}</Txt>

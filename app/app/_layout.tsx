@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { Toast } from '@/components/Toast';
+import { Celebration } from '@/fx/Celebration';
 import { startMusic } from '@/services/sound';
 import { RewardBurst } from '@/fx/RewardBurst';
 import { CoachSheet } from '@/components/CoachSheet';
@@ -69,6 +70,7 @@ function Root() {
       <Toast />
       <CoachSheet />
       <RewardBurst />
+      <Celebration />
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, PressableProps, Platform, StyleProp, ViewStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { motion } from '@/theme/tokens';
 import { playSfx } from '@/services/sound';
 
@@ -36,7 +36,7 @@ export function Press({ style, pressScale = 0.95, haptic = 'light', onPress, onP
         onPressIn?.(e);
       }}
       onPressOut={(e) => {
-        scale.set(withTiming(1, { duration: motion.fast, easing: ease }));
+        scale.set(reduced ? 1 : withSpring(1, { damping: 11, stiffness: 320 }));
         onPressOut?.(e);
       }}
       onPress={(e) => {

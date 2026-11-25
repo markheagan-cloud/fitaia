@@ -11,6 +11,7 @@ import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CUR_NAMES, MEALS, Meal, MealEntry, OTHER_DEFIS, fmtKg } from '@/data/content';
+import { useCelebrate } from '@/fx/celebrate';
 import { DayStats, LedgerEntry, RULES, activeDaysThisWeek, dayKey, streak } from './economy';
 import { LegacyEconomy, useEco } from './useEco';
 import type { SelfActionType } from '@/progression/types';
@@ -195,7 +196,11 @@ export const useGame = create<GameState>()(
           .award(action, sourceId)
           .then((r) => {
             const gains = [r.points ? '+' + r.points + ' PF' : '', r.coins ? '+' + r.coins + ' ' + CUR_NAMES[0] : ''].filter(Boolean).join(', ');
-            get().say(r.message ? label + ' · ' + r.message : label + (gains ? ' · ' + gains : ''), r.message ? 'bad' : 'ok');
+            // fin de défi réellement accordée : grand moment ; le reste (repas…) garde le message discret
+            if (action === 'challenge_completed' && !r.message && (r.points || r.coins)) {
+              const st = streak(get().history);
+              useCelebrate.getState().celebrate({ title: label, sub: st > 1 ? st + ' jours d’affilée. Continue.' : 'Ton perso avance avec toi.', coins: r.coins || undefined, points: r.points || undefined });
+            } else get().say(r.message ? label + ' · ' + r.message : label + (gains ? ' · ' + gains : ''), r.message ? 'bad' : 'ok');
           })
           .catch(() => get().say(label + ' · récompense non enregistrée, réessaie plus tard', 'bad'));
       };
