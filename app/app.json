@@ -56,7 +56,9 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres, photographier tes repas, compter tes pompes et prendre ton selfie."
+          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres, photographier tes repas, compter tes pompes et prendre ton selfie.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
       ],
       "./plugins/sans-push-distant",
@@ -64,7 +66,9 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false
+          "microphonePermission": false,
+          "enableBackgroundPlayback": false,
+          "recordAudioAndroid": false
         }
       ]
     ],
