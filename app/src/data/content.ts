@@ -63,7 +63,7 @@ export const ORIGIN_LABEL: Record<MealOrigin, string> = {
   openfoodfacts: 'Valeurs de l’emballage (Open Food Facts)',
   average: 'Estimation : valeurs moyennes de l’aliment',
   manual: 'Saisie manuelle',
-  photo: '≈ d’après ta photo',
+  photo: 'D’après ta photo',
 };
 export const MEALS: Meal[] = [
   { name: 'Bowl poulet, riz, brocolis', kcal: 620, p: 48, g: 70, l: 14, score: 86, items: ['Poulet grillé, 150 g', 'Riz basmati, 120 g', 'Brocolis, 80 g'] },
