@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { avatarBase, defaultSheetFor } from '@/avatar/identity';
 import { deleteAvatar3d, deleteAvatar3dPortrait, type Avatar3d } from '@/services/avatar3d';
-import { caricatureConfigured, createCaricature, deleteCaricature, type Caricature } from '@/services/caricature';
+import { caricatureConfigured, completeOutfits, createCaricature, deleteCaricature, type Caricature } from '@/services/caricature';
 import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -112,6 +112,8 @@ type Actions = {
   caricatureJob: { state: 'idle' | 'queued' | 'running' | 'saving' | 'failed'; error: string };
   /** Lance la création depuis le selfie gardé ; sans effet si elle tourne déjà ou si le serveur n'est pas configuré. */
   createMyCaricature: () => Promise<void>;
+  /** Dessine en arrière-plan les tenues que le perso n'a pas encore ; sans effet si c'est déjà en cours. */
+  completeMyOutfits: () => Promise<void>;
   stopTimers: () => void;
 };
 
@@ -121,6 +123,7 @@ let toastT: ReturnType<typeof setTimeout> | undefined;
 let typeT: ReturnType<typeof setTimeout> | undefined;
 let pushT: ReturnType<typeof setInterval> | undefined;
 let selfieT: ReturnType<typeof setTimeout> | undefined;
+let outfitsBusy = false;
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -436,10 +439,28 @@ export const useGame = create<GameState>()(
             get().setCaricature(c);
             set({ caricatureJob: { state: 'idle', error: '' } });
             get().say('Ton perso à ton image est prêt', 'ok');
+            void get().completeMyOutfits();
           } catch (e) {
             const error = e instanceof Error ? e.message : 'Création du perso impossible.';
             set({ caricatureJob: { state: 'failed', error } });
             get().say('Perso à ton image : ' + error, 'bad');
+          }
+        },
+        completeMyOutfits: async () => {
+          const s = get();
+          const c = s.caricature;
+          if (!c || outfitsBusy || s.caricatureJob.state !== 'idle') return;
+          outfitsBusy = true;
+          try {
+            const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
+            await completeOutfits(c, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, (batch) => {
+              const cur = get().caricature;
+              if (cur && cur.id === c.id) set({ caricature: { ...cur, outfits: { ...(cur.outfits ?? {}), ...batch } } });
+            });
+          } catch {
+            // réessayé à la prochaine ouverture de la boutique
+          } finally {
+            outfitsBusy = false;
           }
         },
         setCharacter: (c) => set({ character: c, characterReady: true }),

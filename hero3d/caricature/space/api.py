@@ -59,7 +59,7 @@ def caricature_dict(selfie_b64, sex, sheet_json, generate_all, stub=False):
         return {'ok': False, 'error': str(e)[:200]}
 
 
-def tenues_dict(portrait_b64, sex, generate_tenues, sheet=None):
+def tenues_dict(portrait_b64, sex, generate_tenues, sheet=None, only=None):
     """Portrait du perso (PNG/JPEG base64) → {"ok", "tenues": {id: png base64}} : chaque tenue portée par ce perso."""
     t = time.time()
     try:
@@ -70,8 +70,12 @@ def tenues_dict(portrait_b64, sex, generate_tenues, sheet=None):
             raise ValueError('portrait absent ou trop lourd')
         portrait = Image.open(io.BytesIO(raw)).convert('RGB')
         portrait.thumbnail((768, 768))
-        tenues = generate_tenues(portrait, sex, sheet)
-        if set(tenues) != set(recette.TENUES):
+        only = [k for k in only if isinstance(k, str)] if isinstance(only, list) else None
+        attendu = set(recette.prompts_tenues(sex, sheet, only))
+        if not attendu:
+            raise ValueError('aucune tenue connue demandée')
+        tenues = generate_tenues(portrait, sex, sheet, only)
+        if set(tenues) != attendu:
             raise ValueError('tenues incomplètes')
         return {'ok': True, 'tenues': {k: to_b64(v) for k, v in tenues.items()},
                 'report': {'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}}

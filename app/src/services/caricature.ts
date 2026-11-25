@@ -17,6 +17,7 @@ import { Platform } from 'react-native';
 import type { AvatarBase } from '@/avatar/identity';
 import { runServerJob, type JobFetch } from '@/avatar/avatar3dJob';
 import { callDirect } from '@/avatar/directCall';
+import { SKINS } from '@/data/content';
 import { base64ToBytes, callGradio, type GradioFetch } from '@/avatar/gradioCall';
 import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedOutfits, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
 
@@ -56,6 +57,39 @@ async function savePng(id: string, which: 'portrait' | BodyKey, url: string): Pr
 }
 
 /** Image reçue en base64 (Space) → fichier du téléphone ; sur le web, adresse data: gardée en mémoire. */
+/** Tenues demandées par lots de 5 (réponses légères) ; un lot en échec n'annule pas les autres. */
+async function drawOutfits(id: string, portraitB64: string, base: AvatarBase, sheet: Record<string, unknown> | undefined, ids: string[], signal?: AbortSignal, onBatch?: (o: Record<string, string>) => void): Promise<Record<string, string>> {
+  const headers: Record<string, string> = TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {};
+  const outfits: Record<string, string> = {};
+  for (let i = 0; i < ids.length; i += 5) {
+    try {
+      const tj = await callDirect(URL_DIRECT, { portrait: portraitB64, sex: base, sheet: sheet ?? {}, only: ids.slice(i, i + 5) }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 });
+      const tenues = finishedOutfits(tj);
+      if (!tenues) continue;
+      const batch: Record<string, string> = {};
+      for (const [k, b64] of Object.entries(tenues)) batch[k] = await saveB64Png(id, 'tenue-' + k, b64);
+      Object.assign(outfits, batch);
+      onBatch?.(batch);
+    } catch {
+      // ce lot sera redemandé à la prochaine ouverture de la boutique
+    }
+  }
+  return outfits;
+}
+
+/**
+ * Complète un perso déjà dessiné avec les tenues de la boutique qu'il n'a pas encore (nouvelles tenues, lot en échec).
+ * Le portrait enregistré sur le téléphone sert de référence : aucun nouveau selfie.
+ */
+export async function completeOutfits(c: Caricature, sheet: Record<string, unknown> | undefined, onBatch: (o: Record<string, string>) => void): Promise<void> {
+  if (!URL_DIRECT || Platform.OS === 'web') return;
+  const missing = SKINS.map((s) => s.id).filter((k) => !c.outfits?.[k]);
+  if (!missing.length) return;
+  const img = await ImageManipulator.manipulateAsync(c.portraitUri, [], { format: ImageManipulator.SaveFormat.PNG, base64: true });
+  if (!img.base64) return;
+  await drawOutfits(c.id, img.base64, c.base, sheet, missing, undefined, onBatch);
+}
+
 async function saveB64Png(id: string, which: string, b64: string): Promise<string> {
   if (Platform.OS === 'web') return 'data:image/png;base64,' + b64;
   const dest = new File(Paths.document, caricatureFileName(id, which));
@@ -110,13 +144,8 @@ export async function createCaricature(selfieUri: string, base: AvatarBase, shee
     // valable et la boutique garde ses images de présentation : jamais de tenue à moitié.
     if (URL_DIRECT) {
       try {
-        const tj = await callDirect(URL_DIRECT, { portrait: r.portrait, sex: base, sheet: sheet ?? {} }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 });
-        const tenues = finishedOutfits(tj);
-        if (tenues) {
-          const outfits: Record<string, string> = {};
-          for (const [k, b64] of Object.entries(tenues)) outfits[k] = await saveB64Png(id, 'tenue-' + k, b64);
-          made.outfits = outfits;
-        }
+        const outfits = await drawOutfits(id, r.portrait, base, sheet, SKINS.slice(0, 5).map((s) => s.id), signal); // les autres tenues se dessinent ensuite en arrière-plan (completeOutfits)
+        if (Object.keys(outfits).length) made.outfits = outfits;
       } catch {
         // tenues indisponibles pour l'instant
       }

@@ -38,6 +38,16 @@ export const SKINS: Skin[] = [
   { id: 'creme', name: 'Crème Studio', rarity: 'epique', img: IMG.p2, cur: 'store', price: 0 },
   { id: 'titane', name: 'Titane Néon', rarity: 'legendaire', img: IMG.p3, cur: 'store', price: 0 },
   { id: 'atelier', name: 'Atelier Noir', rarity: 'legendaire', img: IMG.p4, cur: 'store', price: 0 },
+  { id: 'sprint', name: 'Sprint Rouge', rarity: 'commune', img: IMG.p1, cur: 'earn', price: 150 },
+  { id: 'dojo', name: 'Dojo Blanc', rarity: 'commune', img: IMG.p2, cur: 'earn', price: 200 },
+  { id: 'street', name: 'Street Graphite', rarity: 'rare', img: IMG.p3, cur: 'earn', price: 350 },
+  { id: 'plage', name: 'Plage Corail', rarity: 'rare', img: IMG.p4, cur: 'earn', price: 450 },
+  { id: 'ring', name: 'Ring Doré', rarity: 'rare', img: IMG.p5, cur: 'earn', price: 550 },
+  { id: 'alpin', name: 'Alpin Givre', rarity: 'epique', img: IMG.p6, cur: 'earn', price: 700 },
+  { id: 'pilote', name: 'Pilote Néon', rarity: 'epique', img: IMG.p1, cur: 'earn', price: 1100 },
+  { id: 'samourai', name: 'Samouraï Néon', rarity: 'legendaire', img: IMG.p2, cur: 'earn', price: 1600 },
+  { id: 'astro', name: 'Astro Lime', rarity: 'legendaire', img: IMG.p3, cur: 'earn', price: 2000 },
+  { id: 'royal', name: 'Royal Or', rarity: 'legendaire', img: IMG.p4, cur: 'earn', price: 2400 },
 ];
 
 /**

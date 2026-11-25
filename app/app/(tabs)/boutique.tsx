@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Image, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, alert, shadow } from '@/theme/tokens';
 import { CUR_NAMES, RARITY, RarityKey, fmt } from '@/data/content';
 import { useGame } from '@/store/useGame';
-import { useEco } from '@/store/useEco';
+import { useDailyCoins, useEco } from '@/store/useEco';
+import { useRouter } from 'expo-router';
 import { displayableOutfits, skinOf } from '@/avatar/outfits';
 import { useAvatarBase } from '@/avatar/HeroAvatar';
 import { caricatureConfigured } from '@/services/caricature';
@@ -33,6 +34,20 @@ export default function Boutique() {
   const outfits = useMemo(() => displayableOutfits(catalog), [catalog]);
   const parcours = useMemo(() => (account ? buildParcours(account, statuses, STAGES, catalog) : null), [account, statuses, catalog]);
   const balance = wallet?.balance ?? 0;
+  const router = useRouter();
+  const todayCoins = useDailyCoins('daily_challenge') + useDailyCoins('daily_meal');
+  // tenues pas encore dessinées sur ce perso (nouvelles tenues) : on les complète en arrière-plan
+  const completeMyOutfits = useGame((s) => s.completeMyOutfits);
+  useEffect(() => {
+    if (caricatureConfigured && caricature) void completeMyOutfits();
+  }, [caricature?.id, completeMyOutfits]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ownedIds = new Set(inventory?.items.map((i) => i.itemId) ?? []);
+  // Objectif : la tenue pas encore possédée la plus proche du solde (vrai prix, vraie progression)
+  const goal = outfits.filter((i) => !ownedIds.has(i.id) && i.priceFitcoins !== null).sort((x, y) => (x.priceFitcoins ?? 0) - (y.priceFitcoins ?? 0)).find((i) => (i.priceFitcoins ?? 0) > balance)
+    ?? outfits.find((i) => !ownedIds.has(i.id) && i.priceFitcoins !== null);
+  const goalSkin = goal ? skinOf(goal.id) : undefined;
+  const goalPrice = goal?.priceFitcoins ?? 0;
+  const ordered = [...outfits.filter((i) => i.source === 'LIMITED' || i.source === 'STORE'), ...outfits.filter((i) => i.source !== 'LIMITED' && i.source !== 'STORE')];
 
   const act = async (item: CosmeticItem) => {
     if (busy) return;
@@ -76,9 +91,38 @@ export default function Boutique() {
         </Txt>
       </View>
 
+      {/* Solde + objectif : ce qu'il manque, et ce qu'on peut gagner aujourd'hui */}
+      <View style={[styles.goal, { backgroundColor: t.surf }, shadow.card]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <CoinIcon size={22} />
+          <Display size={30} num>{fmt(balance)}</Display>
+          <Txt size={13} color={t.ink2} style={{ marginTop: 8 }}>{CUR_NAMES[0]}</Txt>
+        </View>
+        {goal && goalSkin ? (
+          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+            {mine?.[goalSkin.id] ? <Image source={{ uri: mine[goalSkin.id] }} style={styles.goalImg} /> : null}
+            <View style={{ flex: 1, gap: 6 }}>
+              <Txt size={12} color={t.ink2}>Ta prochaine tenue</Txt>
+              <Txt size={16} weight="bold">{goal.name}</Txt>
+              <View style={[styles.track, { backgroundColor: t.line }]}>
+                <View style={{ width: `${Math.min(100, Math.round((balance / Math.max(1, goalPrice)) * 100))}%`, height: '100%', borderRadius: 3, backgroundColor: LIME }} />
+              </View>
+              <Txt size={12} num color={t.ink2}>
+                {balance >= goalPrice ? 'Tu peux la débloquer maintenant.' : 'Encore ' + fmt(goalPrice - balance) + ' ' + CUR_NAMES[0] + ' sur ' + fmt(goalPrice) + '.'}
+              </Txt>
+            </View>
+          </View>
+        ) : null}
+        <Press haptic="medium" onPress={() => router.navigate('/(tabs)/defis')} style={[styles.earn, shadow.btn]}>
+          <Txt size={14} weight="bold" color={OBSIDIAN}>
+            {todayCoins > 0 ? 'Gagner +' + todayCoins + ' ' + CUR_NAMES[0] + ' aujourd’hui' : 'Défis du jour faits : reviens demain'}
+          </Txt>
+        </Press>
+      </View>
+
       {/* Tenues */}
       <Row>
-        <Txt size={15} weight="bold">Tenues</Txt>
+        <Txt size={15} weight="bold">{'Tenues · ' + outfits.length}</Txt>
         {!ready && !error ? <ActivityIndicator size="small" color={t.ink2} /> : null}
       </Row>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12, paddingHorizontal: 4 }}>
@@ -93,7 +137,7 @@ export default function Boutique() {
       </View>
       {error ? <Txt size={13} color={t.ink2} style={{ paddingHorizontal: 4 }}>La boutique ne s’est pas chargée. Ferme et rouvre l’app.</Txt> : null}
       <View style={styles.grid}>
-        {outfits.map((item) => {
+        {ordered.map((item) => {
           const sk = skinOf(item.id);
           if (!sk) return null;
           const r = RARITY[RARITY_KEY[item.rarity]];
@@ -161,6 +205,9 @@ export default function Boutique() {
 
 const styles = StyleSheet.create({
   pass: { borderRadius: 30, padding: 18, gap: 12, overflow: 'hidden', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
+  goal: { borderRadius: 28, padding: 16, gap: 14 },
+  goalImg: { width: 84, height: 84, borderRadius: 18 },
+  earn: { height: 50, borderRadius: 18, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center' },
   track: { height: 6, borderRadius: 3, overflow: 'hidden' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   frame: { width: '48%', flexGrow: 1, borderRadius: 26, padding: 2.5 },

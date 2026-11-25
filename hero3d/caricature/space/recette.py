@@ -43,7 +43,21 @@ TENUES = {
     'atelier': 'Full body, arms crossed, very big head, one third of the figure, on a small body. {Il} wears a legendary luxury outfit: black tailored long '
                'coat with gold embroidery, black turtleneck, gold chain, black trousers, black and gold sneakers. Dark '
                'background with golden light rays behind {lui}.',
+    # Ajout du 25/11/2026 (build 8) : dix tenues de plus, créations FITAIA, aucune marque.
+    'sprint': 'Full body, running pose, very big head, one third of the figure, on a small body. {Il} wears a runner outfit: red sleeveless running top, black split running shorts, bright red running shoes, white headband. Background: red athletics track with soft morning light.',
+    'dojo': 'Full body, calm fighting stance, very big head, one third of the figure, on a small body. {Il} wears a martial arts training outfit: white karate-style jacket and trousers with a black belt, bare feet. Background: warm wooden dojo with paper walls.',
+    'street': 'Full body, hands in hoodie pocket, very big head, one third of the figure, on a small body. {Il} wears a streetwear outfit: oversized graphite grey hoodie, black joggers, chunky white sneakers, black beanie. Background: grey concrete wall with soft lime light.',
+    'plage': 'Full body, relaxed pose, very big head, one third of the figure, on a small body. {Il} wears a beach outfit: coral swim shorts with a white wave pattern, open white linen shirt, flip-flops, towel over one shoulder. Background: turquoise sea and white sand under a bright sky.',
+    'ring': 'Full body, boxing guard pose, very big head, one third of the figure, on a small body. {Il} wears a boxing outfit: shiny gold boxing shorts with a black waistband, open black satin robe with gold trim, red boxing gloves, black boxing boots. Background: boxing ring ropes with spotlights.',
+    'alpin': 'Full body, confident pose, very big head, one third of the figure, on a small body. {Il} wears an epic mountain outfit: ice-blue technical ski jacket with white panels, white ski trousers, ski goggles on the forehead, grey gloves, snow boots. Background: snowy peaks under a clear blue sky.',
+    'pilote': 'Full body, helmet under one arm, very big head, one third of the figure, on a small body. {Il} wears an epic racing driver outfit: black racing suit with magenta and cyan neon stripes, racing gloves, racing boots, a plain black helmet under the arm. Background: night race track with blurred neon lights.',
+    'samourai': 'Full body, proud stance, very big head, one third of the figure, on a small body. {Il} wears a legendary neon samurai outfit: black and red layered samurai-style armour with glowing magenta edges, wide black trousers, a sheathed sword at the hip. Background: night street with red lanterns and pink neon glow.',
+    'astro': 'Full body, heroic pose, very big head, one third of the figure, on a small body. {Il} wears a legendary astronaut outfit: white space suit with lime green glowing panels, helmet held under one arm, lime-soled boots. Background: starry space with a large planet glowing behind {lui}.',
+    'royal': 'Full body, arms crossed, very big head, one third of the figure, on a small body. {Il} wears a legendary champion king outfit: deep purple velvet cape with gold trim over a black and gold athletic suit, small gold crown, gold sneakers. Background: dark hall with golden light rays behind {lui}.',
 }
+# Les six tenues d'origine : ce que reçoit une app qui ne précise pas `only` (builds ≤ 7).
+TENUES_BASE = ('origine', 'cargo', 'olive', 'creme', 'titane', 'atelier')
+MAX_TENUES_PAR_APPEL = 6
 CHEVEUX = {'noir': 'black', 'brun': 'dark brown', 'chatain': 'brown', 'blond': 'blond', 'roux': 'red', 'gris': 'grey', 'blanc': 'white'}
 PEAU = {'s1': 'very fair', 's2': 'fair', 's3': 'light', 's4': 'warm medium brown', 's5': 'warm brown', 's6': 'deep brown',
         's7': 'dark brown', 's8': 'very dark brown'}
@@ -92,9 +106,10 @@ def prompts(sex, sheet=None):
     return portrait, {k: meme + ' ' + v.format(silhouette=silhouette(sheet), **m) for k, v in CORPS.items()}
 
 
-def prompts_tenues(sex, sheet=None):
+def prompts_tenues(sex, sheet=None, only=None):
     """{tenue: prompt} : chaque tenue de la boutique portée par le perso (image de référence = son portrait), à sa silhouette."""
     m = _mots(sex)
     meme = MEME.format(barbe=m['barbe'])
     corps = ' ' + m['Il'] + ' has ' + silhouette(sheet if isinstance(sheet, dict) else {}) + '.'
-    return {k: meme + corps + ' ' + v.format(**m) for k, v in TENUES.items()}
+    ids = [k for k in (only or TENUES_BASE) if k in TENUES][:MAX_TENUES_PAR_APPEL]
+    return {k: meme + corps + ' ' + TENUES[k].format(**m) for k in ids}
