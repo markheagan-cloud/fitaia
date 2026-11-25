@@ -85,7 +85,8 @@ type Actions = {
   /** Mode caméra réel : démarrage, mise à jour, fin. */
   pushBeginReal: () => void;
   pushUpdate: (reps: number, feedback: string, kind: FbKind) => void;
-  pushFinish: (rejected: number) => void;
+  /** `target` : cible du jour réellement atteinte (5 par défaut, démonstration comprise). */
+  pushFinish: (rejected: number, target?: number) => void;
   pushAbort: () => void;
   resetScan: () => void;
   doScan: () => void;
@@ -306,12 +307,12 @@ export const useGame = create<GameState>()(
           if (pushT) clearInterval(pushT);
           set({ running: false, reps: 0, attempt: 0, phase: 0, feedback: 'Défi arrêté. Rien n’est compté, tu peux recommencer quand tu veux.', fbKind: 'info' });
         },
-        pushFinish: (rejected) => {
+        pushFinish: (rejected, target = 5) => {
           const s = get();
           if (!s.running) return;
-          set({ phase: 0, reps: 5, running: false, pushDone: true, burned: s.burned + RULES.challengeBurn, feedback: 'Défi réussi. 5 pompes complètes' + (rejected ? ', ' + rejected + ' refusée' + (rejected > 1 ? 's' : '') : '') + '.', fbKind: 'good' });
+          set({ phase: 0, reps: target, running: false, pushDone: true, burned: s.burned + RULES.challengeBurn, feedback: 'Défi réussi. ' + target + ' pompes complètes' + (rejected ? ', ' + rejected + ' refusée' + (rejected > 1 ? 's' : '') : '') + '.', fbKind: 'good' });
           logDay({ challenges: 1 });
-          set({ pushTotal: get().pushTotal + 5, firstWinAt: get().firstWinAt || Date.now() });
+          set({ pushTotal: get().pushTotal + target, firstWinAt: get().firstWinAt || Date.now() });
           reward('challenge_completed', 'pushups:' + dayKey(), 'Défi du jour réussi');
         },
 

@@ -46,7 +46,7 @@ export function usePushupCamera(target = 5) {
         if (x.type === 'rep') {
           playSfx('rep');
           speak(repPhrase(x.count, target));
-          if (x.count >= target) finish(rejected.current);
+          if (x.count >= target) finish(rejected.current, target);
           else update(x.count, 'Pompe ' + x.count + ' validée, amplitude complète.', 'good');
         } else if (x.type === 'rejected') {
           rejected.current++;

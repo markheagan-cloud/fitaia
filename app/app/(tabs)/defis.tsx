@@ -6,6 +6,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, shadow } from '@/theme/tokens';
 import { CUR_NAMES, OTHER_DEFIS, fmt } from '@/data/content';
 import { useSteps } from '@/hooks/useSteps';
+import { challengeTarget as poseTarget, nextRaise } from '@/coach/challengeTarget';
 import { usePushupCamera } from '@/pose/usePushupCamera';
 import { FitaiaPoseView } from '../../modules/fitaia-pose';
 import { useEconomy, useGame } from '@/store/useGame';
@@ -35,7 +36,10 @@ export default function Defis() {
   const weeklyPoints = useEco((s) => s.account?.weeklyPoints ?? 0);
   const stepsState = useSteps();
   const completeExtra = useGame((s) => s.completeExtra);
-  const cam = usePushupCamera(5);
+  const history = useGame((x) => x.history);
+  // cible du jour : monte toute seule avec les jours réussis ; sans caméra (démonstration) elle reste à 5
+  const target = poseTarget(history);
+  const cam = usePushupCamera(target);
 
   const ph = phase === 1;
   const pose = { head: ph ? 176 : 132, shoulder: ph ? 178 : 140, hip: ph ? 190 : 172, elbowX: ph ? 106 : 146, elbowY: ph ? 192 : 172 };
@@ -99,9 +103,10 @@ export default function Defis() {
 
         <View style={{ paddingHorizontal: 8, paddingTop: 4, gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <Display size={22} color="#F5F4F1">5 pompes</Display>
+            <Display size={22} color="#F5F4F1">{(cam.ready ? target : 5) + ' pompes'}</Display>
             <Txt size={14} weight="bold" num color={LIME}>{dailyCoins ? '+' + dailyCoins + ' ' + CUR_NAMES[0] : '+' + PF_CHALLENGE + ' PF'}</Txt>
           </View>
+          {cam.ready && !running && !pushDone ? <Txt size={12} color="#9EA2AA">{nextRaise(history)}</Txt> : null}
           <View accessibilityRole="text" accessibilityLiveRegion="polite" style={[styles.fb, { backgroundColor: fb.bg }]}>
             <Txt size={13} weight="semibold" lineHeight={18} color={fb.ink}>{feedback}</Txt>
           </View>

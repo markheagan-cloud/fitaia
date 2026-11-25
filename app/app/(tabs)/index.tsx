@@ -6,6 +6,8 @@ import { BlurView } from 'expo-blur';
 import { Breathe } from '@/fx/Breathe';
 import { fenetre, forme } from '@/coach/forme';
 import { streak } from '@/store/economy';
+import { challengeTarget } from '@/coach/challengeTarget';
+import { poseReady } from '@/pose/usePushupCamera';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
 import { RARITY, fmt, fmtKg } from '@/data/content';
@@ -175,7 +177,7 @@ export default function Home() {
           <PulseIcon size={24} color={OBSIDIAN} strokeWidth={2.2} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
-          <Txt size={15} weight="bold" color={t.strongInk}>{pushDone ? 'Défi du jour réussi' : 'Défi du jour : 5 pompes'}</Txt>
+          <Txt size={15} weight="bold" color={t.strongInk}>{pushDone ? 'Défi du jour réussi' : 'Défi du jour : ' + (poseReady ? challengeTarget(history) : 5) + ' pompes'}</Txt>
           <Txt size={13} color={t.strongInk2}>{pushDone ? 'Reviens demain pour le suivant' : 'Gratuit, comptées par la caméra'}</Txt>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

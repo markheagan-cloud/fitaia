@@ -95,14 +95,14 @@ export function coachAnswer(c: CoachContext, question: string): string {
   if (/d[ée]fi|pompe|squat|gainage|entra[iî]n|sport|s[ée]ance/.test(q))
     return c.pushDone
       ? `Défi du jour réussi, ${c.streak} jour${c.streak > 1 ? 's' : ''} de série. Les défis bonus (repas, pas, squats) restent ouverts dans l’onglet Défis. Demain, nouveau défi, nouvelle récompense.`
-      : `Le défi du jour t’attend : 5 pompes comptées par la caméra, +${dailyCoins('daily_challenge')} ${CUR_NAMES[0]} au premier défi du jour. Pose le téléphone au sol de profil, 1,5 m de toi, et vas-y.`;
+      : `Le défi du jour t’attend : tes pompes comptées par la caméra, +${dailyCoins('daily_challenge')} ${CUR_NAMES[0]} au premier défi du jour. Pose le téléphone au sol de profil, 1,5 m de toi, et vas-y.`;
   if (/cr[ée]dit|point|gagn|s[ée]rie|coffre|monnaie/.test(q)) return credits(c);
   if (/eau|boire|hydrat/.test(q)) return 'Repère simple : 30 à 35 ml par kilo et par jour, plus pendant les séances. Un verre à chaque repas et une gourde sur ton bureau suffisent la plupart du temps.';
   if (/sommeil|dormir|fatigu|nuit/.test(q)) return 'Le sommeil pèse autant que l’assiette : en dessous de 7 h, la faim augmente le lendemain et la récupération baisse. Même heure de coucher, écran coupé 30 min avant, chambre fraîche.';
   if (/motiv|envie|abandon|dur|decourag/.test(q))
     return c.streak >= 3
       ? `Tu tiens ${c.streak} jours de série, c’est exactement ce qui construit le résultat. Vise seulement demain : un défi, un repas enregistré. Le reste suit.`
-      : 'Une seule règle ce soir : fais le plus petit geste possible. Un défi de 5 pompes ou un repas enregistré. La série démarre là, et la série, c’est ce qui te fait avancer.';
+      : 'Une seule règle ce soir : fais le plus petit geste possible. Ton défi de pompes ou un repas enregistré. La série démarre là, et la série, c’est ce qui te fait avancer.';
   if (/objectif|palier|progres|avance/.test(q))
     return c.tier.reached
       ? `Objectif atteint (${fmtKg(c.targetKg)} kg). Prochaine étape : le maintien, et tes stats continuent de monter avec les défis.`
