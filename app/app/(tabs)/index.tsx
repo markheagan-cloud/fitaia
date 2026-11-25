@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { BlurView } from 'expo-blur';
 import { Breathe } from '@/fx/Breathe';
+import { fenetre, forme } from '@/coach/forme';
+import { streak } from '@/store/economy';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
 import { RARITY, fmt, fmtKg } from '@/data/content';
@@ -37,6 +39,10 @@ export default function Home() {
   const dailyCoins = useDailyCoins('daily_challenge');
   const { pushDone, openCoach } = useGame();
   const body = useBody();
+  const history = useGame((x) => x.history);
+  const pushTotal = useGame((x) => x.pushTotal);
+  const jauges = forme(pushTotal, history, streak(history));
+  const win = fenetre(pushDone);
   const remainingShown = useCountUp(Math.abs(cal.remaining));
 
   const barColor = cal.over ? RED : cal.near ? AMBER : LIME;
@@ -89,6 +95,30 @@ export default function Home() {
           </View>
         </Press>
       </View>
+
+      {/* Forme : trois niveaux sur 4, tirés de ce qui a vraiment été fait, et la fenêtre d'entraînement du jour */}
+      <Card radius={26} style={{ padding: 16, gap: 12 }}>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {jauges.map((j) => (
+            <View key={j.id} style={{ flex: 1, gap: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Txt size={12} weight="semibold">{j.label}</Txt>
+                <Txt size={12} weight="bold" num>{j.level}/4</Txt>
+              </View>
+              <View style={{ flexDirection: 'row', gap: 3 }}>
+                {[1, 2, 3, 4].map((n) => (
+                  <View key={n} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: n <= j.level ? LIME : t.line }} />
+                ))}
+              </View>
+              <Txt size={10} color={t.ink2} numberOfLines={1}>{j.hint}</Txt>
+            </View>
+          ))}
+        </View>
+        <Press haptic="medium" onPress={() => router.navigate('/(tabs)/defis')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: win.open ? LIME : t.bg }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: win.open ? OBSIDIAN : LIME }} />
+          <Txt size={13} weight="semibold" color={win.open ? OBSIDIAN : t.ink} style={{ flex: 1 }}>{win.text}</Txt>
+        </Press>
+      </Card>
 
       {/* Calories */}
       <Card radius={26} style={{ paddingTop: 18, paddingHorizontal: 16, paddingBottom: 16, gap: 14 }}>
