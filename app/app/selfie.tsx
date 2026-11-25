@@ -45,7 +45,7 @@ export default function Selfie() {
         : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.9 });
       if (res.canceled || !res.assets?.length) return;
       const a = res.assets[0];
-      const prepared = await prepareSelfie(a.uri, a.width ?? 1024, a.height ?? 1024);
+      const prepared = await prepareSelfie(a.uri, a.width ?? 1024, a.height ?? 1024, useCamera);
       tmpRef.current = prepared.uri;
       setPreview(prepared.uri);
       setPhase('captured');
@@ -63,11 +63,11 @@ export default function Selfie() {
       setSelfieUri(uri);
       if (caricatureConfigured) {
         // le perso à son image se dessine en arrière-plan (plusieurs minutes) : on ne bloque pas l'écran
-        say('Selfie enregistré. Ton perso se dessine, il arrive dans moins d’une minute', 'ok');
         void createMyCaricature();
-      } else {
-        say('Selfie enregistré sur ton téléphone', 'ok');
+        router.replace('/reveal');
+        return;
       }
+      say('Selfie enregistré sur ton téléphone', 'ok');
       router.replace('/creator');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Enregistrement impossible.');
@@ -85,10 +85,10 @@ export default function Selfie() {
 
   const ring = phase === 'error' ? RED : phase === 'captured' ? AMBER : LIME;
   const hint =
-    phase === 'idle' ? (existing ? 'Tu as déjà un selfie. En reprendre un ?' : 'Place ton visage dans l’ovale, lumière de face') :
+    phase === 'idle' ? (existing ? 'Tu as déjà un selfie. En reprendre un ?' : 'Regarde l’objectif, lumière de face. Ton perso naît de cette photo.') :
     phase === 'captured' ? 'On garde celle-ci ?' :
     error;
-  const btn = phase === 'idle' ? 'Prendre mon selfie' : phase === 'captured' ? 'Garder et personnaliser' : 'Réessayer';
+  const btn = phase === 'idle' ? 'Prendre mon selfie' : phase === 'captured' ? 'Créer mon perso' : 'Réessayer';
 
   return (
     <Screen name="selfie" gap={14}>
@@ -102,7 +102,7 @@ export default function Selfie() {
 
       <Txt size={13} lineHeight={19} color={t.ink2} style={{ paddingHorizontal: 4, opacity: 0.85 }}>
         Ton selfie reste sur ton téléphone. Il n’est jamais stocké sur nos serveurs : il est envoyé seulement le temps de dessiner ton perso, puis oublié.
-        {!avatarConfigured && !caricatureConfigured ? ' Le dessin à partir du selfie n’est pas encore disponible : ton perso garde la base choisie dans le créateur.' : ''}
+        {!avatarConfigured && !caricatureConfigured ? ' Le dessin à partir du selfie n’est pas encore disponible.' : ''}
       </Txt>
 
       <Press haptic="medium" onPress={phase === 'idle' ? capture : phase === 'captured' ? keep : retake} style={[styles.btn, { backgroundColor: LIME }, shadow.btn]}>
@@ -113,8 +113,8 @@ export default function Selfie() {
           <Txt size={14} weight="semibold">Reprendre la photo</Txt>
         </Press>
       ) : existing ? (
-        <Press onPress={() => router.replace('/creator')} style={[styles.ghost, { borderColor: t.line }]}>
-          <Txt size={14} weight="semibold">Garder l’actuel et personnaliser</Txt>
+        <Press onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)'))} style={[styles.ghost, { borderColor: t.line }]}>
+          <Txt size={14} weight="semibold">Garder mon perso actuel</Txt>
         </Press>
       ) : null}
     </Screen>

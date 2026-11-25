@@ -63,7 +63,7 @@ export default function Creator() {
   const caricatureJob = useGame((s) => s.caricatureJob);
   const createMyCaricature = useGame((s) => s.createMyCaricature);
   const drawing = caricatureJob.state === 'queued' || caricatureJob.state === 'running' || caricatureJob.state === 'saving';
-  const CARICATURE_STEP: Record<string, string> = { queued: 'Ton perso attend son tour…', running: 'Ton perso se dessine (quelques minutes)…', saving: 'Enregistrement de ton perso…' };
+  const CARICATURE_STEP: Record<string, string> = { queued: 'Ton perso attend son tour…', running: 'Ton perso se dessine…', saving: 'Enregistrement de ton perso…' };
   const say = useGame((s) => s.say);
   const skin = useEquippedSkin();
   const [busy, setBusy] = useState<AvatarStep | null>(null);
@@ -110,6 +110,39 @@ export default function Creator() {
       setBusy(null);
     }
   };
+
+  // Perso créé depuis le selfie : plus de fiche ni de perso tout fait, seulement le sien (et de quoi le refaire).
+  if (caricatureConfigured) {
+    return (
+      <Screen name="creator" gap={14}>
+        <View style={[styles.hero, shadow.lg]}>
+          {caricature || selfieUri ? (
+            <Image source={{ uri: caricature?.portraitUri ?? selfieUri ?? '' }} accessibilityLabel={caricature ? 'Ton perso' : 'Ton selfie'} style={{ width: width - 32, height: 340 }} resizeMode="cover" />
+          ) : null}
+          <View style={styles.tag}>
+            <Txt size={12} weight="semibold" color="#F5F4F1" numberOfLines={1}>
+              {drawing ? CARICATURE_STEP[caricatureJob.state] : caricature ? 'Ton perso, dessiné depuis ton selfie' : 'Ton selfie'}
+            </Txt>
+          </View>
+        </View>
+        <Press haptic="medium" disabled={drawing} onPress={selfieUri ? () => { void createMyCaricature(); router.replace('/reveal'); } : () => router.push('/selfie')} style={[styles.primary, { backgroundColor: LIME }, shadow.btn]}>
+          <Txt size={16} weight="bold" color={OBSIDIAN}>{drawing ? 'Ton perso se dessine…' : caricature ? 'Redessiner mon perso' : 'Dessiner mon perso'}</Txt>
+        </Press>
+        {!drawing ? (
+          <Press onPress={() => router.push('/selfie')} style={[styles.ghost, { borderColor: t.line }]}>
+            <Txt size={14} weight="semibold">Reprendre mon selfie</Txt>
+          </Press>
+        ) : null}
+        {caricatureJob.state === 'failed' && caricatureJob.error ? <Txt size={13} color="#B4342A" style={{ paddingHorizontal: 4 }}>{caricatureJob.error}</Txt> : null}
+        <Txt size={12} lineHeight={17} color={t.ink2} style={{ paddingHorizontal: 4 }}>
+          Ton perso naît de ton selfie et suit ta taille et ton poids. Ton selfie reste sur ton téléphone.
+        </Txt>
+        <Press onPress={leave} style={[styles.ghost, { borderColor: t.line }]}>
+          <Txt size={14} weight="semibold">Retour</Txt>
+        </Press>
+      </Screen>
+    );
+  }
 
   return (
     <Screen name="creator" gap={14}>

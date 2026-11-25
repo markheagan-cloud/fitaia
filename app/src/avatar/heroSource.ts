@@ -23,6 +23,8 @@ export type HeroInput = {
   base: AvatarBase;
   caricature: { base: AvatarBase; portraitUri: string; outfits?: Record<string, string> } | null;
   avatar3d: { base: AvatarBase; portraitUri?: string | null } | null;
+  /** Selfie gardé sur le téléphone, montré tant que le perso se dessine (jamais un perso tout fait à la place). */
+  pendingSelfie?: string | null;
   drawing: { outfit: string; uri: string } | null;
   skin: { id: string; name: string; img: ImageSourcePropType };
   stage: { img: ImageSourcePropType; label: string } | null;
@@ -40,6 +42,7 @@ export function heroSourceFor(i: HeroInput): HeroChoice {
     if (worn) return { source: { uri: worn }, label: 'Ton perso en tenue ' + i.skin.name, personal: true };
     return { source: { uri: i.caricature.portraitUri }, label: 'Ton perso, dessiné depuis ton selfie', personal: true };
   }
+  if (i.pendingSelfie) return { source: { uri: i.pendingSelfie }, label: 'Ton selfie, ton perso se dessine', personal: true };
   if (i.avatar3d?.portraitUri && i.avatar3d.base === i.base) {
     return { source: { uri: i.avatar3d.portraitUri }, label: 'Ton avatar 3D, créé depuis ton selfie', personal: true };
   }

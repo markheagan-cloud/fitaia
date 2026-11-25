@@ -7,7 +7,6 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
 import { ACTIVITY, Activity, DEFAULT_PROFILE, PACE, Pace, Profile, Sex, dailyGoal } from '@/store/profile';
-import { DEFAULT_SHEET, previewImage } from '@/data/character';
 import { fmt, fmtKg } from '@/data/content';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
@@ -88,8 +87,8 @@ export default function Onboarding() {
 
         {step === 0 ? (
           <View style={{ gap: 16 }}>
-            <Display size={28}>Ton budget, calculé pour toi</Display>
-            <Txt size={14} lineHeight={20} color={t.ink2}>Trois réponses et FITAIA calcule ton budget calorique à partir de ton métabolisme (formule Mifflin-St Jeor). Tout reste sur ton téléphone.</Txt>
+            <Display size={28}>Ton avatar, c’est toi</Display>
+            <Txt size={14} lineHeight={20} color={t.ink2}>Un selfie et FITAIA dessine ton perso, avec ton visage et ta silhouette. D’abord trois réponses pour calculer ton budget calorique (formule Mifflin-St Jeor). Tout reste sur ton téléphone.</Txt>
             <Chips options={[{ id: 'f', label: 'Femme' }, { id: 'm', label: 'Homme' }, { id: 'x', label: 'Autre' }]} value={sex} onChange={setSex} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Num label="Âge" value={age} onChange={setAge} unit="ans" autoFocus />
@@ -99,7 +98,7 @@ export default function Onboarding() {
         ) : step === 1 ? (
           <View style={{ gap: 16 }}>
             <Display size={28}>Où tu pars, où tu vas</Display>
-            <Txt size={14} lineHeight={20} color={t.ink2}>Le chemin est découpé en 5 paliers. Ton perso change à chaque palier franchi.</Txt>
+            <Txt size={14} lineHeight={20} color={t.ink2}>5 paliers jusqu’à ton objectif. Ton perso change de corps avec toi.</Txt>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Num label="Poids aujourd’hui" value={kg} onChange={setKg} unit="kg" autoFocus />
               <Num label="Objectif" value={target} onChange={setTarget} unit="kg" />
@@ -129,8 +128,7 @@ export default function Onboarding() {
               <Txt size={12} lineHeight={17} color={t.ink2}>Chaque défi réussi en ajoute. Jamais sous 1 200 (femme) / 1 500 (homme). Repère indicatif, pas un avis médical : en cas de doute, parle-en à un médecin.</Txt>
             </View>
             <View style={{ alignItems: 'center' }}>
-              <Image source={previewImage({ ...DEFAULT_SHEET, appearance: sex === 'f' ? 'fem' : sex === 'x' ? 'neutre' : 'masc' })} accessibilityLabel="Ton perso" style={{ width: Math.min(width - 32, 180), height: 225, borderRadius: 20 }} resizeMode="cover" />
-              <Txt size={12} color={t.ink2}>Prochaine étape : ton perso, à ton image.</Txt>
+              <Txt size={12} color={t.ink2}>Prochaine étape : un selfie, et ton perso apparaît.</Txt>
             </View>
           </View>
         )}
@@ -142,7 +140,7 @@ export default function Onboarding() {
             </Press>
           ) : null}
           <Press haptic="medium" disabled={!canNext} onPress={next} style={[styles.primary, { flex: 2 }, shadow.btn]}>
-            <Txt size={16} weight="bold" color={OBSIDIAN}>{step < 2 ? 'Continuer' : 'Créer mon perso'}</Txt>
+            <Txt size={16} weight="bold" color={OBSIDIAN}>{step < 2 ? 'Continuer' : 'Prendre mon selfie'}</Txt>
           </Press>
         </View>
       </ScrollView>

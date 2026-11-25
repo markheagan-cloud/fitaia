@@ -1,3 +1,4 @@
+import { caricatureConfigured } from '@/services/caricature';
 import React, { useEffect } from 'react';
 import { ImageStyle, StyleProp, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -33,6 +34,7 @@ export function useHeroSource(): HeroChoice {
   const avatar = useGame((s) => s.avatar);
   const avatar3d = useGame((s) => s.avatar3d);
   const caricature = useGame((s) => s.caricature);
+  const selfieUri = useGame((s) => s.selfieUri);
   const ready = useGame((s) => s.characterReady);
   const sheet = useGame((s) => s.character);
   const stage = useHeroStage();
@@ -40,6 +42,7 @@ export function useHeroSource(): HeroChoice {
   return heroSourceFor({
     base,
     caricature,
+    pendingSelfie: caricatureConfigured ? selfieUri : null,
     avatar3d,
     drawing: avatar,
     skin,

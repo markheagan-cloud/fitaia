@@ -12,6 +12,7 @@ import { Toast } from '@/components/Toast';
 import { RewardBurst } from '@/fx/RewardBurst';
 import { CoachSheet } from '@/components/CoachSheet';
 import { useGame } from '@/store/useGame';
+import { caricatureConfigured } from '@/services/caricature';
 import { COMMUNITY_MINOR_MESSAGE, canJoinCommunity } from '@/community/access';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -21,6 +22,8 @@ function Root() {
   const onboarded = useGame((s) => s.onboarded);
   const age = useGame((s) => s.profile.age);
   const pathname = usePathname();
+  // le perso de FITAIA est celui de la personne : sans selfie, on ne va pas plus loin que l'écran du selfie
+  const needsSelfie = useGame((s) => s.hydrated && s.onboarded && caricatureConfigured && !s.selfieUri && !s.caricature);
   // Garde des routes : Communauté réservée aux majeurs (liens profonds compris), labo 3D réservé au développement.
   const minorInCommunity = pathname.startsWith('/communaute') && !canJoinCommunity(age);
   const devOnly = !__DEV__ && pathname.startsWith('/human-engine-debug');
@@ -45,6 +48,7 @@ function Root() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg }, animation: 'slide_from_right' }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="selfie" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
+        <Stack.Screen name="reveal" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="creator" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
         <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="human-engine-debug" options={{ animation: 'slide_from_right', gestureEnabled: false }} />
@@ -58,7 +62,8 @@ function Root() {
         <Stack.Screen name="communaute/discussion/[id]" />
       </Stack>
       {!onboarded && pathname !== '/onboarding' ? <Redirect href="/onboarding" /> : null}
-      {onboarded && (minorInCommunity || devOnly) ? <Redirect href="/(tabs)" /> : null}
+      {needsSelfie && pathname !== '/selfie' && pathname !== '/onboarding' ? <Redirect href="/selfie" /> : null}
+      {onboarded && !needsSelfie && (minorInCommunity || devOnly) ? <Redirect href="/(tabs)" /> : null}
       <Toast />
       <CoachSheet />
       <RewardBurst />

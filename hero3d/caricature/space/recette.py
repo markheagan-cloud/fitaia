@@ -12,6 +12,7 @@ NOMS = ('portrait', 'surpoids', 'actuel', 'athletique')
 # Recette du 25/11/2026 (premier vrai test sur Modal) : les longs prompts « the man in image 1 » + description du style
 # faisaient ignorer le selfie (visage générique, peau éclaircie). Des consignes courtes, tournées comme une retouche
 # (« Redraw this exact man… »), gardent la peau, les cheveux et la barbe de la photo.
+# Style validé par Mark le 25/11/2026 sur la version test (4) (« c'est parfait ») : ne pas le changer sans son accord.
 PORTRAIT = ('Redraw this exact {qui} as a cool caricature painting: bigger head, small shoulders, soft painted shading, '
             'no black outlines, {couleurs}plain cream background, head and shoulders, front view.')
 MEME = 'Same character, same face, same hair, {barbe}same painted caricature style, soft coloured edges, no black outlines.'
@@ -26,15 +27,16 @@ CORPS = {
 TENUES = {
     'origine': 'Full body, relaxed standing pose, very big head, one third of the figure, on a small body. {Il} wears the starter outfit: red crew-neck '
                't-shirt, black jogging pants with a lime side stripe, white sneakers. Plain cream background.',
-    'cargo': 'Full body, standing confident pose, very big head, one third of the figure, on a small body. {Il} wears a streetwear outfit: olive bomber '
-             'jacket with orange lining, black hoodie, sand cargo pants with straps, chunky white sneakers. Soft grey-blue '
-             'background.',
+    'cargo': 'Full body, relaxed confident pose, very big head, one third of the figure, on a small body. {Il} wears a Florida '
+             'street outfit: open short-sleeve shirt with a pink and teal palm-leaf print over a white tank top, sand cargo '
+             'shorts, white sneakers, sunglasses pushed up on the head. Background: pink and orange sunset sky with palm '
+             'tree silhouettes.',
     'olive': 'Full body, dynamic walking pose, very big head, one third of the figure, on a small body. {Il} wears a techwear outfit: olive waterproof '
              'shell jacket with taped seams, black utility vest, tapered black pants, trail running shoes, small chest '
              'bag. Deep green background with a soft light halo.',
-    'creme': 'Full body, hands in pockets, very big head, one third of the figure, on a small body. {Il} wears an epic designer outfit: cream oversized '
-             'varsity jacket with violet sleeves and chenille patches, cream wide pants, violet high-top sneakers, '
-             'headphones around the neck. Violet background with a soft glow behind {lui}.',
+    'creme': 'Full body, one hand in pocket, very big head, one third of the figure, on a small body. {Il} wears an epic '
+             'coastal night outfit: cream linen suit with rolled sleeves over a hot pink t-shirt, white loafers, thin gold '
+             'chain. Background: night city skyline with pink and cyan neon glow reflected on wet ground.',
     'titane': 'Full body, heroic pose, very big head, one third of the figure, on a small body. {Il} wears a legendary futuristic sports suit: brushed '
               'titanium armour plates over a black bodysuit, glowing cyan neon lines, glowing visor pushed up on the '
               'forehead, neon-soled sneakers. Dark blue background with cyan glow behind {lui}.',

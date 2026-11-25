@@ -58,7 +58,8 @@
         {
           "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true

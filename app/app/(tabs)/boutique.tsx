@@ -8,6 +8,7 @@ import { useGame } from '@/store/useGame';
 import { useEco } from '@/store/useEco';
 import { displayableOutfits, skinOf } from '@/avatar/outfits';
 import { useAvatarBase } from '@/avatar/HeroAvatar';
+import { caricatureConfigured } from '@/services/caricature';
 import { buildParcours } from '@/progression/parcours';
 import { STAGES } from '@/progression/progressionRules';
 import type { CosmeticItem, Rarity } from '@/inventory/types';
@@ -71,7 +72,7 @@ export default function Boutique() {
           </Txt>
         ) : null}
         <Txt size={13} lineHeight={19} color="#B7BBC2">
-          Tout le jeu est gratuit : défis, niveaux et récompenses ne s’achètent pas. Seules quelques tenues se vendent, pour le style.
+          Tout le jeu est gratuit : défis, niveaux et récompenses ne s’achètent pas. Les tenues, tu les vois portées par ton perso, pas par un mannequin.
         </Txt>
       </View>
 
@@ -111,7 +112,15 @@ export default function Boutique() {
               style={[styles.skin, { backgroundColor: t.surf, borderColor: eq ? LIME : 'transparent', opacity: busy && busy !== item.id ? 0.6 : 1 }, shadow.card]}
             >
               <View style={styles.skinImgWrap}>
-                <Image source={mine?.[sk.id] ? { uri: mine[sk.id] } : sk.img} style={styles.skinImg} resizeMode="cover" />
+                {mine?.[sk.id] ? (
+                  <Image source={{ uri: mine[sk.id] }} style={styles.skinImg} resizeMode="cover" />
+                ) : caricatureConfigured ? (
+                  <LinearGradient colors={[r.c, OBSIDIAN]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.skinImg, { alignItems: 'center', justifyContent: 'center', padding: 12 }]}>
+                    <Txt size={12} weight="semibold" color="#F5F4F1" style={{ textAlign: 'center' }}>{caricature ? 'Redessine ton perso pour l’essayer' : 'Se dessine sur ton perso…'}</Txt>
+                  </LinearGradient>
+                ) : (
+                  <Image source={sk.img} style={styles.skinImg} resizeMode="cover" />
+                )}
                 <View style={[styles.skinBar, { backgroundColor: r.c }]} />
               </View>
               <View style={{ gap: 2, paddingHorizontal: 6, paddingBottom: 6 }}>

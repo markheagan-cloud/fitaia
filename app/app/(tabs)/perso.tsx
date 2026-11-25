@@ -1,3 +1,4 @@
+import { caricatureConfigured } from '@/services/caricature';
 import React, { useState } from 'react';
 import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -50,17 +51,19 @@ export default function Perso() {
   return (
     <Screen name="perso">
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end' }}>
-        <Press onPress={() => router.push('/corps')} pressScale={0.98} accessibilityLabel="Voir mon corps en 3D" style={[styles.heroWrap, shadow.lg]}>
+        <Press onPress={() => router.push(caricatureConfigured ? '/creator' : '/corps')} pressScale={0.98} accessibilityLabel={caricatureConfigured ? 'Mon perso' : 'Voir mon corps en 3D'} style={[styles.heroWrap, shadow.lg]}>
           <HeroAvatar width={heroW} height={300} />
           <View style={styles.tag}>
             <Txt size={12} weight="semibold" color="#F5F4F1">{tier.reached ? 'Objectif atteint' : 'Aujourd’hui, palier ' + tier.current}</Txt>
           </View>
-          <View style={styles.tag3d}>
-            <Txt size={12} weight="bold" color={OBSIDIAN}>3D</Txt>
-          </View>
+          {caricatureConfigured ? null : (
+            <View style={styles.tag3d}>
+              <Txt size={12} weight="bold" color={OBSIDIAN}>3D</Txt>
+            </View>
+          )}
         </Press>
         <View style={[styles.next, { backgroundColor: t.surf, borderColor: t.line }, shadow.md]}>
-          <Image source={goalPortrait ? { uri: goalPortrait } : avatar && avatar.outfit === skin.id ? { uri: avatar.uri } : stage !== null ? BODY_STAGES[Math.min(2, stage + 1)].img : previewImage(sheet)} accessibilityLabel="Prochain palier" style={{ width: 64, height: 86, borderRadius: 14, opacity: goalPortrait || stage !== null ? 0.6 : 0.35 }} resizeMode="cover" />
+          <Image source={goalPortrait ? { uri: goalPortrait } : caricatureConfigured ? hero.source : avatar && avatar.outfit === skin.id ? { uri: avatar.uri } : stage !== null ? BODY_STAGES[Math.min(2, stage + 1)].img : previewImage(sheet)} accessibilityLabel="Prochain palier" style={{ width: 64, height: 86, borderRadius: 14, opacity: goalPortrait || stage !== null ? 0.6 : 0.35 }} resizeMode="cover" />
           <Txt size={12} weight="semibold" num color={t.ink2} lineHeight={16} style={{ textAlign: 'center' }}>
             {tier.reached ? 'Niveau ' + body.level : 'Palier ' + Math.min(5, tier.current + 1) + '\n' + 'dans ' + fmtKg(tier.toNext) + ' kg'}
           </Txt>
