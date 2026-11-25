@@ -3,6 +3,7 @@ import { View, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { recentMeals } from '@/coach/recentMeals';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
 import { CUR_NAMES, MEALS, ORIGIN_LABEL, fmt } from '@/data/content';
@@ -35,6 +36,8 @@ export default function Scanner() {
   const cal = useCalories();
   const { scanned, mealIdx, customMeal, doScan, nextMeal, addMeal, setCustomMeal, say } = useGame();
   const mealCoins = useDailyCoins('daily_meal');
+  const allMeals = useGame((x) => x.meals);
+  const recents = React.useMemo(() => recentMeals(allMeals), [allMeals]);
   const [manual, setManual] = useState(false);
   const [editing, setEditing] = useState<MealEntry | null>(null);
   const [mode, setMode] = useState<Mode>('idle');
@@ -234,6 +237,18 @@ export default function Scanner() {
           <Press onPress={doScan} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 10 }}>
             <Txt size={12} color={t.ink2}>Voir un exemple de repas</Txt>
           </Press>
+          {recents.length ? (
+            <View style={{ gap: 8 }}>
+              <Txt size={13} weight="bold">Refaire un repas</Txt>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {recents.map((m) => (
+                  <Press key={m.name + m.kcal} haptic="medium" accessibilityLabel={'Refaire ' + m.name} onPress={() => setCustomMeal(m)} style={{ borderRadius: 999, borderWidth: 1, borderColor: t.line, backgroundColor: t.surf, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }}>
+                    <Txt size={13} weight="semibold" numberOfLines={1}>{m.name} · {fmt(m.kcal)} kcal</Txt>
+                  </Press>
+                ))}
+              </View>
+            </View>
+          ) : null}
           <MealJournal onEdit={(m) => { setEditing(m); setManual(true); }} />
         </>
       ) : (
