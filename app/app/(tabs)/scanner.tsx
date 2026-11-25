@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -19,8 +19,12 @@ import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { Food, fetchBarcode, toMeal } from '@/services/food';
 import { useDailyCoins } from '@/store/useEco';
 import { useCountUp } from '@/fx/AnimatedNumber';
+import * as ImagePicker from 'expo-image-picker';
+import { analyseMealPhoto, estimateToMeal, mealPhotoConfigured, type MealEstimate } from '@/services/mealPhoto';
 
-type Mode = 'idle' | 'search' | 'portion' | 'barcode';
+const PORTIONS: [string, number][] = [['Petite', 0.7], ['Normale', 1], ['Grande', 1.3]];
+
+type Mode = 'idle' | 'search' | 'portion' | 'barcode' | 'photo';
 
 export default function Scanner() {
   const t = useTheme();
@@ -36,6 +40,31 @@ export default function Scanner() {
   const [mode, setMode] = useState<Mode>('idle');
   const [food, setFood] = useState<Food | null>(null);
   const [busy, setBusy] = useState(false);
+  const [estimate, setEstimate] = useState<MealEstimate | null>(null);
+  const [factor, setFactor] = useState(1);
+  const [photoErr, setPhotoErr] = useState<string | null>(null);
+
+  const takePhoto = async () => {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    const res = perm.granted
+      ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (res.canceled || !res.assets?.[0]) return;
+    setMode('photo');
+    setEstimate(null);
+    setPhotoErr(null);
+    setFactor(1);
+    setBusy(true);
+    try {
+      const e = await analyseMealPhoto(res.assets[0].uri);
+      if (!e) setPhotoErr('Je ne vois pas de repas sur cette photo. Reprends-la de plus près, ou cherche l’aliment par son nom.');
+      setEstimate(e);
+    } catch (err) {
+      setPhotoErr(err instanceof Error ? err.message : 'Analyse impossible. Vérifie ta connexion et réessaie.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const pick = (f: Food) => {
     setFood(f);
@@ -88,6 +117,71 @@ export default function Scanner() {
       </Screen>
     );
   }
+  if (!scanned && mode === 'photo') {
+    const m = estimate ? estimateToMeal(estimate, factor) : null;
+    return (
+      <Screen name="scan">
+        <Card radius={28} pad={16} elevated style={{ gap: 14 }}>
+          {busy ? (
+            <View style={{ alignItems: 'center', gap: 12, paddingVertical: 28 }}>
+              <ActivityIndicator color={LIME} size="large" />
+              <Txt size={15} weight="semibold">J’analyse ton assiette…</Txt>
+              <Txt size={12} color={t.ink2}>Environ 20 à 40 secondes</Txt>
+            </View>
+          ) : m ? (
+            <>
+              <View style={{ gap: 3 }}>
+                <Txt size={13} color={t.ink2}>{m.name}</Txt>
+                <Display wide size={34} num lineHeight={34} letterSpacing={-1.7}>
+                  {fmt(m.kcal)}
+                  <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal estimées</Display>
+                </Display>
+                <Txt size={11} color={t.ink2}>Estimation d’après ta photo. Choisis ta portion, ou corrige à la main.</Txt>
+              </View>
+              <View style={{ gap: 6 }}>
+                {m.items.map((it) => (
+                  <View key={it} style={[styles.chip, { alignSelf: 'flex-start' }]}>
+                    <Txt size={13} weight="semibold" color={OBSIDIAN}>{it}</Txt>
+                  </View>
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {PORTIONS.map(([label, f]) => {
+                  const on = factor === f;
+                  return (
+                    <Press key={label} onPress={() => setFactor(f)} style={[styles.ghost, { height: 44, borderColor: on ? LIME : t.line, backgroundColor: on ? LIME : 'transparent' }]}>
+                      <Txt size={14} weight={on ? 'bold' : 'semibold'} color={on ? OBSIDIAN : t.ink}>{label}</Txt>
+                    </Press>
+                  );
+                })}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <Press onPress={() => { setManual(true); }} style={[styles.ghost, { height: 52, borderRadius: 20, borderColor: t.line }]}>
+                  <Txt size={14} weight="semibold">Corriger</Txt>
+                </Press>
+                <Press haptic="medium" onPress={() => { setCustomMeal(m); setMode('idle'); setEstimate(null); }} style={[styles.primary, { flex: 1.4, height: 52, borderRadius: 20 }, shadow.btn]}>
+                  <Txt size={14} weight="bold" color={OBSIDIAN}>Valider ce repas</Txt>
+                </Press>
+              </View>
+            </>
+          ) : (
+            <View style={{ gap: 10, paddingVertical: 12 }}>
+              <Txt size={14} lineHeight={20}>{photoErr ?? 'Aucune photo.'}</Txt>
+              <Press haptic="medium" onPress={takePhoto} style={[styles.primary, { height: 52 }, shadow.btn]}>
+                <Txt size={14} weight="bold" color={OBSIDIAN}>Reprendre la photo</Txt>
+              </Press>
+            </View>
+          )}
+        </Card>
+        {!busy ? (
+          <Press onPress={() => { setMode('idle'); setEstimate(null); }} style={[styles.ghost, { borderColor: t.line, flex: 0 }]}>
+            <Txt size={14} weight="semibold">Annuler</Txt>
+          </Press>
+        ) : null}
+        <ManualMealSheet visible={manual} edit={null} onClose={() => setManual(false)} />
+      </Screen>
+    );
+  }
   if (!scanned && mode === 'barcode') {
     return (
       <Screen name="scan">
@@ -99,7 +193,7 @@ export default function Scanner() {
   return (
     <Screen name="scan">
       <View style={[styles.cam, shadow.md]}>
-        {!scanned ? <Txt size={13} color="#9AA0A8">Scanne, cherche ou écris ton repas</Txt> : null}
+        {!scanned ? <Txt size={13} color="#9AA0A8">Photo, code-barres ou recherche : ton repas compté en un geste</Txt> : null}
         <Svg width={W} height={268} viewBox="0 0 358 268" preserveAspectRatio="xMidYMid meet" style={StyleSheet.absoluteFill}>
           <Path
             d="M40 70V52a12 12 0 0 1 12-12h18M288 40h18a12 12 0 0 1 12 12v18M318 198v18a12 12 0 0 1-12 12h-18M70 228H52a12 12 0 0 1-12-12v-18"
@@ -122,8 +216,13 @@ export default function Scanner() {
 
       {!scanned ? (
         <>
-          <Press haptic="medium" onPress={() => setMode('barcode')} style={[styles.primary, { height: 56 }, shadow.btn]}>
-            <Txt size={16} weight="bold" color={OBSIDIAN}>Scanner un code-barres</Txt>
+          {mealPhotoConfigured ? (
+            <Press haptic="medium" onPress={takePhoto} style={[styles.primary, { height: 56 }, shadow.btn]}>
+              <Txt size={16} weight="bold" color={OBSIDIAN}>Prendre mon assiette en photo</Txt>
+            </Press>
+          ) : null}
+          <Press haptic="medium" onPress={() => setMode('barcode')} style={mealPhotoConfigured ? [styles.ghost, { flex: 0, height: 52, borderColor: t.ink }] : [styles.primary, { height: 56 }, shadow.btn]}>
+            <Txt size={mealPhotoConfigured ? 15 : 16} weight="bold" color={mealPhotoConfigured ? t.ink : OBSIDIAN}>Scanner un code-barres</Txt>
           </Press>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Press onPress={() => setMode('search')} style={[styles.ghost, { borderColor: t.line }]}>

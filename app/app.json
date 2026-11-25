@@ -43,7 +43,7 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso.",
+          "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso et pour photographier tes repas.",
           "photosPermission": "FITAIA accède à tes photos uniquement pour choisir un selfie."
         }
       ],
@@ -56,9 +56,10 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie."
+          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres, photographier tes repas, compter tes pompes et prendre ton selfie."
         }
       ],
+      "./plugins/sans-push-distant",
       "expo-notifications"
     ],
     "experiments": {

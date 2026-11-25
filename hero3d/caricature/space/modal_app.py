@@ -23,14 +23,14 @@ from fastapi import Request
 MODELE_HF = 'black-forest-labs/FLUX.2-klein-4B'
 CACHE = '/cache'
 
-image = (
+base = (
     modal.Image.debian_slim(python_version='3.12')
     .apt_install('git')
     .pip_install('torch==2.8.0', 'git+https://github.com/huggingface/diffusers.git', 'transformers>=4.57', 'accelerate',
                  'sentencepiece', 'pillow', 'fastapi[standard]', 'huggingface_hub')
     .env({'HF_HOME': CACHE, 'HF_HUB_ENABLE_HF_TRANSFER': '0'})
-    .add_local_python_source('recette', 'api')
 )
+image = base.add_local_python_source('recette', 'api')
 app = modal.App('fitaia-caricature', image=image)
 volume = modal.Volume.from_name('fitaia-hf-cache', create_if_missing=True)
 # Secret facultatif « fitaia-caricature » : FITAIA_CARICATURE_TOKEN (l'app l'envoie en Authorization: Bearer) et HF_TOKEN
@@ -86,10 +86,11 @@ class CaricatureModel:
         import base64, io
         from PIL import Image
         refs = [Image.open(io.BytesIO(base64.b64decode(p))).convert('RGB') for p in photos_b64]
+        ref_arg = None if not refs else refs if len(refs) > 1 else refs[0]
         out = []
         for p in prompts:
             g = self.torch.Generator(device='cuda').manual_seed(seed)
-            im = self.pipe(prompt=p, image=refs if len(refs) > 1 else refs[0], generator=g, height=size, width=size, guidance_scale=1.0, num_inference_steps=steps).images[0]
+            im = self.pipe(prompt=p, image=ref_arg, generator=g, height=size, width=size, guidance_scale=1.0, num_inference_steps=steps).images[0]
             b = io.BytesIO(); im.save(b, format='PNG'); out.append(base64.b64encode(b.getvalue()).decode())
         return out
 
@@ -110,3 +111,91 @@ def health():
     import recette
 
     return {'ok': True, 'modele': recette.MODELE, 'graine': recette.SEED}
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Repas en photo → estimation (Qwen2.5-VL-7B-Instruct, Apache 2.0). Même app, même jeton, carte séparée du dessin.
+# POST <url repas>  {"photo": "<jpeg base64>"}  → {"ok", "name", "items": [{"name","grams","kcal","p","g","l"}], "kcal","p","g","l"}
+# C'est une ESTIMATION à partir d'une photo : l'app l'affiche comme telle et la personne ajuste la portion.
+# ---------------------------------------------------------------------------------------------------------------
+MODELE_VISION = 'Qwen/Qwen2.5-VL-7B-Instruct'
+CONSIGNE_REPAS = (
+    'You are a nutrition assistant. Look at this meal photo. List each food you can see with an estimated portion in '
+    'grams and its nutrition for that portion. Answer ONLY with JSON, no text around it, in this exact shape: '
+    '{"name": "<short French name of the meal>", "items": [{"name": "<French food name>", "grams": 0, "kcal": 0, '
+    '"p": 0, "g": 0, "l": 0}]} where p = protein grams, g = carbohydrate grams, l = fat grams. If there is no food in '
+    'the photo, answer {"name": "", "items": []}. Write every name in French (for example "Poulet grillé", "Riz blanc", '
+    '"Brocoli"), never in English. Use standard nutrition tables (cooked white rice is about 130 kcal per 100 g).'
+)
+
+
+vision_image = base.pip_install('torchvision==0.23.0').add_local_python_source('recette', 'api')
+
+
+@app.cls(image=vision_image, gpu=['L4', 'A10G'], volumes={CACHE: volume}, secrets=secrets, timeout=300, scaledown_window=60)
+class MealVision:
+    @modal.enter()
+    def load(self):
+        import torch
+        from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
+
+        self.torch = torch
+        self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(MODELE_VISION, torch_dtype=torch.bfloat16).to('cuda')
+        self.proc = AutoProcessor.from_pretrained(MODELE_VISION, min_pixels=256 * 28 * 28, max_pixels=640 * 28 * 28)
+        volume.commit()
+
+    def analyse(self, photo_b64):
+        import base64
+        import io
+        import json
+        import re
+
+        from PIL import Image
+
+        raw = base64.b64decode(photo_b64 or '', validate=True)
+        if not raw or len(raw) > 6 * 1024 * 1024:
+            raise ValueError('photo absente ou trop lourde')
+        img = Image.open(io.BytesIO(raw)).convert('RGB')
+        img.thumbnail((896, 896))
+        msgs = [{'role': 'user', 'content': [{'type': 'image'}, {'type': 'text', 'text': CONSIGNE_REPAS}]}]
+        text = self.proc.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
+        inputs = self.proc(text=[text], images=[img], return_tensors='pt').to('cuda')
+        with self.torch.inference_mode():
+            out = self.model.generate(**inputs, max_new_tokens=400, do_sample=False)
+        answer = self.proc.batch_decode(out[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)[0]
+        m = re.search(r'\{.*\}', answer, re.S)
+        data = json.loads(m.group(0)) if m else {}
+        items = []
+        for it in data.get('items', [])[:8]:
+            try:
+                row = {'name': str(it['name'])[:60], 'grams': max(0, round(float(it.get('grams', 0)))),
+                       'kcal': max(0, round(float(it['kcal']))), 'p': max(0, round(float(it.get('p', 0)))),
+                       'g': max(0, round(float(it.get('g', 0)))), 'l': max(0, round(float(it.get('l', 0))))}
+            except (KeyError, TypeError, ValueError):
+                continue
+            if row['kcal'] <= 3000:
+                items.append(row)
+        if not items:
+            return {'ok': False, 'error': 'Aucun aliment reconnu sur la photo. Rapproche-toi du plat, en pleine lumière.'}
+        tot = {k: sum(i[k] for i in items) for k in ('kcal', 'p', 'g', 'l')}
+        return {'ok': True, 'name': str(data.get('name') or items[0]['name'])[:60], 'items': items, **tot, 'modele': MODELE_VISION}
+
+    @modal.method()
+    def direct(self, body: dict, authorization: str = ''):
+        return self._handle(body, authorization)
+
+    def _handle(self, body, authorization):
+        expected = os.environ.get('FITAIA_CARICATURE_TOKEN', '')
+        if expected and authorization != 'Bearer ' + expected:
+            return {'ok': False, 'error': 'jeton refusé'}
+        try:
+            return self.analyse(body.get('photo', ''))
+        except Exception as e:  # message lisible pour l'app
+            return {'ok': False, 'error': str(e)[:200]}
+
+    @modal.fastapi_endpoint(method='POST')
+    async def repas(self, request: Request):
+        body = await request.json()
+        if not isinstance(body, dict):
+            return {'ok': False, 'error': 'corps JSON attendu'}
+        return self._handle(body, request.headers.get('authorization', ''))
