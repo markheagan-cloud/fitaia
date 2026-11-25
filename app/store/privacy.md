@@ -10,7 +10,8 @@ Dernière mise à jour : 21 novembre 2026
 - Les dessins de ton perso reviennent sur ton téléphone et y restent. Tu peux les effacer à tout moment en refaisant ton perso ou en supprimant l'app.
 
 ## Caméra et mouvement
-- La caméra sert à compter tes répétitions (analyse sur l'appareil, aucune image n'est enregistrée ni envoyée), à scanner les codes-barres et à prendre ton selfie.
+- Tes photos de repas servent uniquement à estimer les aliments et les calories. Elles sont envoyées, chiffrées (HTTPS), au même service chez Modal, gardées en mémoire le temps du calcul, puis effacées.
+- La caméra sert à compter tes répétitions (analyse sur l'appareil, aucune image n'est enregistrée ni envoyée), à scanner les codes-barres, à photographier tes repas et à prendre ton selfie.
 - Le podomètre sert au défi « Marcher 6 000 pas ». Les pas ne quittent pas ton téléphone.
 
 ## Services tiers
