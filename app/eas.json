@@ -12,7 +12,12 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_CARICATURE_URL": "https://leperecastorof-blip--fitaia-caricature-caricaturemodel-c-9f8ff6.us-east.modal.run",
+        "EXPO_PUBLIC_CARICATURE_TOKEN": "",
+        "EXPO_PUBLIC_MEAL_URL": "https://leperecastorof-blip--fitaia-caricature-mealvision-repas.us-east.modal.run"
+      }
     }
   },
   "submit": {

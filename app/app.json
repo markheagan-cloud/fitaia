@@ -44,7 +44,8 @@
         "expo-image-picker",
         {
           "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso et pour photographier tes repas.",
-          "photosPermission": "FITAIA accède à tes photos uniquement pour choisir un selfie."
+          "photosPermission": "FITAIA accède à tes photos uniquement pour choisir un selfie.",
+          "microphonePermission": false
         }
       ],
       [
