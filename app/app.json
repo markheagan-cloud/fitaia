@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "FITAIA",
-    "slug": "fitaia",
+    "slug": "fitaia-",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -72,6 +72,12 @@
       "lang": "fr",
       "themeColor": "#121315",
       "backgroundColor": "#121315"
+    },
+    "owner": "fitaias-team",
+    "extra": {
+      "eas": {
+        "projectId": "265e2380-a09f-4abe-b8b8-6bd12049ff2c"
+      }
     }
   }
 }
