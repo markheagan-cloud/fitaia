@@ -1,9 +1,15 @@
 # Politique de confidentialité — FITAIA
 
-Dernière mise à jour : 21 novembre 2026
+Dernière mise à jour : 26 novembre 2026
 
 ## Ce que FITAIA enregistre
-- Ton profil (sexe, âge, taille, poids, objectif, activité), ton journal (repas, pesées, défis, crédits) et ton perso sont stockés **uniquement sur ton téléphone** (stockage local de l'app). FITAIA n'a pas de compte utilisateur et ne garde aucune de ces données sur un serveur.
+- Ton profil (sexe, âge, taille, poids, objectif, activité), ton journal (repas, pesées, défis, crédits) et ton perso sont stockés sur ton téléphone (stockage local de l'app). Tant que tu n'ouvres pas la Communauté, FITAIA ne crée aucun compte et ne garde aucune de ces données sur un serveur.
+
+## La Communauté (facultative)
+- Si tu rejoins la Communauté, FITAIA crée un compte anonyme (sans e-mail ni mot de passe) sur notre serveur hébergé par Supabase à Paris (Union européenne).
+- Ce serveur garde ce que tu choisis de partager : ton pseudo, ta ville si tu l'indiques, ton genre et tes préférences de mise en relation, le dessin de ton perso, tes points, tes demandes d'amis, tes messages privés, et tes publications, réponses, réactions et photos dans les forums et les running clubs.
+- Les autres membres voient ton pseudo, ton perso et ce que tu publies. Tes messages privés ne sont visibles que par toi et ton correspondant, et par la modération en cas de signalement.
+- Tu peux signaler un contenu, bloquer un membre, et supprimer ton compte Communauté à tout moment dans Communauté › Confidentialité : tes données sont alors effacées du serveur.
 
 ## Ton selfie
 - Ton selfie sert uniquement à dessiner ton perso. Il est envoyé, chiffré (HTTPS), à notre service de dessin hébergé chez Modal (États-Unis), gardé en mémoire le temps du dessin, puis effacé : il n'est jamais écrit sur disque ni conservé.
@@ -18,10 +24,12 @@ Dernière mise à jour : 21 novembre 2026
 ## Services tiers
 - Open Food Facts (base ouverte, licence ODbL) : les recherches d'aliments et les codes-barres sont envoyés à openfoodfacts.org pour obtenir les valeurs nutritionnelles. Aucun identifiant personnel n'est transmis.
 - Modal (modal.com) : héberge le service de dessin du perso décrit plus haut.
-- Pas d'achat dans l'app, pas de publicité, pas de revente de données, pas de traqueur publicitaire.
+- Supabase (supabase.com) : héberge le serveur de la Communauté décrit plus haut, à Paris.
+- Achats : certaines tenues peuvent s'acheter avec ton compte Apple. Le paiement est géré par Apple ; FITAIA ne reçoit ni ne conserve tes coordonnées bancaires.
+- Pas de publicité, pas de revente de données, pas de traqueur publicitaire.
 
 ## Tes droits
-- Tu peux supprimer toutes tes données en supprimant l'app. Pour toute question : {{EMAIL_SUPPORT}}.
+- Tu peux supprimer les données de ton téléphone en supprimant l'app, et celles de la Communauté avec le bouton « Supprimer mon compte Communauté ». Pour toute question : {{EMAIL_SUPPORT}}.
 - FITAIA ne s'adresse pas aux enfants de moins de 13 ans.
 
 ## Avertissement santé
