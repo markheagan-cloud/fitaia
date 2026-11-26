@@ -16,6 +16,7 @@ import { portraitSource, PortraitKind } from '../avatars/portraits';
 import { VectorAvatar, AVATAR_VB } from '@/avatar/VectorAvatar';
 import { demoAvatar } from '../services/devData';
 import { useTheme } from '@/theme/ThemeProvider';
+import { Icon } from './icons';
 
 export type PortraitMode = 'tete' | 'buste' | 'corps' | 'carte';
 
@@ -145,6 +146,14 @@ export function AvatarPortrait({ avatarId, size, mode = 'tete', radius, style }:
         <View style={{ position: 'absolute', left: (size - w) / 2, top: -hh * f.top }}>
           <VectorAvatar sheet={demo.sheet} outfit={demo.outfit} width={w} background={false} />
         </View>
+      </View>
+    );
+  }
+  // membre réel : pas encore de portrait partagé par le serveur, silhouette neutre (jamais le visage de quelqu'un d'autre)
+  if (avatarId.startsWith('membre')) {
+    return (
+      <View style={[box, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Icon name="user" size={Math.round(size * 0.5)} color={t.ink2} />
       </View>
     );
   }

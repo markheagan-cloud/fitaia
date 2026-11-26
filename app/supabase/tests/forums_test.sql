@@ -58,7 +58,7 @@ select pg_temp.check((select count(*) from public.forum_posts where forum_id = '
 
 -- running club
 reset role;
-insert into public.forums (id, kind, title, city) values ('run_paris', 'running', 'Running club Paris', 'Paris');
+insert into public.forums (id, kind, title, city) values ('run_paris', 'running', 'Running club Paris', 'Paris') on conflict (id) do nothing;
 set role authenticated;
 set request.jwt.claim.sub = '00000000-0000-0000-0000-00000000000c';
 select pg_temp.fails($q$insert into public.run_meetups (forum_id, organizer_id, start_at, place, distance_km, pace) values ('f_perte', '00000000-0000-0000-0000-00000000000c', now() + interval '3 days', 'Entrée du parc', 5, 'tranquille')$q$, 'sortie refusée hors running club');

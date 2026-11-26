@@ -20,7 +20,17 @@ import type { ForumState, Pace, PostTag, ReactionId } from './models/forums';
 import { DEMO_POST_IDS, demoForumPosts } from './services/demoForums';
 import type { MatchWith } from './models/types';
 
-export const COMMUNITY_MODE: 'local-demo' | 'serveur' = 'local-demo';
+import { SERVER_ENABLED, sb } from './server/client';
+import * as api from './server/api';
+import { AppState } from 'react-native';
+
+/**
+ * « serveur » dès que l'adresse du projet Supabase est fournie (EXPO_PUBLIC_SUPABASE_URL + clé publique) :
+ * les autres membres sont de vraies personnes, rien n'est simulé et aucun profil de démonstration n'est ajouté.
+ * Sinon « local + démonstration », annoncé à l'écran.
+ */
+export const COMMUNITY_MODE: 'local-demo' | 'serveur' = SERVER_ENABLED ? 'serveur' : 'local-demo';
+const SERVER = COMMUNITY_MODE === 'serveur';
 
 export type Onboarding = {
   displayName: string;
@@ -75,6 +85,13 @@ type State = {
   refreshDemo: () => void;
   /** Filtre « Me proposer » : tout le monde, seulement des femmes ou seulement des hommes (réciproque). */
   setMatchWith: (w: MatchWith, myGender?: 'f' | 'm') => void;
+  /** Serveur réel : dernier refus ou problème réseau à montrer (null = rien). */
+  serverError: string | null;
+  clearServerError: () => void;
+  /** Serveur réel : recharge tout ce que je peux lire (sans effet en mode démonstration). */
+  pull: () => Promise<void>;
+  /** Supprime le compte Communauté et toutes ses données (serveur compris). */
+  deleteAccount: () => Promise<Result>;
 
   // ---------- forums ouverts et running clubs (mode local + démonstration)
   forums: ForumState;
@@ -122,9 +139,71 @@ export const useCommunity = create<State>()(
         return out;
       };
 
+      // ---------- serveur réel : chaque action est validée ici (réponse immédiate), puis par le serveur, seul juge,
+      // dont l'état remplace ensuite la copie du téléphone.
+      let queue: Promise<unknown> = Promise.resolve();
+      let pulling: Promise<void> | null = null;
+
+      /** Mon identifiant de compte serveur ; la première fois, ma copie locale est renommée avec cet identifiant. */
+      const ensureMe = async (): Promise<string> => {
+        const uid = await api.ensureSession(sb());
+        const cur = get().myId;
+        if (cur !== uid) {
+          const social: SocialState = JSON.parse(JSON.stringify(get().social));
+          const mine = social.profiles[cur];
+          if (mine) {
+            delete social.profiles[cur];
+            social.profiles[uid] = { ...mine, userId: uid };
+          }
+          set({ myId: uid, social, rev: get().rev + 1 });
+        }
+        return uid;
+      };
+
+      const pullNow = async () => {
+        if (!SERVER || get().status !== 'active') return;
+        if (pulling) return pulling;
+        pulling = (async () => {
+          try {
+            const me = await ensureMe();
+            const r = await api.pull(sb(), me);
+            const local = get().social.profiles[me];
+            // mon profil pas encore arrivé sur le serveur : on garde la copie locale
+            if (!r.social.profiles[me] && local) r.social.profiles[me] = local;
+            set({ social: r.social, forums: { ...get().forums, ...r.forums }, rev: get().rev + 1 });
+          } catch (e) {
+            set({ serverError: api.reasonOf(e) });
+          } finally {
+            pulling = null;
+          }
+        })();
+        return pulling;
+      };
+
+      const remote = (fn: (c: ReturnType<typeof sb>, me: string) => Promise<unknown>) => {
+        // rien ne part tant que la personne n'a pas rejoint la Communauté
+        if (!SERVER || get().status !== 'active') return;
+        queue = queue.then(async () => {
+          try {
+            const me = await ensureMe();
+            await fn(sb(), me);
+            if (get().serverError) set({ serverError: null });
+          } catch (e) {
+            set({ serverError: api.reasonOf(e) });
+          }
+          await pullNow();
+        });
+      };
+
+      const pushProfile = () =>
+        remote(async (c, me) => {
+          const p = get().social.profiles[me];
+          if (p) await api.saveProfile(c, me, p);
+        });
+
       /** Profils de démonstration : réponse simulée quelques secondes après un message. */
       const scheduleDemoReply = (other: string, convId: string) => {
-        if (!DEMO_IDS.has(other)) return;
+        if (SERVER || !DEMO_IDS.has(other)) return;
         const i = get().demoReplyIdx[other] ?? 0;
         const text = demoReply(other, i);
         if (!text) return;
@@ -146,8 +225,23 @@ export const useCommunity = create<State>()(
         rev: 0,
         hydrated: false,
         forums: emptyForumState(),
+        serverError: null,
+        clearServerError: () => set({ serverError: null }),
+        pull: pullNow,
+        deleteAccount: async () => {
+          if (SERVER) {
+            try {
+              const me = await ensureMe();
+              await api.deleteAccount(sb(), me);
+            } catch (e) {
+              return { ok: false, reason: api.reasonOf(e) };
+            }
+          }
+          set({ status: 'inconnu', myId: newId('u'), social: emptyState(), readAt: {}, forums: emptyForumState(), demoReplyIdx: {}, rev: get().rev + 1 });
+          return { ok: true };
+        },
 
-        activate: (o, points) =>
+        activate: (o, points) => {
           run((e, me) => {
             const now = Date.now();
             const prev = e.s.profiles[me];
@@ -180,59 +274,92 @@ export const useCommunity = create<State>()(
                 ? { ...prev.privacy, profileVisible: true, allowFitMatch: true, allowMessages: prev.privacy.allowMessages === 'personne' ? 'amis' : prev.privacy.allowMessages }
                 : DEFAULT_PRIVACY,
             });
+            if (SERVER) {
+              set({ status: 'active' });
+              return;
+            }
             for (const p of demoProfiles(now)) if (!e.s.profiles[p.userId]) e.upsertProfile(p);
             set({ status: 'active', forums: withDemoPosts(get().forums ?? emptyForumState(), now) });
-          }),
+          });
+          if (SERVER) pushProfile();
+        },
 
         decline: () => set({ status: 'refuse' }),
         reopen: () => set({ status: 'inconnu' }),
 
-        updatePrivacy: (p) =>
+        updatePrivacy: (p) => {
           run((e, me) => {
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, privacy: { ...cur.privacy, ...p } });
-          }),
+          });
+          pushProfile();
+        },
 
-        updateMe: (p) =>
+        updateMe: (p) => {
           run((e, me) => {
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, ...p, userId: me });
-          }),
+          });
+          pushProfile();
+        },
 
-        syncPoints: (points) =>
+        syncPoints: (points) => {
+          const before = get().social.profiles[get().myId]?.points;
           run((e, me) => {
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, points, lastActiveAt: Date.now() });
-          }),
+          });
+          if (before !== points) remote(async (c) => { await c.rpc('sync_my_points', { p: Math.round(points) }); });
+        },
 
-        pass: (id) => run((e, me) => e.pass(me, id)),
+        pass: (id) => {
+          run((e, me) => e.pass(me, id));
+          remote((c, me) => api.pass(c, me, id));
+        },
 
         addFriend: (id, fitmate) =>
           run((e, me) => {
             const r = e.requestFriend(me, id, fitmate ? 'fitmate' : 'ami');
             // démonstration : les profils fictifs acceptent automatiquement (simulé)
-            if (r.ok && DEMO_IDS.has(id)) {
+            if (r.ok && !SERVER && DEMO_IDS.has(id)) {
               const f = e.friendship(me, id);
               if (f) f.status = 'accepte';
             }
+            if (r.ok) remote((c, me2) => api.requestFriend(c, me2, id, fitmate ? 'fitmate' : 'ami'));
             return r;
           }),
 
-        respond: (fid, accept) => run((e, me) => e.respondFriend(me, fid, accept)),
+        respond: (fid, accept) => {
+          const r = run((e, me) => e.respondFriend(me, fid, accept));
+          if (r.ok) remote((c) => api.respondFriend(c, fid, accept));
+          return r;
+        },
 
-        encourage: (id) => run((e, me) => e.encourage(me, id)),
+        encourage: (id) => {
+          const r = run((e, me) => e.encourage(me, id));
+          if (r.ok) remote((c, me) => api.encourage(c, me, id));
+          return r;
+        },
 
         send: (id, text, type = 'texte') => {
           const r = run((e, me) => e.send(me, id, text, type));
           if (!r.ok) return r;
+          remote((c, me) => api.send(c, me, id, text, type));
           scheduleDemoReply(id, r.conversation.id);
           return { ok: true, conversationId: r.conversation.id };
         },
 
-        block: (id) => run((e, me) => e.block(me, id)),
-        unblock: (id) => run((e, me) => e.unblock(me, id)),
+        block: (id) => {
+          run((e, me) => e.block(me, id));
+          remote((c, me) => api.block(c, me, id));
+        },
+        unblock: (id) => {
+          run((e, me) => e.unblock(me, id));
+          remote((c, me) => api.unblock(c, me, id));
+        },
         report: (id, reason, messageId) => {
           run((e, me) => e.report(me, id, reason, messageId));
+          remote((c, me) => api.report(c, me, id, reason, messageId));
         },
 
         /** Quitter la Communauté : profil masqué et social désactivé (rien n'est publié). */
@@ -241,6 +368,7 @@ export const useCommunity = create<State>()(
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, privacy: { ...cur.privacy, profileVisible: false, allowFitMatch: false, allowMessages: 'personne' } });
           });
+          pushProfile();
           set({ status: 'refuse' });
         },
 
@@ -248,20 +376,28 @@ export const useCommunity = create<State>()(
 
         visit: () => set({ lastVisitAt: Date.now() }),
 
-        setStatus: (status) =>
+        setStatus: (status) => {
           run((e, me) => {
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, status, statusAt: status ? Date.now() : undefined });
-          }),
+          });
+          pushProfile();
+        },
 
-        setNeed: (need, shared = false) =>
+        setNeed: (need, shared = false) => {
           run((e, me) => {
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, need, needAt: need ? Date.now() : undefined, needPublic: !!need && shared });
-          }),
+          });
+          pushProfile();
+        },
 
         refreshDemo: () => {
           if (get().status !== 'active') return;
+          if (SERVER) {
+            void pullNow();
+            return;
+          }
           const now = Date.now();
           const patch = demoRefresh(now, new Date(now).getHours());
           run((e) => {
@@ -277,23 +413,30 @@ export const useCommunity = create<State>()(
           set({ forums: withDemoPosts(get().forums ?? emptyForumState(), now) });
         },
 
-        setMatchWith: (w, myGender) =>
+        setMatchWith: (w, myGender) => {
           run((e, me) => {
             const cur = e.s.profiles[me];
             if (cur) e.upsertProfile({ ...cur, gender: myGender ?? cur.gender, privacy: { ...cur.privacy, matchWith: w } });
-          }),
+          });
+          pushProfile();
+        },
 
-        acceptForumRules: () => set({ forums: { ...get().forums, rulesAcceptedAt: Date.now() } }),
+        acceptForumRules: () => {
+          set({ forums: { ...get().forums, rulesAcceptedAt: Date.now() } });
+          remote((c, me) => api.acceptRules(c, me));
+        },
 
         joinForum: (id) => {
           const f = get().forums;
           if (!forumById(id) || f.joined.includes(id)) return;
           set({ forums: { ...f, joined: [...f.joined, id] } });
+          remote((c, me) => api.joinForum(c, me, id));
         },
 
         leaveForum: (id) => {
           const f = get().forums;
           set({ forums: { ...f, joined: f.joined.filter((x) => x !== id) } });
+          remote((c, me) => api.leaveForum(c, me, id));
         },
 
         setRunCity: (city) => {
@@ -319,13 +462,16 @@ export const useCommunity = create<State>()(
           }
           const post = { id: newId('fp', now), forumId, authorId: me, text: text.trim(), photoUri, createdAt: now, state: 'ok' as const, tag: parentId ? undefined : opts?.tag, parentId };
           set({ forums: { ...f, posts: [...f.posts, post], joined: f.joined.includes(forumId) ? f.joined : [...f.joined, forumId] } });
+          remote((c, me2) => api.post(c, me2, forumId, text, photoUri, { tag: post.tag, parentId }));
           return { ok: true };
         },
 
         reactForumPost: (postId, r) => {
           const f = get().forums;
           const me = get().myId;
+          const had = !!f.posts.find((p) => p.id === postId)?.reactions?.[r]?.includes(me);
           set({ forums: { ...f, posts: f.posts.map((p) => (p.id === postId ? toggleReaction(p, r, me) : p)) } });
+          remote((c, me2) => api.toggleReaction(c, me2, postId, r, had));
         },
 
         hideForumPost: (postId) => {
@@ -343,6 +489,7 @@ export const useCommunity = create<State>()(
               hidden: f.hidden.includes(postId) ? f.hidden : [...f.hidden, postId],
             },
           });
+          remote((c, me) => api.reportPost(c, me, postId, reason));
         },
 
         proposeRun: (r) => {
@@ -361,12 +508,15 @@ export const useCommunity = create<State>()(
           if (mineActive.length >= 2) return { ok: false, reason: 'Deux sorties au maximum par organisateur dans un même club.' };
           const meetup = { id: newId('run', now), organizerId: me, going: [me], createdAt: now, ...r, place: r.place.trim() };
           set({ forums: { ...f, meetups: [...f.meetups, meetup], joined: f.joined.includes(r.forumId) ? f.joined : [...f.joined, r.forumId] } });
+          remote((c, me2) => api.proposeRun(c, me2, r));
           return { ok: true };
         },
 
         toggleGoing: (id) => {
           const f = get().forums;
           const me = get().myId;
+          const wasGoing = !!f.meetups.find((m) => m.id === id)?.going.includes(me);
+          remote((c, me2) => api.setGoing(c, me2, id, !wasGoing));
           set({
             forums: {
               ...f,
@@ -379,6 +529,7 @@ export const useCommunity = create<State>()(
           const f = get().forums;
           const me = get().myId;
           set({ forums: { ...f, meetups: f.meetups.map((m) => (m.id === id && m.organizerId === me ? { ...m, cancelled: true } : m)) } });
+          remote((c, me2) => api.cancelRun(c, me2, id));
         },
       };
     },
@@ -395,6 +546,7 @@ export const useCommunity = create<State>()(
       partialize: (s) => ({ status: s.status, myId: s.myId, social: s.social, demoReplyIdx: s.demoReplyIdx, readAt: s.readAt, lastVisitAt: s.lastVisitAt, forums: s.forums }),
       onRehydrateStorage: () => () => {
         useCommunity.setState({ hydrated: true });
+        if (SERVER) void useCommunity.getState().pull();
       },
     },
   ),
@@ -407,4 +559,28 @@ export function useSocial() {
   useCommunity((s) => s.rev);
   const engine = new SocialEngine(social);
   return { engine, myId, me: social.profiles[myId] as CommunityProfile | undefined };
+}
+
+/**
+ * Serveur réel : rafraîchit la Communauté régulièrement tant que l'app est au premier plan (12 s ; 4 s dans une
+ * discussion ouverte). Sans effet en mode démonstration.
+ */
+export function startCommunitySync(fast = () => false): () => void {
+  if (!SERVER) return () => {};
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const tick = async () => {
+    if (stopped) return;
+    if (AppState.currentState === 'active') await useCommunity.getState().pull();
+    timer = setTimeout(tick, fast() ? 4000 : 12000);
+  };
+  const sub = AppState.addEventListener('change', (st) => {
+    if (st === 'active') void useCommunity.getState().pull();
+  });
+  timer = setTimeout(tick, 1500);
+  return () => {
+    stopped = true;
+    if (timer) clearTimeout(timer);
+    sub.remove();
+  };
 }

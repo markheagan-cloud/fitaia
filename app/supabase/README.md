@@ -85,3 +85,25 @@ createdb t && psql -d t -f supabase/tests/supabase_stub.sql -f supabase/migratio
 Résultat attendu : `TESTS SQL COMMUNAUTE OK`, `TESTS SQL COMMUNAUTE (ETAT DU JOUR) OK`, `TESTS SQL FORUMS OK` (32 + 8 + 22 vérifications).
 
 `migrations/0005_forums_reponses_reactions.sql` : réponses (un niveau), étiquettes (victoire, question, astuce, progrès), réactions 👏 💪 🙏 (`forum_reactions`, une de chaque par personne, seulement sur un message lisible). Test : ajouter `-f supabase/migrations/0005_forums_reponses_reactions.sql` après 0004 et `-f supabase/tests/forums_reponses_test.sql` à la fin → `TESTS SQL FORUMS REPONSES OK` (11 vérifications).
+
+## Mise en ligne de la Communauté — `migrations/0006_mise_en_ligne.sql`
+Complète 0001 + 0003 + 0004 + 0005 pour l'app branchée : droits sur le genre et le filtre « Me proposer », carte publique
+avec activités / soutien / créneaux, un running club par ville de l'app (21), suppression du compte par la personne
+(`delete_my_account`, exigence Apple), file de modération `moderation_queue` + `admin_resolve_report` (rôle service
+seulement, revue humaine depuis le tableau de bord), photos des forums dans le seau PRIVÉ `forum-photos`, niveau
+déclaré par le téléphone (`sync_my_points`, ne fait que monter, borné).
+
+App : dès que `EXPO_PUBLIC_SUPABASE_URL` et `EXPO_PUBLIC_SUPABASE_ANON_KEY` sont remplis, `COMMUNITY_MODE` passe à
+`serveur` (src/community/store.ts) : compte anonyme créé à l'entrée dans la Communauté, plus aucun profil ni message
+de démonstration, chaque action validée par le serveur (src/community/server/api.ts), rafraîchissement toutes les 12 s
+(4 s dans une discussion ou un forum). Connexion anonyme à activer dans Authentication → Sign In / Providers.
+
+```
+createdb t && psql -d t -f supabase/tests/supabase_stub.sql -f supabase/migrations/0001_community.sql -f supabase/migrations/0003_community_daily.sql -f supabase/migrations/0004_forums.sql -f supabase/migrations/0005_forums_reponses_reactions.sql -f supabase/migrations/0006_mise_en_ligne.sql -f supabase/tests/community_test.sql -f supabase/tests/community_daily_test.sql -f supabase/tests/forums_test.sql -f supabase/tests/forums_reponses_test.sql -f supabase/tests/mise_en_ligne_test.sql
+```
+Résultat attendu : les cinq lignes `TESTS SQL … OK`.
+
+Contre le vrai serveur, deux comptes réels créés puis supprimés :
+```
+SUPABASE_URL=https://<ref>.supabase.co SUPABASE_ANON_KEY=<clé publique> node scripts/e2e-serveur.js
+```

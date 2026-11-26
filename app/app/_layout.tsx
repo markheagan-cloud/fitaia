@@ -16,6 +16,7 @@ import { CoachSheet } from '@/components/CoachSheet';
 import { useGame } from '@/store/useGame';
 import { caricatureConfigured } from '@/services/caricature';
 import { COMMUNITY_MINOR_MESSAGE, canJoinCommunity } from '@/community/access';
+import { startCommunitySync, useCommunity } from '@/community/store';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -32,6 +33,16 @@ function Root() {
   useEffect(() => {
     if (minorInCommunity) useGame.getState().say(COMMUNITY_MINOR_MESSAGE, 'bad');
   }, [minorInCommunity]);
+  // Communauté en ligne : rafraîchissement régulier (plus rapide dans une discussion) et refus du serveur affichés
+  const pathRef = React.useRef(pathname);
+  pathRef.current = pathname;
+  useEffect(() => startCommunitySync(() => pathRef.current.startsWith('/communaute/discussion') || pathRef.current.startsWith('/communaute/forum/')), []);
+  const serverError = useCommunity((s) => s.serverError);
+  useEffect(() => {
+    if (!serverError) return;
+    useGame.getState().say(serverError, 'bad');
+    useCommunity.getState().clearServerError();
+  }, [serverError]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') useGame.getState().rollover();

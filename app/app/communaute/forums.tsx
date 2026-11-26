@@ -12,7 +12,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
-import { useCommunity, useSocial } from '@/community/store';
+import { useCommunity, useSocial, COMMUNITY_MODE } from '@/community/store';
 import { RUN_CITIES, THEME_FORUMS, repliesOf, runDateLabel, runningForum, upcomingRuns, visiblePosts } from '@/community/models/forums';
 import { HeadStack, SectionHead, Sheet, Tag, TopBar } from '@/community/components/kit';
 import { Icon } from '@/community/components/icons';
@@ -47,12 +47,14 @@ export default function ForumsScreen() {
           <Txt size={14.5} color={t.ink2} lineHeight={20}>Des groupes ouverts : tu entres, tu lis, tu partages tes progrès et tes photos.</Txt>
         </Animated.View>
 
-        <View style={[styles.notice, { backgroundColor: t.surf }, shadow.card]}>
-          <Icon name="info" size={17} color={t.ink2} />
-          <Txt size={12.5} color={t.ink2} lineHeight={18} style={{ flex: 1 }}>
-            Aperçu : les forums ne sont pas encore en ligne. Les messages marqués « Démo » sont fictifs, et les tiens restent sur ton téléphone tant que le serveur n’est pas ouvert.
-          </Txt>
-        </View>
+        {COMMUNITY_MODE === 'local-demo' ? (
+          <View style={[styles.notice, { backgroundColor: t.surf }, shadow.card]}>
+            <Icon name="info" size={17} color={t.ink2} />
+            <Txt size={12.5} color={t.ink2} lineHeight={18} style={{ flex: 1 }}>
+              Aperçu : les forums ne sont pas encore en ligne. Les messages marqués « Démo » sont fictifs, et les tiens restent sur ton téléphone tant que le serveur n’est pas ouvert.
+            </Txt>
+          </View>
+        ) : null}
 
         {/* Running club */}
         <Animated.View entering={FadeInDown.delay(60).duration(280)} style={{ gap: 12 }}>
