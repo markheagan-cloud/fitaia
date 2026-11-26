@@ -47,7 +47,7 @@ TENUES = {
     'sprint': 'Full body, running pose, very big head, one third of the figure, on a small body. {Il} wears a runner outfit: red sleeveless running top, black split running shorts, bright red running shoes, white headband. Background: red athletics track with soft morning light.',
     'dojo': 'Full body, calm fighting stance, very big head, one third of the figure, on a small body. {Il} wears a martial arts training outfit: white karate-style jacket and trousers with a black belt, bare feet. Background: warm wooden dojo with paper walls.',
     'street': 'Full body, hands in hoodie pocket, very big head, one third of the figure, on a small body. {Il} wears a streetwear outfit: oversized graphite grey hoodie, black joggers, chunky white sneakers, black beanie. Background: grey concrete wall with soft lime light.',
-    'plage': 'Full body, relaxed pose, very big head, one third of the figure, on a small body. {Il} wears a beach outfit: coral swim shorts with a white wave pattern, open white linen shirt, flip-flops, towel over one shoulder. Background: turquoise sea and white sand under a bright sky.',
+    'plage': 'Full body, relaxed pose, very big head, one third of the figure, on a small body. {Il} wears a beach outfit: coral swim shorts with a white wave pattern, open white linen shirt{maillot}, flip-flops, towel over one shoulder. Background: turquoise sea and white sand under a bright sky.',
     'ring': 'Full body, boxing guard pose, very big head, one third of the figure, on a small body. {Il} wears a boxing outfit: shiny gold boxing shorts with a black waistband, open black satin robe with gold trim, red boxing gloves, black boxing boots. Background: boxing ring ropes with spotlights.',
     'alpin': 'Full body, confident pose, very big head, one third of the figure, on a small body. {Il} wears an epic mountain outfit: ice-blue technical ski jacket with white panels, white ski trousers, ski goggles on the forehead, grey gloves, snow boots. Background: snowy peaks under a clear blue sky.',
     'pilote': 'Full body, helmet under one arm, very big head, one third of the figure, on a small body. {Il} wears an epic racing driver outfit: black racing suit with magenta and cyan neon stripes, racing gloves, racing boots, a plain black helmet under the arm. Background: night race track with blurred neon lights.',
@@ -93,7 +93,7 @@ def silhouette(sheet):
 def _mots(sex):
     f = sex == 'f'
     return dict(qui='woman' if f else 'man', lui='her' if f else 'him', Il='She' if f else 'He',
-                barbe='' if f else 'same beard, ')
+                barbe='' if f else 'same beard, ', maillot=' over a coral one-piece sporty swimsuit' if f else '')
 
 
 def prompts(sex, sheet=None):
