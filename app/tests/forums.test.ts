@@ -7,7 +7,7 @@ import type { CommunityProfile } from '../src/community/models/types';
 import { genderAllows, suggest } from '../src/social/fitmatch/matching';
 import {
   TWO_WEEKS, THEME_FORUMS, RUN_CITIES, checkPlace, checkPost, cityKey, defaultRunStart, emptyForumState, forumById, nextOccurrence,
-  runDateLabel, runningForum, upcomingRuns, visiblePosts,
+  runDateLabel, runningForum, upcomingRuns, visiblePosts, repliesOf, forumFeed, toggleReaction, reactionCount, isFirstPost, dailyPrompt,
 } from '../src/community/models/forums';
 import type { RunMeetup } from '../src/community/models/forums';
 import { demoForumPosts } from '../src/community/services/demoForums';
@@ -95,5 +95,35 @@ const st = { ...emptyForumState(), meetups: [m, { ...m, id: 'r2', organizerId: '
 const up = upcomingRuns(st, 'run_paris', NOW, new Set(['bloque']));
 ok(up.length === 1 && up[0].m.id === 'r1', 'sortie d’une personne bloquée invisible');
 ok(/^Samedi \d+ (novembre|décembre) · 9 h 00$/.test(runDateLabel(sat)), 'date lisible : ' + runDateLabel(sat));
+
+// ---------- inspiré des meilleurs : réponses, réactions, étiquettes, tri, accueil des nouveaux, question du jour
+{
+  const base = demoForumPosts(NOW);
+  const st = { ...emptyForumState(), posts: base };
+  ok(visiblePosts(st, 'f_perte', new Set()).every((p) => !p.parentId), 'le fil ne montre que les messages principaux');
+  const rep = repliesOf(st, 'demo_fp_2', new Set());
+  ok(rep.length === 2 && rep[0].createdAt < rep[1].createdAt, 'réponses dans l’ordre de la conversation');
+  ok(repliesOf(st, 'demo_fp_2', new Set(['demo_leila'])).length === 1, 'réponse d’une personne bloquée invisible');
+  const q = forumFeed(st, 'f_perte', new Set(), 'question', 'recent', NOW);
+  ok(q.length === 1 && q[0].id === 'demo_fp_2', 'filtre Questions');
+  const v = forumFeed(st, 'f_perte', new Set(), 'victoire', 'recent', NOW);
+  ok(v.length === 1 && v[0].tag === 'victoire', 'filtre Victoires');
+  const nr = forumFeed(st, 'f_repas', new Set(), 'sans_reponse', 'recent', NOW);
+  ok(nr.length === 2 && nr.every((p) => !repliesOf(st, p.id, new Set()).length), 'filtre Sans réponse');
+  const mine = { id: 'm1', forumId: 'f_perte', authorId: 'me', text: 'nouveau', createdAt: NOW - 1000, state: 'ok' as const };
+  const st2 = { ...st, posts: [...st.posts, mine] };
+  ok(forumFeed(st2, 'f_perte', new Set(), 'tout', 'recent', NOW)[0].id === 'm1', 'tri Récents : le plus récent en premier');
+  ok(forumFeed(st2, 'f_perte', new Set(), 'tout', 'populaire', NOW)[0].id === 'demo_fp_2', 'tri Populaires : réactions + réponses');
+  const r1 = toggleReaction(mine, 'bravo', 'x');
+  ok(reactionCount(r1) === 1 && reactionCount(toggleReaction(r1, 'bravo', 'x')) === 0, 'réaction : un geste pour mettre, un pour retirer');
+  ok(reactionCount(toggleReaction(r1, 'merci', 'x')) === 2, 'plusieurs réactions différentes possibles');
+  ok(isFirstPost(st2, mine), 'premier message d’une personne repéré');
+  ok(!isFirstPost(st2, { ...mine, id: 'm2', createdAt: NOW }), 'deuxième message : plus « premier »');
+  ok(!isFirstPost(st, rep[0]), 'une réponse n’est jamais un « premier message »');
+  const pr = dailyPrompt(forumById('f_perte')!, NOW);
+  ok(pr.text.length > 5 && dailyPrompt(forumById('f_perte')!, NOW + 3600000).text === pr.text, 'question du jour stable dans la journée');
+  ok(dailyPrompt(forumById('f_perte')!, NOW + 86400000).text !== pr.text, 'question du jour qui change chaque jour');
+  ok(base.filter((p) => p.reactions).every((p) => Object.values(p.reactions!).every((ids) => ids!.every((x) => x.startsWith('demo_')))), 'démo : réactions seulement de profils fictifs');
+}
 
 console.log(`\nFORUMS OK (${n} vérifications)`);

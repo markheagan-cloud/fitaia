@@ -13,7 +13,7 @@ import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { useCommunity, useSocial } from '@/community/store';
-import { RUN_CITIES, THEME_FORUMS, runDateLabel, runningForum, upcomingRuns, visiblePosts } from '@/community/models/forums';
+import { RUN_CITIES, THEME_FORUMS, repliesOf, runDateLabel, runningForum, upcomingRuns, visiblePosts } from '@/community/models/forums';
 import { HeadStack, SectionHead, Sheet, Tag, TopBar } from '@/community/components/kit';
 import { Icon } from '@/community/components/icons';
 import { since, useNow } from '@/community/components/ui';
@@ -106,6 +106,7 @@ export default function ForumsScreen() {
               const last = posts[0];
               const authors = [...new Set(posts.map((p) => p.authorId))].slice(0, 3);
               const joined = forums.joined.includes(f.id);
+              const open = posts.filter((p) => p.tag === 'question' && p.authorId !== myId && !repliesOf(forums, p.id, blocked).length).length;
               return (
                 <Press key={f.id} onPress={() => router.push(CR.forum(f.id))} pressScale={0.99} accessibilityLabel={f.title} style={[styles.row, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }]}>
                   <View style={{ flex: 1, gap: 3 }}>
@@ -116,7 +117,12 @@ export default function ForumsScreen() {
                     <Txt size={13} color={t.ink2} numberOfLines={1}>
                       {last ? (last.authorId === myId ? 'Toi' : engine.s.profiles[last.authorId]?.displayName ?? 'Membre') + ' : ' + (last.text || 'Photo') : f.description}
                     </Txt>
-                    {last ? <Txt size={11.5} color={t.ink2}>{since(last.createdAt, now)}</Txt> : null}
+                    {last ? (
+                      <Txt size={11.5} color={t.ink2}>
+                        {since(last.createdAt, now)}
+                        {open ? <Txt size={11.5} weight="bold" color={t.ink}>{' · ' + open + (open > 1 ? ' questions attendent' : ' question attend') + ' une réponse'}</Txt> : null}
+                      </Txt>
+                    ) : null}
                   </View>
                   {authors.length ? (
                     <HeadStack ids={authors.map((id) => ({ avatarId: id === myId ? 'moi' : engine.s.profiles[id]?.avatarId ?? '' }))} size={28} ring={t.surf} />

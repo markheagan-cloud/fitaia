@@ -36,7 +36,37 @@ export type ForumPost = {
   photoUri?: string;
   createdAt: number;
   state: ForumPostState;
+  /** Étiquette choisie par l'auteur (comme le « flair » de Reddit) : sert au filtre du forum. */
+  tag?: PostTag;
+  /** Réponse à un message (un seul niveau, comme les commentaires Strava) ; absent = message principal. */
+  parentId?: string;
+  /** Réactions en un geste (inspirées des « kudos » de Strava) : identifiants des membres par réaction. */
+  reactions?: Partial<Record<ReactionId, string[]>>;
 };
+
+export type PostTag = 'victoire' | 'question' | 'astuce' | 'progres';
+export const POST_TAGS: { id: PostTag; label: string; emoji: string; hint: string }[] = [
+  { id: 'victoire', label: 'Victoire', emoji: '🏆', hint: 'Dis comment tu as fait : ça aide les autres à y arriver aussi.' },
+  { id: 'question', label: 'Question', emoji: '❓', hint: 'Donne un peu de contexte pour avoir de meilleures réponses.' },
+  { id: 'astuce', label: 'Astuce', emoji: '💡', hint: 'Ce qui marche pour toi, concrètement.' },
+  { id: 'progres', label: 'Progrès', emoji: '📈', hint: 'Où tu en étais, où tu en es, ce qui a changé.' },
+];
+
+export type ReactionId = 'bravo' | 'force' | 'merci';
+export const REACTIONS: { id: ReactionId; emoji: string; label: string }[] = [
+  { id: 'bravo', emoji: '👏', label: 'Bravo' },
+  { id: 'force', emoji: '💪', label: 'Courage' },
+  { id: 'merci', emoji: '🙏', label: 'Merci' },
+];
+
+export type ForumFilter = 'tout' | 'victoire' | 'question' | 'sans_reponse';
+export const FORUM_FILTERS: { id: ForumFilter; label: string }[] = [
+  { id: 'tout', label: 'Tout' },
+  { id: 'victoire', label: '🏆 Victoires' },
+  { id: 'question', label: '❓ Questions' },
+  { id: 'sans_reponse', label: 'Sans réponse' },
+];
+export type ForumSort = 'recent' | 'populaire';
 
 export type Pace = 'tranquille' | 'moyen' | 'rapide';
 
@@ -204,12 +234,67 @@ export const RUN_SAFETY = [
   'Préviens un proche de l’heure et du lieu.',
 ];
 
-/** Messages visibles pour moi : hors masqués, hors auteurs bloqués, hors messages retirés. */
+/** Messages visibles pour moi : hors masqués, hors auteurs bloqués, hors messages retirés. Messages principaux seulement. */
 export function visiblePosts(s: ForumState, forumId: string, blocked: Set<string>): ForumPost[] {
-  const hidden = new Set(s.hidden);
-  return s.posts
-    .filter((p) => p.forumId === forumId && p.state !== 'masque' && !hidden.has(p.id) && !blocked.has(p.authorId))
+  return allVisible(s, blocked)
+    .filter((p) => p.forumId === forumId && !p.parentId)
     .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function allVisible(s: ForumState, blocked: Set<string>): ForumPost[] {
+  const hidden = new Set(s.hidden);
+  return s.posts.filter((p) => p.state !== 'masque' && !hidden.has(p.id) && !blocked.has(p.authorId));
+}
+
+/** Réponses visibles d'un message, de la plus ancienne à la plus récente (on lit la conversation dans l'ordre). */
+export function repliesOf(s: ForumState, postId: string, blocked: Set<string>): ForumPost[] {
+  return allVisible(s, blocked).filter((p) => p.parentId === postId).sort((a, b) => a.createdAt - b.createdAt);
+}
+
+export const reactionCount = (p: ForumPost) => REACTIONS.reduce((n, r) => n + (p.reactions?.[r.id]?.length ?? 0), 0);
+
+/** Ajoute ou retire ma réaction (une de chaque type au plus par personne). */
+export function toggleReaction(p: ForumPost, r: ReactionId, me: string): ForumPost {
+  const cur = p.reactions?.[r] ?? [];
+  const next = cur.includes(me) ? cur.filter((x) => x !== me) : [...cur, me];
+  return { ...p, reactions: { ...p.reactions, [r]: next } };
+}
+
+/**
+ * Premier message d'une personne dans les forums : on le signale pour que les autres l'accueillent.
+ * (Les études sur les communautés santé : un nouveau qui reçoit une réponse revient ; sans réponse, il part.)
+ */
+export function isFirstPost(s: ForumState, p: ForumPost): boolean {
+  if (p.parentId) return false;
+  return !s.posts.some((x) => x.authorId === p.authorId && !x.parentId && x.createdAt < p.createdAt);
+}
+
+/** Fil d'un forum : filtre (étiquette, sans réponse) puis tri (récent ou populaire = réactions + 2 × réponses, sur 7 jours). */
+export function forumFeed(s: ForumState, forumId: string, blocked: Set<string>, filter: ForumFilter, sort: ForumSort, now: number): ForumPost[] {
+  let list = visiblePosts(s, forumId, blocked);
+  if (filter === 'victoire' || filter === 'question') list = list.filter((p) => p.tag === filter);
+  if (filter === 'sans_reponse') list = list.filter((p) => repliesOf(s, p.id, blocked).length === 0);
+  if (sort === 'populaire') {
+    const score = (p: ForumPost) => (now - p.createdAt < 7 * 86400000 ? reactionCount(p) + 2 * repliesOf(s, p.id, blocked).length : -1);
+    list = [...list].sort((a, b) => score(b) - score(a) || b.createdAt - a.createdAt);
+  }
+  return list;
+}
+
+/** Question du jour épinglée en haut de chaque forum (rituel quotidien, comme le fil « victoires du jour » de r/loseit). */
+const PROMPTS: Record<string, string[]> = {
+  f_perte: ['Ta victoire du jour, même petite ?', 'Qu’est-ce qui t’a aidé à tenir cette semaine ?', 'Une victoire qui ne se voit pas sur la balance ?'],
+  f_muscle: ['Ton meilleur exercice de la semaine ?', 'Un progrès sur une charge ou des répétitions ?', 'Ta séance du jour en une phrase ?'],
+  f_repas: ['Ton repas préféré de la semaine, en photo ?', 'Une recette simple qui t’aide à rester régulier ?', 'Ton petit-déjeuner qui tient jusqu’à midi ?'],
+  f_reprise: ['Qu’as-tu fait aujourd’hui, même 10 minutes ?', 'Ce qui te fait peur dans la reprise ?', 'Ton petit pas de la semaine ?'],
+  f_motivation: ['Qui a besoin d’un coup de boost aujourd’hui ?', 'Ta raison de continuer, en une phrase ?', 'Un message pour quelqu’un qui veut lâcher ?'],
+};
+export function dailyPrompt(forum: Forum, now: number): { text: string; tag: PostTag } {
+  if (forum.kind === 'running') return { text: 'Raconte ta dernière sortie : distance, sensations, qui était là ?', tag: 'progres' };
+  const list = PROMPTS[forum.id] ?? ['Ta victoire du jour ?'];
+  const day = Math.floor(now / 86400000);
+  const text = list[day % list.length];
+  return { text, tag: /victoire/i.test(text) ? 'victoire' : forum.id === 'f_repas' || forum.id === 'f_muscle' ? 'progres' : 'astuce' };
 }
 
 /** Sorties à venir d'un running club, triées par date. */

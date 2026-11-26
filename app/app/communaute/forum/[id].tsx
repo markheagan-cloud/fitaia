@@ -5,7 +5,7 @@
  * - Running club : sorties proposées par les membres (toutes les deux semaines par défaut), lieu public, « Je viens ».
  * Mode local + démonstration : rien ne part sur un serveur, et l'écran le dit.
  */
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, ScrollView, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,12 +19,13 @@ import { useGame } from '@/store/useGame';
 import { useCommunity, useSocial } from '@/community/store';
 import { REPORT_REASONS } from '@/community/models/types';
 import {
-  FORUM_RULES, PACES, POST_LIMITS, RUN_SAFETY, defaultRunStart, forumById, runDateLabel, shortDay, upcomingRuns, visiblePosts,
+  FORUM_FILTERS, FORUM_RULES, PACES, POST_LIMITS, POST_TAGS, REACTIONS, RUN_SAFETY, dailyPrompt, defaultRunStart, forumById, forumFeed,
+  isFirstPost, repliesOf, runDateLabel, shortDay, upcomingRuns, visiblePosts,
 } from '@/community/models/forums';
-import type { ForumPost, Pace } from '@/community/models/forums';
+import type { ForumFilter, ForumPost, ForumSort, Pace, PostTag } from '@/community/models/forums';
 import { Head, Sheet, Tag, Toggle, TopBar } from '@/community/components/kit';
 import { Icon } from '@/community/components/icons';
-import { MainButton, since, useNow } from '@/community/components/ui';
+import { Chip, MainButton, since, useNow } from '@/community/components/ui';
 import { CR } from '@/community/routes';
 
 const HOURS = [7, 8, 9, 10, 12, 18, 19, 20];
@@ -55,6 +56,14 @@ export default function ForumScreen() {
   const [actionsFor, setActionsFor] = useState<ForumPost | null>(null);
   const [reporting, setReporting] = useState(false);
   const [runOpen, setRunOpen] = useState(false);
+  const [filter, setFilter] = useState<ForumFilter>('tout');
+  const [sort, setSort] = useState<ForumSort>('recent');
+  const [tag, setTag] = useState<PostTag | undefined>();
+  const [replyTo, setReplyTo] = useState<ForumPost | null>(null);
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [focused, setFocused] = useState(false);
+  const input = useRef<TextInput>(null);
+  const react = useCommunity((s) => s.reactForumPost);
 
   if (!forum) {
     return (
@@ -66,11 +75,13 @@ export default function ForumScreen() {
   }
 
   const blocked = new Set(engine.s.blocks.flatMap((b) => (b.blockerId === myId ? [b.blockedId] : b.blockedId === myId ? [b.blockerId] : [])));
-  const posts = visiblePosts(forums, forum.id, blocked);
+  const all = visiblePosts(forums, forum.id, blocked);
+  const posts = forumFeed(forums, forum.id, blocked, filter, sort, now);
+  const prompt = dailyPrompt(forum, now);
   const runs = forum.kind === 'running' ? upcomingRuns(forums, forum.id, now, blocked) : [];
   const joined = forums.joined.includes(forum.id);
   const rulesOk = !!forums.rulesAcceptedAt;
-  const anyDemo = posts.some((p) => engine.s.profiles[p.authorId]?.demo);
+  const anyDemo = all.some((p) => engine.s.profiles[p.authorId]?.demo);
 
   const needRules = () => {
     if (rulesOk) return false;
@@ -90,11 +101,30 @@ export default function ForumScreen() {
 
   const submit = () => {
     if (needRules()) return;
-    const r = post(forum.id, text, photo);
+    const r = post(forum.id, text, replyTo ? undefined : photo, { tag: replyTo ? undefined : tag, parentId: replyTo?.id });
     if (!r.ok) return say(r.reason ?? 'Publication impossible', 'bad');
+    if (replyTo) setOpen({ ...open, [replyTo.id]: true });
     setText('');
     setPhoto(undefined);
-    say('Publié', 'ok');
+    setTag(undefined);
+    setReplyTo(null);
+    input.current?.blur();
+    say(replyTo ? 'Réponse envoyée' : 'Publié', 'ok');
+  };
+
+  const startReply = (p: ForumPost) => {
+    if (needRules()) return;
+    setReplyTo(p);
+    setTag(undefined);
+    setPhoto(undefined);
+    setTimeout(() => input.current?.focus(), 50);
+  };
+
+  const answerPrompt = () => {
+    if (needRules()) return;
+    setReplyTo(null);
+    setTag(prompt.tag);
+    setTimeout(() => input.current?.focus(), 50);
   };
 
   const nameOf = (uid: string) => (uid === myId ? 'Toi' : engine.s.profiles[uid]?.displayName ?? 'Membre');
@@ -162,35 +192,76 @@ export default function ForumScreen() {
             </View>
           ) : null}
 
+          {/* Question du jour épinglée (rituel quotidien) */}
+          <Press onPress={answerPrompt} pressScale={0.98} accessibilityLabel={'Question du jour : ' + prompt.text} style={[styles.prompt, { backgroundColor: t.strong }, shadow.md]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Icon name="spark" size={14} color={LIME} />
+              <Txt size={12} weight="bold" color={LIME}>Question du jour</Txt>
+            </View>
+            <Txt size={17} weight="bold" color={t.strongInk} lineHeight={22}>{prompt.text}</Txt>
+            <View style={[styles.promptBtn, { backgroundColor: LIME }]}>
+              <Txt size={13} weight="bold" color={OBSIDIAN}>Répondre</Txt>
+            </View>
+          </Press>
+
           <View style={{ gap: 10 }}>
-            <Txt size={17} weight="bold" style={{ paddingHorizontal: 4 }}>Discussions</Txt>
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4 }}>
+              <Txt size={17} weight="bold" style={{ flex: 1 }}>Discussions</Txt>
+              <View style={[styles.seg, { backgroundColor: t.track }]}>
+                {(['recent', 'populaire'] as ForumSort[]).map((k) => (
+                  <Press key={k} accessibilityRole="radio" accessibilityState={{ selected: sort === k }} onPress={() => setSort(k)} pressScale={0.95} style={[styles.segBtn, sort === k && { backgroundColor: t.surf }]}>
+                    <Txt size={12} weight="bold" color={sort === k ? t.ink : t.ink2}>{k === 'recent' ? 'Récents' : 'Populaires'}</Txt>
+                  </Press>
+                ))}
+              </View>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 4 }}>
+              {FORUM_FILTERS.map((f) => (
+                <Chip key={f.id} label={f.label} on={filter === f.id} onPress={() => setFilter(f.id)} />
+              ))}
+            </ScrollView>
             {posts.length ? (
               posts.map((p) => {
                 const demo = engine.s.profiles[p.authorId]?.demo;
+                const replies = repliesOf(forums, p.id, blocked);
+                const shown = open[p.id] ? replies : replies.slice(-1);
+                // nouveau membre (inscrit depuis moins de 14 jours) qui écrit pour la première fois : on invite à l'accueillir
+                const first = p.authorId !== myId && isFirstPost(forums, p) && now - (engine.s.profiles[p.authorId]?.joinedAt ?? 0) < 14 * 86400000;
+                const tg = POST_TAGS.find((x) => x.id === p.tag);
                 return (
                   <View key={p.id} style={[styles.post, { backgroundColor: t.surf }, shadow.card]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <Press onPress={() => p.authorId !== myId && router.push(CR.profile(p.authorId))} disabled={p.authorId === myId} accessibilityLabel={'Profil de ' + nameOf(p.authorId)}>
-                        <Head avatarId={avatarOf(p.authorId)} size={38} />
-                      </Press>
-                      <View style={{ flex: 1, gap: 1 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                          <Txt size={14} weight="bold">{nameOf(p.authorId)}</Txt>
-                          {demo ? <Tag kind="demo" /> : null}
-                        </View>
-                        <Txt size={11.5} color={t.ink2}>{since(p.createdAt, now)}</Txt>
+                    <PostHead p={p} name={nameOf(p.authorId)} avatar={avatarOf(p.authorId)} demo={!!demo} now={now} onMore={() => { setActionsFor(p); setReporting(false); }} onProfile={p.authorId !== myId ? () => router.push(CR.profile(p.authorId)) : undefined} />
+                    {tg || first ? (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                        {tg ? <View style={[styles.tagChip, { backgroundColor: t.track }]}><Txt size={12} weight="bold">{tg.emoji} {tg.label}</Txt></View> : null}
+                        {first ? <View style={[styles.tagChip, { backgroundColor: LIME }]}><Txt size={12} weight="bold" color={OBSIDIAN}>👋 Premier message</Txt></View> : null}
                       </View>
-                      <Press onPress={() => { setActionsFor(p); setReporting(false); }} accessibilityLabel="Options du message" pressScale={0.9} style={styles.more}>
-                        <Icon name="more" size={18} color={t.ink2} />
-                      </Press>
-                    </View>
+                    ) : null}
                     {p.text ? <Txt size={14.5} lineHeight={20}>{p.text}</Txt> : null}
                     {p.photoUri ? <Image source={{ uri: p.photoUri }} style={styles.photo} resizeMode="cover" accessibilityLabel="Photo partagée" /> : null}
+                    <Reactions p={p} me={myId} onToggle={(r) => react(p.id, r)} onReply={() => startReply(p)} replies={replies.length} />
+                    {first && !replies.length ? (
+                      <Txt size={12.5} color={t.ink2}>C’est son premier message : un petit mot de bienvenue fait la différence.</Txt>
+                    ) : null}
+                    {replies.length > shown.length ? (
+                      <Press onPress={() => setOpen({ ...open, [p.id]: true })} accessibilityLabel={'Voir les ' + replies.length + ' réponses'}>
+                        <Txt size={13} weight="bold" color={t.ink2}>Voir les {replies.length} réponses</Txt>
+                      </Press>
+                    ) : null}
+                    {shown.map((r) => (
+                      <View key={r.id} style={[styles.reply, { borderLeftColor: t.line }]}>
+                        <PostHead p={r} small name={nameOf(r.authorId)} avatar={avatarOf(r.authorId)} demo={!!engine.s.profiles[r.authorId]?.demo} now={now} onMore={() => { setActionsFor(r); setReporting(false); }} onProfile={r.authorId !== myId ? () => router.push(CR.profile(r.authorId)) : undefined} />
+                        <Txt size={14} lineHeight={19}>{r.text}</Txt>
+                        <Reactions p={r} me={myId} small onToggle={(x) => react(r.id, x)} onReply={() => startReply(p)} />
+                      </View>
+                    ))}
                   </View>
                 );
               })
             ) : (
-              <Txt size={13.5} color={t.ink2} style={{ paddingHorizontal: 4 }}>Personne n’a encore écrit ici. Lance la discussion.</Txt>
+              <Txt size={13.5} color={t.ink2} style={{ paddingHorizontal: 4 }}>
+                {all.length ? (filter === 'sans_reponse' ? 'Tout le monde a reçu une réponse. Bravo à la communauté !' : 'Rien dans ce filtre pour l’instant.') : 'Personne n’a encore écrit ici. Lance la discussion.'}
+              </Txt>
             )}
           </View>
 
@@ -203,7 +274,23 @@ export default function ForumScreen() {
 
         {/* Zone d'écriture */}
         <View style={[styles.composer, { paddingBottom: insets.bottom + 10, backgroundColor: t.bg, borderTopColor: t.line }]}>
-          {photo ? (
+          {replyTo ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16 }}>
+              <Icon name="chat" size={15} color={t.ink2} />
+              <Txt size={12.5} color={t.ink2} numberOfLines={1} style={{ flex: 1 }}>Réponse à {nameOf(replyTo.authorId)} : {replyTo.text}</Txt>
+              <Press onPress={() => setReplyTo(null)} accessibilityLabel="Annuler la réponse"><Icon name="close" size={18} color={t.ink2} /></Press>
+            </View>
+          ) : focused || text || tag ? (
+            <View style={{ gap: 6 }}>
+              <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingHorizontal: 12 }}>
+                {POST_TAGS.map((x) => (
+                  <Chip key={x.id} label={x.emoji + ' ' + x.label} on={tag === x.id} onPress={() => setTag(tag === x.id ? undefined : x.id)} />
+                ))}
+              </ScrollView>
+              {tag ? <Txt size={12} color={t.ink2} style={{ paddingHorizontal: 16 }}>{POST_TAGS.find((x) => x.id === tag)!.hint}</Txt> : null}
+            </View>
+          ) : null}
+          {photo && !replyTo ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12 }}>
               <Image source={{ uri: photo }} style={styles.thumb} />
               <Txt size={12.5} color={t.ink2} style={{ flex: 1 }}>Photo jointe. Seulement toi, habillé, personne d’autre sans accord.</Txt>
@@ -211,20 +298,24 @@ export default function ForumScreen() {
             </View>
           ) : null}
           <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 12, alignItems: 'flex-end' }}>
-            <Press onPress={pickPhoto} accessibilityLabel="Joindre une photo" pressScale={0.9} style={[styles.send, { backgroundColor: t.surf }, shadow.sm]}>
-              <Icon name="image" size={20} color={t.ink} />
-            </Press>
+            {!replyTo ? (
+              <Press onPress={pickPhoto} accessibilityLabel="Joindre une photo" pressScale={0.9} style={[styles.send, { backgroundColor: t.surf }, shadow.sm]}>
+                <Icon name="image" size={20} color={t.ink} />
+              </Press>
+            ) : null}
             <TextInput
+              ref={input}
               value={text}
               onChangeText={setText}
-              onFocus={() => needRules()}
-              placeholder="Écris dans le forum"
+              onFocus={() => { setFocused(true); needRules(); }}
+              onBlur={() => setFocused(false)}
+              placeholder={replyTo ? 'Ta réponse' : tag === prompt.tag && !text ? prompt.text : 'Écris dans le forum'}
               placeholderTextColor={t.ink2}
               multiline
               maxLength={POST_LIMITS.maxLength}
               style={[styles.input, { backgroundColor: t.surf, color: t.ink }, shadow.sm]}
             />
-            <Press accessibilityLabel="Publier" disabled={!text.trim() && !photo} onPress={submit} haptic="medium" pressScale={0.9} style={[styles.send, { backgroundColor: text.trim() || photo ? LIME : t.track }]}>
+            <Press accessibilityLabel={replyTo ? 'Envoyer la réponse' : 'Publier'} disabled={!text.trim() && !photo} onPress={submit} haptic="medium" pressScale={0.9} style={[styles.send, { backgroundColor: text.trim() || photo ? LIME : t.track }]}>
               <Icon name="arrowUp" size={21} color={OBSIDIAN} strokeWidth={2.5} />
             </Press>
           </View>
@@ -272,6 +363,53 @@ export default function ForumScreen() {
       </Sheet>
 
       {forum.kind === 'running' ? <RunSheet visible={runOpen} onClose={() => setRunOpen(false)} forumId={forum.id} /> : null}
+    </View>
+  );
+}
+
+function PostHead({ p, name, avatar, demo, now, onMore, onProfile, small }: { p: ForumPost; name: string; avatar: string; demo: boolean; now: number; onMore: () => void; onProfile?: () => void; small?: boolean }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <Press onPress={onProfile ?? (() => {})} disabled={!onProfile} accessibilityLabel={'Profil de ' + name}>
+        <Head avatarId={avatar} size={small ? 28 : 38} />
+      </Press>
+      <View style={{ flex: 1, gap: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Txt size={small ? 13 : 14} weight="bold">{name}</Txt>
+          {demo ? <Tag kind="demo" /> : null}
+          {small ? <Txt size={11.5} color={t.ink2}>· {since(p.createdAt, now)}</Txt> : null}
+        </View>
+        {!small ? <Txt size={11.5} color={t.ink2}>{since(p.createdAt, now)}</Txt> : null}
+      </View>
+      <Press onPress={onMore} accessibilityLabel="Options du message" pressScale={0.9} style={styles.more}>
+        <Icon name="more" size={18} color={t.ink2} />
+      </Press>
+    </View>
+  );
+}
+
+/** Réactions en un geste (👏 Bravo, 💪 Courage, 🙏 Merci) + Répondre. */
+function Reactions({ p, me, onToggle, onReply, replies, small }: { p: ForumPost; me: string; onToggle: (r: (typeof REACTIONS)[number]['id']) => void; onReply: () => void; replies?: number; small?: boolean }) {
+  const t = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
+      {REACTIONS.map((r) => {
+        const ids = p.reactions?.[r.id] ?? [];
+        const mine = ids.includes(me);
+        if (small && !ids.length) return null;
+        return (
+          <Press key={r.id} accessibilityRole="button" accessibilityState={{ selected: mine }} accessibilityLabel={r.label + (ids.length ? ' (' + ids.length + ')' : '')} onPress={() => onToggle(r.id)} pressScale={0.9} haptic="light" style={[styles.react, { backgroundColor: mine ? LIME : t.bg, borderColor: mine ? LIME : t.line }]}>
+            <Txt size={13}>{r.emoji}</Txt>
+            {!small || ids.length ? <Txt size={12} weight="bold" color={mine ? OBSIDIAN : t.ink}>{ids.length ? ids.length : r.label}</Txt> : null}
+          </Press>
+        );
+      })}
+      <View style={{ flex: 1 }} />
+      <Press onPress={onReply} accessibilityLabel="Répondre" pressScale={0.94} style={styles.replyBtn}>
+        <Icon name="chat" size={15} color={t.ink2} />
+        <Txt size={12.5} weight="bold" color={t.ink2}>{replies ? 'Répondre · ' + replies : 'Répondre'}</Txt>
+      </Press>
     </View>
   );
 }
@@ -378,4 +516,12 @@ const styles = StyleSheet.create({
   pill: { height: 36, paddingHorizontal: 13, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   field: { height: 46, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 15 },
   safety: { borderRadius: 16, padding: 12, gap: 8 },
+  prompt: { borderRadius: 24, padding: 16, gap: 8 },
+  promptBtn: { alignSelf: 'flex-start', height: 34, paddingHorizontal: 14, borderRadius: 17, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
+  seg: { flexDirection: 'row', borderRadius: 16, padding: 3 },
+  segBtn: { height: 28, paddingHorizontal: 10, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  tagChip: { height: 26, paddingHorizontal: 10, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  react: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 30, paddingHorizontal: 10, borderRadius: 15, borderWidth: 1 },
+  replyBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 30, paddingHorizontal: 6 },
+  reply: { borderLeftWidth: 2, paddingLeft: 12, marginLeft: 6, gap: 6 },
 });

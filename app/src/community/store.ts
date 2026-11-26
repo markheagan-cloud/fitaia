@@ -15,8 +15,8 @@ import {
 import { emptyState, newId, SocialEngine, SocialState } from './services/engine';
 import { demoProfiles, demoRefresh, demoReply, DEMO_IDS } from './services/devData';
 import type { NeedId, StatusId } from './models/intentions';
-import { checkPlace, checkPost, emptyForumState, forumById } from './models/forums';
-import type { ForumState, Pace } from './models/forums';
+import { checkPlace, checkPost, emptyForumState, forumById, toggleReaction } from './models/forums';
+import type { ForumState, Pace, PostTag, ReactionId } from './models/forums';
 import { DEMO_POST_IDS, demoForumPosts } from './services/demoForums';
 import type { MatchWith } from './models/types';
 
@@ -82,7 +82,8 @@ type State = {
   joinForum: (forumId: string) => void;
   leaveForum: (forumId: string) => void;
   setRunCity: (city: string | null) => void;
-  postInForum: (forumId: string, text: string, photoUri?: string) => Result;
+  postInForum: (forumId: string, text: string, photoUri?: string, opts?: { tag?: PostTag; parentId?: string }) => Result;
+  reactForumPost: (postId: string, r: ReactionId) => void;
   hideForumPost: (postId: string) => void;
   reportForumPost: (postId: string, reason: string) => void;
   proposeRun: (r: { forumId: string; startAt: number; everyTwoWeeks: boolean; place: string; distanceKm: number; pace: Pace }) => Result;
@@ -93,7 +94,18 @@ type State = {
 /** Ajoute/rafraîchit les messages de démonstration des forums (les miens sont conservés tels quels). */
 function withDemoPosts(f: ForumState, now: number): ForumState {
   const mine = f.posts.filter((p) => !DEMO_POST_IDS.has(p.id));
-  return { ...f, posts: [...demoForumPosts(now), ...mine] };
+  // mes réactions sur les messages de démonstration sont conservées (seules celles des profils fictifs sont recréées)
+  const demo = demoForumPosts(now).map((d) => {
+    const old = f.posts.find((p) => p.id === d.id);
+    if (!old?.reactions) return d;
+    const reactions = { ...d.reactions };
+    for (const [r, ids] of Object.entries(old.reactions) as [ReactionId, string[]][]) {
+      const extra = (ids ?? []).filter((x) => !x.startsWith('demo_'));
+      if (extra.length) reactions[r] = [...(reactions[r] ?? []), ...extra];
+    }
+    return { ...d, reactions };
+  });
+  return { ...f, posts: [...demo, ...mine] };
 }
 
 const engineOf = (s: SocialState) => new SocialEngine(s);
@@ -289,7 +301,7 @@ export const useCommunity = create<State>()(
           set({ forums: { ...f, city } });
         },
 
-        postInForum: (forumId, text, photoUri) => {
+        postInForum: (forumId, text, photoUri, opts) => {
           const f = get().forums;
           const me = get().myId;
           if (get().status !== 'active') return { ok: false, reason: 'Rejoins d’abord la Communauté.' };
@@ -299,9 +311,21 @@ export const useCommunity = create<State>()(
           const mine = f.posts.filter((p) => p.authorId === me).map((p) => ({ createdAt: p.createdAt, text: p.text }));
           const c = checkPost({ text, hasPhoto: !!photoUri, now, myRecent: mine });
           if (!c.ok) return c;
-          const post = { id: newId('fp', now), forumId, authorId: me, text: text.trim(), photoUri, createdAt: now, state: 'ok' as const };
+          let parentId: string | undefined;
+          if (opts?.parentId) {
+            const parent = f.posts.find((p) => p.id === opts.parentId);
+            if (!parent || parent.forumId !== forumId || parent.state === 'masque') return { ok: false, reason: 'Ce message n’existe plus.' };
+            parentId = parent.parentId ?? parent.id; // un seul niveau de réponses
+          }
+          const post = { id: newId('fp', now), forumId, authorId: me, text: text.trim(), photoUri, createdAt: now, state: 'ok' as const, tag: parentId ? undefined : opts?.tag, parentId };
           set({ forums: { ...f, posts: [...f.posts, post], joined: f.joined.includes(forumId) ? f.joined : [...f.joined, forumId] } });
           return { ok: true };
+        },
+
+        reactForumPost: (postId, r) => {
+          const f = get().forums;
+          const me = get().myId;
+          set({ forums: { ...f, posts: f.posts.map((p) => (p.id === postId ? toggleReaction(p, r, me) : p)) } });
         },
 
         hideForumPost: (postId) => {

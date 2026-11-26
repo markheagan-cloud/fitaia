@@ -83,3 +83,5 @@ organisateur), « Je viens ». Filtre réciproque femmes / hommes dans `fitmatch
 createdb t && psql -d t -f supabase/tests/supabase_stub.sql -f supabase/migrations/0001_community.sql -f supabase/migrations/0003_community_daily.sql -f supabase/migrations/0004_forums.sql -f supabase/tests/community_test.sql -f supabase/tests/community_daily_test.sql -f supabase/tests/forums_test.sql
 ```
 Résultat attendu : `TESTS SQL COMMUNAUTE OK`, `TESTS SQL COMMUNAUTE (ETAT DU JOUR) OK`, `TESTS SQL FORUMS OK` (32 + 8 + 22 vérifications).
+
+`migrations/0005_forums_reponses_reactions.sql` : réponses (un niveau), étiquettes (victoire, question, astuce, progrès), réactions 👏 💪 🙏 (`forum_reactions`, une de chaque par personne, seulement sur un message lisible). Test : ajouter `-f supabase/migrations/0005_forums_reponses_reactions.sql` après 0004 et `-f supabase/tests/forums_reponses_test.sql` à la fin → `TESTS SQL FORUMS REPONSES OK` (11 vérifications).
