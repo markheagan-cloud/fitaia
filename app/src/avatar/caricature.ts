@@ -81,6 +81,19 @@ export function buildCaricature(r: CaricatureJobResult, base: AvatarBase, files:
 }
 
 /** Réponse JSON « tenues » du service ({"ok", "tenues": {id: png base64}}) → images par tenue, ou null si elle est vide ou invalide. */
+/** Réponse du mode « mix » : {ok, cle, image} → clé et image base64 ; erreur lisible sinon (jamais d'image inventée). */
+export function finishedMix(json: string): { key: string; image: string } {
+  let r: { ok?: boolean; cle?: unknown; image?: unknown; error?: unknown };
+  try {
+    r = JSON.parse(json);
+  } catch {
+    throw new Error('Réponse illisible du serveur de dessin.');
+  }
+  if (!r || r.ok !== true) throw new Error(typeof r?.error === 'string' && r.error ? r.error : 'Mélange impossible à dessiner.');
+  if (typeof r.cle !== 'string' || !/^m-[a-z0-9_-]+$/.test(r.cle) || typeof r.image !== 'string' || !r.image) throw new Error('Réponse incomplète du serveur de dessin.');
+  return { key: r.cle, image: r.image };
+}
+
 export function finishedOutfits(json: string): Record<string, string> | null {
   let r: { ok?: boolean; tenues?: Record<string, unknown> };
   try {

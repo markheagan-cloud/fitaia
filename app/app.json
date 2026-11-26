@@ -77,7 +77,8 @@
           "enableBackgroundPlayback": false,
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true

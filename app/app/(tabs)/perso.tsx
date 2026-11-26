@@ -197,6 +197,9 @@ export default function Perso() {
           <Txt size={14} weight="semibold">Mon profil</Txt>
         </Press>
       </View>
+      <Press haptic="medium" accessibilityLabel="Mon vestiaire" onPress={() => router.push('/vestiaire')} style={[styles.selfieBtn, { borderColor: t.line }]}>
+        <Txt size={14} weight="semibold">Mon vestiaire · m’habiller pièce par pièce</Txt>
+      </Press>
       {__DEV__ ? (
         <Press onPress={() => router.push('/human-engine-debug')} style={[styles.selfieBtn, { borderColor: t.line, borderStyle: 'dashed' }]}>
           <Txt size={13} weight="semibold" color={t.ink2}>Labo 3D (interne)</Txt>

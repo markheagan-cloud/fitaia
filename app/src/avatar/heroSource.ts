@@ -27,6 +27,8 @@ export type HeroInput = {
   pendingSelfie?: string | null;
   drawing: { outfit: string; uri: string } | null;
   skin: { id: string; name: string; img: ImageSourcePropType };
+  /** Mélange porté (vestiaire) : clé d'une image de caricature.outfits ; passe avant la tenue entière. */
+  look?: string | null;
   stage: { img: ImageSourcePropType; label: string } | null;
   ready: boolean;
   sheet: CharacterSheet;
@@ -37,7 +39,9 @@ export type HeroInput = {
 export function heroSourceFor(i: HeroInput): HeroChoice {
   const label = 'Ton perso en tenue ' + i.skin.name;
   if (i.caricature?.portraitUri && i.caricature.base === i.base) {
-    // la tenue équipée, portée par le perso de la personne, si elle a été dessinée ; sinon son portrait
+    // le mélange du vestiaire s'il est porté et dessiné, sinon la tenue équipée, sinon le portrait
+    const mixed = i.look ? i.caricature.outfits?.[i.look] : undefined;
+    if (mixed) return { source: { uri: mixed }, label: 'Ton perso, habillé à ta façon', personal: true };
     const worn = i.caricature.outfits?.[i.skin.id];
     if (worn) return { source: { uri: worn }, label: 'Ton perso en tenue ' + i.skin.name, personal: true };
     return { source: { uri: i.caricature.portraitUri }, label: 'Ton perso, dessiné depuis ton selfie', personal: true };

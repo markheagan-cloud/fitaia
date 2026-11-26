@@ -79,7 +79,7 @@ export const OUTFIT_SHEETS: OutfitSheet[] = [
   { itemId: 'outfit_astro', collection: 'prestige', addedAt: BUILD8, limited: WINDOWS.lancement, tagline: 'En orbite, panneaux citron lumineux.',
     pieces: { haut: 'Combinaison spatiale blanche à panneaux citron', chaussures: 'Bottes à semelle citron', accessoire: 'Casque sous le bras' }, decor: 'Espace étoilé, grande planète' },
   { itemId: 'outfit_royal', collection: 'prestige', addedAt: BUILD8, limited: WINDOWS.lancement, tagline: 'Le roi des champions.',
-    pieces: { haut: 'Cape en velours violet à bordure or, tenue de sport noir et or', chaussures: 'Baskets dorées', accessoire: 'Petite couronne dorée' }, decor: 'Grande salle, rayons dorés' },
+    pieces: { haut: 'Cape en velours violet à bordure or, tenue de sport noir et or', bas: 'Pantalon de sport noir et or', chaussures: 'Baskets dorées', accessoire: 'Petite couronne dorée' }, decor: 'Grande salle, rayons dorés' },
 ];
 
 const SHEET_BY_ID = new Map(OUTFIT_SHEETS.map((s) => [s.itemId, s]));

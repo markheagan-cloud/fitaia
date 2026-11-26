@@ -4,6 +4,7 @@ import { ImageStyle, StyleProp, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useBody, useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
+import { useLook } from '@/shop/useLook';
 import { previewImage } from '@/data/character';
 import { BODY_STAGES, sheetMatchesHero, stageIndex } from './bodyStages';
 import { heroSourceFor, type HeroChoice } from './heroSource';
@@ -39,7 +40,9 @@ export function useHeroSource(): HeroChoice {
   const sheet = useGame((s) => s.character);
   const stage = useHeroStage();
   const base = useAvatarBase();
+  const look = useLook((s) => s.worn);
   return heroSourceFor({
+    look,
     base,
     caricature,
     pendingSelfie: caricatureConfigured ? selfieUri : null,

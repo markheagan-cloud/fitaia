@@ -51,6 +51,13 @@ const expectErr = async (p: Promise<unknown>) => {
   t.ok(/vide/.test(await expectErr(callDirect('u', {}, { fetch: okFetch('   ') }))), 'réponse vide refusée');
   t.ok(/trop de temps/.test(await expectErr(callDirect('u', {}, { fetch: slow, timeoutMs: 20 }))), 'délai dépassé : message lisible');
 
+  // comme window.fetch : refuse d'être appelé comme méthode de l'objet d'options (vestiaire sur le web, 26/11)
+  const strict = function (this: unknown, _u: string, _i: Init) {
+    if (this !== undefined && this !== globalThis) throw new TypeError('Illegal invocation');
+    return Promise.resolve({ ok: true, status: 200, text: async () => '{"ok":true}' });
+  } as GradioFetch;
+  t.equal(await callDirect('u', {}, { fetch: strict }), '{"ok":true}', 'fetch du navigateur : pas d’« Illegal invocation »');
+
   const ctl = new AbortController();
   const p = expectErr(callDirect('u', {}, { fetch: slow, signal: ctl.signal }));
   ctl.abort();

@@ -2,7 +2,7 @@
  * Fiche d'un article de la boutique : la tenue sur le perso de la personne, en grand, et tout ce qu'il faut savoir
  * avant de la prendre (pièces, chaussures, décor, collection, date de fin, prix). Ou la fiche d'un article à venir.
  */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +24,8 @@ import { OutfitArt, UpcomingArt, rarityOf, useMyOutfits } from '@/shop/ShopArt';
 import { useWishlist } from '@/shop/useWishlist';
 import { PERSONAS, daysToAfford, delayOf, inDays } from '@/shop/rythme';
 import { usePace } from '@/shop/usePace';
+import { eurosLabel, palierOf } from '@/shop/prixEuros';
+import { achatsPossibles, acheterEnEuros, prixApple } from '@/services/achats';
 
 const PIECES: PieceKind[] = ['haut', 'bas', 'chaussures', 'accessoire'];
 
@@ -34,11 +36,20 @@ export default function Article() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const say = useGame((s) => s.say);
   const celebrate = useCelebrate((s) => s.celebrate);
-  const { catalog, inventory, wallet, buy, equip } = useEco();
+  const { catalog, inventory, wallet, buy, equip, grantPaid } = useEco();
   const mine = useMyOutfits();
   const wished = useWishlist((s) => s.ids.includes(String(id)));
   const toggleWish = useWishlist((s) => s.toggle);
   const [busy, setBusy] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [applePrice, setApplePrice] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    if (id) prixApple([String(id)]).then((p) => live && setApplePrice(p[String(id)] ?? null));
+    return () => {
+      live = false;
+    };
+  }, [id]);
   const { pace, start, doneToday } = usePace();
   const now = new Date();
   const item = catalog.find((i) => i.id === id);
@@ -123,6 +134,26 @@ export default function Article() {
   const waitMax = wait !== null && price !== null ? delayOf(daysToAfford(price, PERSONAS[0].week, start), doneToday) : null;
   const daysLeft = lim && lim.open ? lim.daysLeft - 1 : null;
   const tooLate = wait !== null && daysLeft !== null && wait > daysLeft;
+  const palier = palierOf(item);
+  const euros = palier ? applePrice ?? eurosLabel(palier.euros) : null;
+  const canPay = !owned && sale && euros !== null;
+
+  const pay = async () => {
+    if (paying || busy) return;
+    if (!achatsPossibles()) {
+      say('Achat en euros disponible sur l’app iPhone', 'bad');
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await acheterEnEuros(item.id, (it) => grantPaid(it));
+      const sk = skinOf(item.id);
+      if (res.ok) celebrate({ title: item.name + ' débloquée', sub: 'Elle est à toi pour toujours, et déjà sur ton perso.', image: sk ? mine?.[sk.id] : undefined });
+      else if (!res.annule) say(res.message, 'bad');
+    } finally {
+      setPaying(false);
+    }
+  };
 
   const cta = worn ? 'Sur ton perso' : owned ? 'La mettre sur mon perso' : !sale ? 'Édition terminée' : price === null ? 'Offerte, déjà à toi' : missing > 0 ? 'Il te manque ' + fmt(missing) + ' ' + CUR_NAMES[0] : 'Débloquer pour ' + fmt(price) + ' ' + CUR_NAMES[0];
   const canAct = !worn && (owned || (sale && price !== null && missing === 0));
@@ -148,7 +179,7 @@ export default function Article() {
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + (canPay ? 180 : 120) }}>
         <View style={{ height: 420 + insets.top, backgroundColor: OBSIDIAN }}>
           <OutfitArt itemId={item.id} rarity={item.rarity} height={420 + insets.top} />
           <View style={[styles.rarityBar, { backgroundColor: r.c }]} />
@@ -187,7 +218,7 @@ export default function Article() {
           <Facts rows={[
             ['Collection', (coll?.name ?? '') + ' · ' + have + ' / ' + collItems.length + ' possédées'],
             ['Rareté', r.label],
-            ['Prix', price === null ? 'Offerte à l’inscription' : fmt(price) + ' ' + CUR_NAMES[0]],
+            ['Prix', price === null ? 'Offerte à l’inscription' : fmt(price) + ' ' + CUR_NAMES[0] + (euros ? ' ou ' + euros : '')],
             ['Ton solde', fmt(balance) + ' ' + CUR_NAMES[0]],
             ...(wait !== null ? [[pace.mine ? 'À ton rythme' : 'En jouant', inDays(wait) + (pace.mine ? '' : ' (défi + 2 repas, 6 j / 7)')] as [string, string]] : []),
           ]} />
@@ -197,8 +228,8 @@ export default function Article() {
               <Txt size={13} lineHeight={19} color={t.ink2}>
                 {'En bossant : ' + (waitMax !== null && waitMax < (wait ?? 0) ? '3 défis et 3 repas par jour, tu l’as ' + inDays(waitMax) + (tooLate && daysLeft !== null && waitMax <= daysLeft ? ', avant la fin.' : '.') : 'défi du jour et repas, ' + inDays(wait) + '.')}
               </Txt>
-              {lim ? (
-                <Txt size={13} lineHeight={19} color={t.ink2}>En euros : prévu avec les achats intégrés Apple, pas encore ouverts dans l’app.</Txt>
+              {euros ? (
+                <Txt size={13} lineHeight={19} color={t.ink2}>{'Tout de suite : ' + euros + ', achat Apple. Même tenue, rien de plus : payer va juste plus vite.'}</Txt>
               ) : null}
             </View>
           ) : null}
@@ -217,7 +248,12 @@ export default function Article() {
             </View>
           )}
         </Press>
-        {!owned && sale && missing > 0 ? <Txt size={12} color={t.ink2} style={{ textAlign: 'center' }}>Touche pour aller aux défis du jour et gagner des Fitcoins.</Txt> : null}
+        {canPay ? (
+          <Press haptic="medium" disabled={paying || busy} onPress={pay} accessibilityLabel={'Acheter ' + item.name + ' pour ' + euros} style={[styles.pay, { borderColor: t.ink }]}>
+            {paying ? <ActivityIndicator color={t.ink} /> : <Txt size={15} weight="bold" num>{'L’avoir tout de suite · ' + euros}</Txt>}
+          </Press>
+        ) : null}
+        {!owned && sale && missing > 0 ? <Txt size={12} color={t.ink2} style={{ textAlign: 'center' }}>{canPay ? 'Fitcoins : touche le bouton vert pour aller aux défis du jour.' : 'Touche pour aller aux défis du jour et gagner des Fitcoins.'}</Txt> : null}
       </View>
       {top}
     </View>
@@ -263,5 +299,6 @@ const styles = StyleSheet.create({
   pieceRow: { flexDirection: 'row', paddingVertical: 12, gap: 8, alignItems: 'flex-start' },
   ghost: { height: 48, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
   bar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 16, paddingTop: 12, gap: 6, borderTopWidth: StyleSheet.hairlineWidth },
+  pay: { height: 50, borderRadius: 18, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
   cta: { height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18 },
 });

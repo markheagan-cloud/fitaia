@@ -19,7 +19,7 @@ import { runServerJob, type JobFetch } from '@/avatar/avatar3dJob';
 import { callDirect } from '@/avatar/directCall';
 import { SKINS } from '@/data/content';
 import { base64ToBytes, callGradio, type GradioFetch } from '@/avatar/gradioCall';
-import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedOutfits, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
+import { BODY_KEYS, buildCaricature, caricatureFileName, finishedCaricature, finishedMix, finishedOutfits, finishedSpaceCaricature, type BodyKey, type Caricature, type CaricatureJobResult } from '@/avatar/caricature';
 
 const ENDPOINT = (process.env.EXPO_PUBLIC_CARICATURE_ENDPOINT ?? '').replace(/\/+$/, '');
 const SPACE = (process.env.EXPO_PUBLIC_CARICATURE_SPACE ?? '').replace(/\/+$/, '');
@@ -88,6 +88,34 @@ export async function completeOutfits(c: Caricature, sheet: Record<string, unkno
   const img = await ImageManipulator.manipulateAsync(c.portraitUri, [], { format: ImageManipulator.SaveFormat.PNG, base64: true });
   if (!img.base64) return;
   await drawOutfits(c.id, img.base64, c.base, sheet, missing, undefined, onBatch);
+}
+
+/**
+ * Dessine un mélange de pièces (haut d'une tenue, bas d'une autre…) sur le perso déjà créé : un vrai dessin du
+ * service (mode « mix »), jamais un collage. Rend la clé du mélange et l'image enregistrée sur le téléphone.
+ */
+export async function drawMix(c: Caricature, sheet: Record<string, unknown> | undefined, mix: Record<string, string>, signal?: AbortSignal): Promise<{ key: string; uri: string }> {
+  if (!URL_DIRECT) throw new Error('Service de dessin non configuré.');
+  const headers: Record<string, string> = TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {};
+  const portrait = await portraitBase64(c.portraitUri);
+  const text = await callDirect(URL_DIRECT, { portrait, sex: c.base, sheet: sheet ?? {}, mix }, { fetch: fetch as unknown as GradioFetch, headers, signal, timeoutMs: 180_000 });
+  const r = finishedMix(text);
+  return { key: r.key, uri: await saveB64Png(c.id, 'tenue-' + r.key, r.image) };
+}
+
+/** Portrait du perso en base64 (PNG) : fichier du téléphone, ou adresse data:/http sur le web. */
+async function portraitBase64(uri: string): Promise<string> {
+  if (uri.startsWith('data:')) return uri.slice(uri.indexOf(',') + 1);
+  if (Platform.OS === 'web') {
+    const res = await fetch(uri);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(bin);
+  }
+  const img = await ImageManipulator.manipulateAsync(uri, [], { format: ImageManipulator.SaveFormat.PNG, base64: true });
+  if (!img.base64) throw new Error('Lecture du portrait impossible.');
+  return img.base64;
 }
 
 async function saveB64Png(id: string, which: string, b64: string): Promise<string> {

@@ -74,3 +74,19 @@ ouvert** : il passera par les achats intégrés Apple, pas encore branchés.
 
 Ce qui reste à décider par Mark : les prix en euros des éditions limitées (au moment des achats Apple), et s'il veut
 un bonus de série (7 jours d'affilée), qui demande une nouvelle règle côté serveur.
+
+## Prix en euros (26 novembre 2026)
+
+Décision de Mark : un prix fixe Apple par tenue, pas de monnaie achetable, pas de lot. Les Fitcoins restent gagnés
+seulement. Grille calée sur le marché (`src/shop/prixEuros.ts`, testée par `tests/shop-prix.test.ts`) :
+
+| Rareté | Prix | Repère marché |
+|---|---|---|
+| Commune | Fitcoins seulement | on l'a en 1 à 4 jours de défis |
+| Rare | 2,99 € | Brawl Stars : apparence 2,49 € à 5,99 € |
+| Épique | 5,99 € | Fortnite : tenue rare 800 V-Bucks ≈ 6,50 € |
+| Légendaire | 9,99 € | Clash Royale : apparences de tour 1 500 à 2 500 gemmes, lots 10 à 15 € |
+| Royal Or | 14,99 € | Fortnite : tenues légendaires 2 000 V-Bucks ≈ 16 € |
+
+Chaque tenue payable en euros reste payable en Fitcoins : payer va plus vite, ne donne rien de plus.
+Produits App Store : `com.fitaia.app.tenue.<tenue>` (non consommables), créés par `node scripts/asc-achats.mjs --appliquer`.

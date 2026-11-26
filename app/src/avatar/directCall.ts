@@ -27,7 +27,10 @@ export async function callDirect(url: string, payload: Record<string, unknown>, 
   o.signal?.addEventListener('abort', onAbort);
   const timer = ctl ? setTimeout(() => ctl.abort(), o.timeoutMs ?? 180_000) : null;
   try {
-    const res = await o.fetch(url, {
+    // appelé hors de l'objet d'options : dans un navigateur, window.fetch appelé comme méthode d'un autre objet
+    // lève « Illegal invocation »
+    const call = o.fetch;
+    const res = await call(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(o.headers ?? {}) },
       body: JSON.stringify(payload),

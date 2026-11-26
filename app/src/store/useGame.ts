@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { avatarBase, defaultSheetFor } from '@/avatar/identity';
 import { deleteAvatar3d, deleteAvatar3dPortrait, type Avatar3d } from '@/services/avatar3d';
-import { caricatureConfigured, completeOutfits, createCaricature, deleteCaricature, type Caricature } from '@/services/caricature';
+import { caricatureConfigured, completeOutfits, createCaricature, deleteCaricature, drawMix, type Caricature } from '@/services/caricature';
 import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -116,6 +116,8 @@ type Actions = {
   createMyCaricature: () => Promise<void>;
   /** Dessine en arrière-plan les tenues que le perso n'a pas encore ; sans effet si c'est déjà en cours. */
   completeMyOutfits: () => Promise<void>;
+  /** Vestiaire : dessine un mélange de pièces sur le perso (service, mode « mix ») et rend la clé de l'image. */
+  drawMyMix: (mix: Record<string, string>, signal?: AbortSignal) => Promise<string>;
   stopTimers: () => void;
 };
 
@@ -468,6 +470,16 @@ export const useGame = create<GameState>()(
           } finally {
             outfitsBusy = false;
           }
+        },
+        drawMyMix: async (mix, signal) => {
+          const s = get();
+          const c = s.caricature;
+          if (!c) throw new Error('Crée d’abord ton perso avec un selfie.');
+          const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
+          const r = await drawMix(c, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, mix, signal);
+          const cur = get().caricature;
+          if (cur && cur.id === c.id) set({ caricature: { ...cur, outfits: { ...(cur.outfits ?? {}), [r.key]: r.uri } } });
+          return r.key;
         },
         setCharacter: (c) => set({ character: c, characterReady: true }),
         setProfile: (patch) => {

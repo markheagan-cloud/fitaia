@@ -23,10 +23,12 @@ import { OutfitArt, UpcomingArt, rarityOf, useMyOutfits } from '@/shop/ShopArt';
 import { useWishlist } from '@/shop/useWishlist';
 import { daysToAfford, delayOf, inDays, nextEvents } from '@/shop/rythme';
 import { usePace } from '@/shop/usePace';
+import { achatsPossibles, reprendreAchats } from '@/services/achats';
 
 export default function Boutique() {
   const t = useTheme();
-  const { ready, error, account, statuses, catalog, inventory, wallet } = useEco();
+  const { ready, error, account, statuses, catalog, inventory, wallet, grantPaid } = useEco();
+  const say = useGame((s) => s.say);
   const mine = useMyOutfits();
   const caricature = useGame((s) => s.caricature);
   const outfits = useMemo(() => displayableOutfits(catalog), [catalog]);
@@ -43,6 +45,22 @@ export default function Boutique() {
     if (caricatureConfigured && caricature) void completeMyOutfits();
   }, [caricature?.id, completeMyOutfits]); // eslint-disable-line react-hooks/exhaustive-deps
   const ownedIds = new Set(inventory?.items.map((i) => i.itemId) ?? []);
+  const ownedSkins = outfits.filter((i) => ownedIds.has(i.id)).map((i) => skinOf(i.id)!.id);
+  const [restoring, setRestoring] = useState(false);
+  const restore = async () => {
+    if (restoring) return;
+    if (!achatsPossibles()) {
+      say('Achats en euros disponibles sur l’app iPhone', 'bad');
+      return;
+    }
+    setRestoring(true);
+    try {
+      const found = await reprendreAchats((it) => grantPaid(it, false), true);
+      say(found.length ? found.length + (found.length > 1 ? ' tenues retrouvées' : ' tenue retrouvée') : 'Aucun achat à restaurer sur ce compte Apple', found.length ? 'ok' : 'bad');
+    } finally {
+      setRestoring(false);
+    }
+  };
   const buyable = (i: CosmeticItem) => !ownedIds.has(i.id) && i.priceFitcoins !== null && onSale(i.id, now);
   // Objectif : la tenue pas encore possédée la plus proche du solde (vrai prix, vraie progression)
   const goal = outfits.filter(buyable).sort((x, y) => (x.priceFitcoins ?? 0) - (y.priceFitcoins ?? 0)).find((i) => (i.priceFitcoins ?? 0) > balance)
@@ -92,7 +110,7 @@ export default function Boutique() {
           </Txt>
         ) : null}
         <Txt size={13} lineHeight={19} color="#B7BBC2">
-          Défis, niveaux et récompenses sont gratuits. Chaque tenue est dessinée sur ton perso, avec ta tête. Les éditions limitées se débloquent avec tes Fitcoins.
+          Défis, niveaux et récompenses sont gratuits. Chaque tenue est dessinée sur ton perso, avec ta tête. Tout se débloque avec tes Fitcoins ; les tenues rares et au-dessus aussi tout de suite en euros.
         </Txt>
       </View>
 
@@ -124,6 +142,18 @@ export default function Boutique() {
           </Txt>
         </Press>
       </View>
+
+      {/* Mon vestiaire : ses tenues, et les mélanger pièce par pièce */}
+      <Press accessibilityLabel="Ouvrir mon vestiaire" onPress={() => router.push('/vestiaire')} pressScale={0.98} style={[styles.note, { backgroundColor: OBSIDIAN, flexDirection: 'row', alignItems: 'center', gap: 12 }, shadow.card]}>
+        <View style={{ flexDirection: 'row' }}>
+          {ownedSkins.slice(0, 3).map((sk, i) => (mine?.[sk] ? <Image key={sk} source={{ uri: mine[sk] }} style={[styles.closet, { marginLeft: i ? -18 : 0 }]} /> : null))}
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Txt size={15} weight="bold" color="#F5F4F1">Mon vestiaire</Txt>
+          <Txt size={12} lineHeight={17} color="#B7BBC2">{ownedSkins.length + (ownedSkins.length > 1 ? ' tenues à toi' : ' tenue à toi') + ' · mélange hauts, bas, chaussures et accessoires'}</Txt>
+        </View>
+        <Txt size={18} weight="bold" color={LIME}>›</Txt>
+      </Press>
 
       {/* Ton calendrier : ce qui tombe, et quand, si tu continues comme ça */}
       {agenda.length > 0 ? (
@@ -263,6 +293,8 @@ export default function Boutique() {
             'Tu vois chaque tenue sur ton perso avant de la prendre.',
             'Aucun coffre ni tirage au hasard : tu choisis, tu sais ce que tu as.',
             'Le prix est écrit sur chaque article, en Fitcoins, et les Fitcoins se gagnent en faisant tes défis.',
+            'Les tenues rares et au-dessus ont aussi un prix fixe en euros : pas de monnaie à acheter, pas de lot, pas de reste.',
+            'Payer va plus vite, ne donne rien de plus : la même tenue s’obtient en jouant.',
             'Une édition limitée affiche sa date de fin, sans compte à rebours.',
             'Ce que tu as débloqué reste à toi, même après la fin d’une édition.',
           ].map((l) => (
@@ -271,6 +303,9 @@ export default function Boutique() {
               <Txt size={13} lineHeight={19} color={t.ink2} style={{ flex: 1 }}>{l}</Txt>
             </View>
           ))}
+          <Press onPress={restore} accessibilityLabel="Restaurer mes achats" style={{ alignSelf: 'flex-start', paddingVertical: 6 }}>
+            <Txt size={13} weight="semibold" color={t.ink}>{restoring ? 'Recherche de tes achats…' : 'Restaurer mes achats'}</Txt>
+          </Press>
         </View>
       ) : null}
     </Screen>
@@ -368,6 +403,7 @@ function UpcomingCard({ u, wished, onPress }: { u: Upcoming; wished: boolean; on
 }
 
 const styles = StyleSheet.create({
+  closet: { width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: OBSIDIAN },
   pass: { borderRadius: 30, padding: 18, gap: 12, overflow: 'hidden', borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' },
   goal: { borderRadius: 28, padding: 16, gap: 14 },
   goalImg: { width: 84, height: 84, borderRadius: 18 },

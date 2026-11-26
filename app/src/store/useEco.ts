@@ -10,6 +10,8 @@ import type { ProgressionAccount, SelfActionType } from '@/progression/types';
 import { rejectionMessage } from '@/economy/messages';
 import { uuidV4 } from '@/platform/ids';
 import { STARTER_OUTFIT, getSession } from '@/services/session';
+import { reprendreAchats } from '@/services/achats';
+import { useLook } from '@/shop/useLook';
 
 /** Ancienne économie du téléphone, convertie une seule fois (solde 10:1 plafonné, tenues possédées, tenue portée). */
 export type LegacyEconomy = { credits: number; owned: string[]; equipped: string };
@@ -34,6 +36,8 @@ type EcoState = {
   award(action: SelfActionType, sourceId: string): Promise<AwardResult>;
   buy(itemId: string): Promise<ShopResult>;
   equip(itemId: string): Promise<ShopResult>;
+  /** Tenue payée en euros (achat Apple validé) : ajoutée à l'inventaire et mise sur le perso. */
+  grantPaid(itemId: string, wear?: boolean): Promise<void>;
 };
 
 let initOnce: Promise<void> | null = null;
@@ -67,6 +71,8 @@ export const useEco = create<EcoState>()((set, get) => ({
           set({ isDemo: s.isDemo });
           await get().refresh();
           set({ ready: true, error: null });
+          // achats Apple payés mais pas encore ajoutés (app fermée pendant l'achat) : rendus sans rien demander
+          void reprendreAchats((it) => get().grantPaid(it, false));
         } catch (e) {
           initOnce = null;
           set({ error: e instanceof Error ? e.message : String(e) });
@@ -116,13 +122,25 @@ export const useEco = create<EcoState>()((set, get) => ({
       return { ok: false, message: rejectionMessage(out.code) };
     }
     await s.inventory.equip(itemId);
+    useLook.getState().clear();
     await get().refresh();
     return { ok: true, message: '' };
+  },
+
+  grantPaid: async (itemId, wear = true) => {
+    const s = await getSession();
+    await s.bootstrap.grantCosmetic(itemId);
+    if (wear) {
+      await s.inventory.equip(itemId);
+      useLook.getState().clear();
+    }
+    await get().refresh();
   },
 
   equip: async (itemId) => {
     const s = await getSession();
     const out = await s.inventory.equip(itemId);
+    if (out.ok) useLook.getState().clear();
     await get().refresh();
     return out.ok ? { ok: true, message: '' } : { ok: false, message: rejectionMessage(out.code) };
   },
