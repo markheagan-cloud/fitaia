@@ -18,6 +18,7 @@ import type { ForumPost, ForumState, Pace, PostTag, ReactionId, RunMeetup } from
 import { emptyState, SocialState } from '../services/engine';
 
 export const PHOTO_BUCKET = 'forum-photos';
+export const AVATAR_BUCKET = 'avatars';
 
 type Row = Record<string, any>;
 const ms = (v: unknown): number => (v ? new Date(String(v)).getTime() : 0);
@@ -87,7 +88,6 @@ export async function ensureSession(c: SupabaseClient): Promise<string> {
 function profileRow(p: CommunityProfile) {
   return {
     display_name: p.displayName.trim().slice(0, 24).padEnd(2, '.'),
-    avatar_id: 'membre',
     language: p.language,
     age_range: p.ageRange,
     country_optional: p.countryOptional ?? null,
@@ -119,7 +119,7 @@ export async function saveProfile(c: SupabaseClient, me: string, p: CommunityPro
   const row = profileRow(p);
   const existing = await ok(c.from('community_profiles').select('user_id').eq('user_id', me).maybeSingle());
   if (!existing) {
-    await ok(c.from('community_profiles').insert({ user_id: me, ...row }));
+    await ok(c.from('community_profiles').insert({ user_id: me, avatar_id: 'membre', ...row }));
   } else {
     await ok(c.from('community_profiles').update(row).eq('user_id', me));
   }
@@ -202,6 +202,27 @@ function cardProfile(r: Row, now: number): CommunityProfile {
   };
 }
 
+/**
+ * Mon perso pour les autres : l'image (dessin) est copiée dans le stockage privé « avatars », l'ancienne est retirée.
+ * `frame`/`head` disent comment la cadrer (voir AvatarPortrait).
+ */
+export async function sharePortrait(c: SupabaseClient, me: string, uri: string, frame: string, head?: { cx: number; cy: number; h: number }) {
+  const res = await fetch(uri);
+  if (!res.ok && res.status !== 0) throw new ServerRefusal('image du perso illisible');
+  const buf = await res.arrayBuffer();
+  const raw = res.headers.get('content-type')?.split(';')[0] ?? '';
+  const type = ['image/png', 'image/webp', 'image/jpeg'].includes(raw) ? raw : uri.toLowerCase().includes('.png') ? 'image/png' : 'image/jpeg';
+  const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg';
+  const path = me + '/perso-' + Date.now().toString(36) + '.' + ext;
+  const up = await c.storage.from(AVATAR_BUCKET).upload(path, buf, { contentType: type, upsert: true });
+  if (up.error) throw new ServerRefusal(up.error.message);
+  const h = head ? [head.cx, head.cy, head.h].map((v) => Math.round(v * 1000) / 1000).join(',') : '';
+  await ok(c.from('community_profiles').update({ avatar_id: 'photo:' + frame + ':' + h + ':' + path }).eq('user_id', me));
+  const { data } = await c.storage.from(AVATAR_BUCKET).list(me, { limit: 100 });
+  const old = (data ?? []).map((f) => me + '/' + f.name).filter((x) => x !== path);
+  if (old.length) await c.storage.from(AVATAR_BUCKET).remove(old);
+}
+
 // ---------------------------------------------------------------------------------------------- lecture
 
 export type Pulled = {
@@ -233,6 +254,19 @@ export async function pull(c: SupabaseClient, me: string, now = Date.now()): Pro
 
   const s = emptyState();
   for (const r of (cards as Row[]) ?? []) if (r.user_id !== me) s.profiles[r.user_id] = cardProfile(r, now);
+  // persos partagés : adresse signée (6 h) vers le stockage privé
+  const shared = ((cards as Row[]) ?? []).filter((r) => r.user_id !== me && String(r.avatar_id ?? '').startsWith('photo:'));
+  if (shared.length) {
+    const parts = shared.map((r) => String(r.avatar_id).split(':'));
+    const { data } = await c.storage.from(AVATAR_BUCKET).createSignedUrls(parts.map((x) => x.slice(3).join(':')), 6 * 3600);
+    const byPath: Record<string, string> = {};
+    for (const d of data ?? []) if (d.path && d.signedUrl) byPath[d.path] = d.signedUrl;
+    shared.forEach((r, i) => {
+      const [, frame, head] = parts[i];
+      const url = byPath[parts[i].slice(3).join(':')];
+      if (url) s.profiles[r.user_id].avatarId = 'url:' + frame + ':' + head + '|' + url;
+    });
+  }
   if (own) s.profiles[me] = ownProfile(own as Row);
 
   s.friendships = ((friendships as Row[]) ?? []).map((f): Friendship => ({
@@ -371,6 +405,13 @@ export async function toggleReaction(c: SupabaseClient, me: string, postId: stri
   else await ok(c.from('forum_reactions').upsert({ post_id: postId, user_id: me, reaction: r }, { ignoreDuplicates: true }));
 }
 
+/** Supprimer mon message (et sa photo). Le serveur refuse pour un message qui n'est pas le mien. */
+export async function deletePost(c: SupabaseClient, me: string, postId: string) {
+  const row = (await ok(c.from('forum_posts').select('photo_path').eq('id', postId).eq('author_id', me).maybeSingle())) as Row | null;
+  await ok(c.from('forum_posts').delete().eq('id', postId).eq('author_id', me));
+  if (row?.photo_path) await c.storage.from(PHOTO_BUCKET).remove([row.photo_path]);
+}
+
 const FORUM_REASONS = new Set(['harcelement', 'spam', 'contenu_inapproprie', 'conseil_dangereux', 'faux_profil', 'autre']);
 
 export const reportPost = (c: SupabaseClient, me: string, postId: string, reason: string) =>
@@ -397,9 +438,11 @@ export const cancelRun = (c: SupabaseClient, me: string, id: string) => ok(c.fro
 
 /** Supprime le compte Communauté et TOUT ce qui s'y rattache (photos comprises), puis se déconnecte. */
 export async function deleteAccount(c: SupabaseClient, me: string) {
-  const { data } = await c.storage.from(PHOTO_BUCKET).list(me, { limit: 1000 });
-  const files = (data ?? []).map((f) => me + '/' + f.name);
-  if (files.length) await c.storage.from(PHOTO_BUCKET).remove(files);
+  for (const bucket of [PHOTO_BUCKET, AVATAR_BUCKET]) {
+    const { data } = await c.storage.from(bucket).list(me, { limit: 1000 });
+    const files = (data ?? []).map((f) => me + '/' + f.name);
+    if (files.length) await c.storage.from(bucket).remove(files);
+  }
   await ok(c.rpc('delete_my_account'));
   await c.auth.signOut();
 }

@@ -17,6 +17,7 @@ import { useGame } from '@/store/useGame';
 import { caricatureConfigured } from '@/services/caricature';
 import { COMMUNITY_MINOR_MESSAGE, canJoinCommunity } from '@/community/access';
 import { startCommunitySync, useCommunity } from '@/community/store';
+import { PortraitSharer } from '@/community/components/PortraitSharer';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -35,7 +36,9 @@ function Root() {
   }, [minorInCommunity]);
   // Communauté en ligne : rafraîchissement régulier (plus rapide dans une discussion) et refus du serveur affichés
   const pathRef = React.useRef(pathname);
-  pathRef.current = pathname;
+  useEffect(() => {
+    pathRef.current = pathname;
+  }, [pathname]);
   useEffect(() => startCommunitySync(() => pathRef.current.startsWith('/communaute/discussion') || pathRef.current.startsWith('/communaute/forum/')), []);
   const serverError = useCommunity((s) => s.serverError);
   useEffect(() => {
@@ -59,6 +62,7 @@ function Root() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <StatusBar style={t.dark ? 'light' : 'dark'} />
+      <PortraitSharer />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg }, animation: 'slide_from_right' }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="selfie" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />

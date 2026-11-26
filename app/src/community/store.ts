@@ -7,6 +7,9 @@
  * aucune fonction réseau n'est présentée comme opérationnelle.
  */
 import { create } from 'zustand';
+import { AppState } from 'react-native';
+import { SERVER_ENABLED, sb } from './server/client';
+import * as api from './server/api';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -19,10 +22,6 @@ import { checkPlace, checkPost, emptyForumState, forumById, toggleReaction } fro
 import type { ForumState, Pace, PostTag, ReactionId } from './models/forums';
 import { DEMO_POST_IDS, demoForumPosts } from './services/demoForums';
 import type { MatchWith } from './models/types';
-
-import { SERVER_ENABLED, sb } from './server/client';
-import * as api from './server/api';
-import { AppState } from 'react-native';
 
 /**
  * « serveur » dès que l'adresse du projet Supabase est fournie (EXPO_PUBLIC_SUPABASE_URL + clé publique) :
@@ -90,6 +89,9 @@ type State = {
   clearServerError: () => void;
   /** Serveur réel : recharge tout ce que je peux lire (sans effet en mode démonstration). */
   pull: () => Promise<void>;
+  /** Serveur réel : clé du perso déjà partagé avec les autres membres (évite de renvoyer la même image). */
+  sharedPortraitKey: string | null;
+  sharePortrait: (key: string, uri: string, frame: string, head?: { cx: number; cy: number; h: number }) => void;
   /** Supprime le compte Communauté et toutes ses données (serveur compris). */
   deleteAccount: () => Promise<Result>;
 
@@ -145,8 +147,13 @@ export const useCommunity = create<State>()(
       let pulling: Promise<void> | null = null;
 
       /** Mon identifiant de compte serveur ; la première fois, ma copie locale est renommée avec cet identifiant. */
+      // une seule ouverture de session à la fois (deux appels simultanés créeraient deux comptes anonymes)
+      let session: Promise<string> | null = null;
       const ensureMe = async (): Promise<string> => {
-        const uid = await api.ensureSession(sb());
+        session ??= api.ensureSession(sb()).finally(() => {
+          session = null;
+        });
+        const uid = await session;
         const cur = get().myId;
         if (cur !== uid) {
           const social: SocialState = JSON.parse(JSON.stringify(get().social));
@@ -172,7 +179,8 @@ export const useCommunity = create<State>()(
             if (!r.social.profiles[me] && local) r.social.profiles[me] = local;
             set({ social: r.social, forums: { ...get().forums, ...r.forums }, rev: get().rev + 1 });
           } catch (e) {
-            set({ serverError: api.reasonOf(e) });
+            // compte supprimé ou Communauté quittée pendant le chargement : rien à signaler
+            if (get().status === 'active') set({ serverError: api.reasonOf(e) });
           } finally {
             pulling = null;
           }
@@ -228,6 +236,19 @@ export const useCommunity = create<State>()(
         serverError: null,
         clearServerError: () => set({ serverError: null }),
         pull: pullNow,
+        sharedPortraitKey: null,
+        sharePortrait: (key, uri, frame, head) => {
+          if (!SERVER || get().status !== 'active' || get().sharedPortraitKey === key) return;
+          set({ sharedPortraitKey: key });
+          remote(async (c, me) => {
+            try {
+              await api.sharePortrait(c, me, uri, frame, head);
+            } catch (e) {
+              set({ sharedPortraitKey: null });
+              throw e;
+            }
+          });
+        },
         deleteAccount: async () => {
           if (SERVER) {
             try {
@@ -237,7 +258,7 @@ export const useCommunity = create<State>()(
               return { ok: false, reason: api.reasonOf(e) };
             }
           }
-          set({ status: 'inconnu', myId: newId('u'), social: emptyState(), readAt: {}, forums: emptyForumState(), demoReplyIdx: {}, rev: get().rev + 1 });
+          set({ status: 'inconnu', sharedPortraitKey: null, myId: newId('u'), social: emptyState(), readAt: {}, forums: emptyForumState(), demoReplyIdx: {}, rev: get().rev + 1 });
           return { ok: true };
         },
 
@@ -477,6 +498,8 @@ export const useCommunity = create<State>()(
         hideForumPost: (postId) => {
           const f = get().forums;
           if (!f.hidden.includes(postId)) set({ forums: { ...f, hidden: [...f.hidden, postId] } });
+          // mon propre message : supprimé pour tout le monde sur le serveur (« Supprimer mon message »)
+          if (f.posts.find((p) => p.id === postId)?.authorId === get().myId) remote((c, me) => api.deletePost(c, me, postId));
         },
 
         reportForumPost: (postId, reason) => {
@@ -543,7 +566,7 @@ export const useCommunity = create<State>()(
         if (version < 2 || !p.forums) p.forums = emptyForumState();
         return p as never;
       },
-      partialize: (s) => ({ status: s.status, myId: s.myId, social: s.social, demoReplyIdx: s.demoReplyIdx, readAt: s.readAt, lastVisitAt: s.lastVisitAt, forums: s.forums }),
+      partialize: (s) => ({ status: s.status, myId: s.myId, social: s.social, demoReplyIdx: s.demoReplyIdx, readAt: s.readAt, lastVisitAt: s.lastVisitAt, forums: s.forums, sharedPortraitKey: s.sharedPortraitKey }),
       onRehydrateStorage: () => () => {
         useCommunity.setState({ hydrated: true });
         if (SERVER) void useCommunity.getState().pull();

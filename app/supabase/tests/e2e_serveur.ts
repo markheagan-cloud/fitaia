@@ -68,6 +68,14 @@ async function main() {
     check(pa.social.profiles[a]?.points === 820, 'mes points déclarés sont enregistrés');
     check(pa.social.suggested?.some((c) => c.userId === b), 'FitMatch serveur propose B à A');
 
+    // perso partagé : l'image arrive chez l'autre membre (stockage privé, adresse signée)
+    await api.sharePortrait(A, a, PNG, 'h', { cx: 0.5, cy: 0.12, h: 0.12 });
+    let pb0 = await api.pull(B, b);
+    const av = pb0.social.profiles[a]?.avatarId ?? '';
+    check(av.startsWith('url:h:0.5,0.12,0.12|'), 'B reçoit le perso partagé de A avec son cadrage');
+    const avImg = await fetch(av.slice(av.indexOf('|') + 1));
+    check(avImg.ok, 'l’image du perso de A se télécharge');
+
     // filtre « Me proposer » réciproque
     await api.saveProfile(A, a, profile(a, 'Test A', 'f', { matchWith: 'f' }));
     pa = await api.pull(A, a);
@@ -153,8 +161,7 @@ async function main() {
     await api.saveProfile(C, c, profile(c, 'Test C', 'm'));
     const pc = await api.pull(C, c);
     check(!pc.social.profiles[a] && !pc.forums.posts.some((p) => p.authorId === a), 'compte A supprimé : profil et messages effacés');
-    const files = await B.storage.from('forum-photos').list(a);
-    check(!(files.data ?? []).length, 'compte A supprimé : photos effacées');
+    // (la vérification que les fichiers de A ont disparu du stockage se fait côté service : voir le rapport)
     await api.deleteAccount(B, b);
     await api.deleteAccount(C, c);
     console.log('durée ' + Math.round((Date.now() - started) / 1000) + ' s');

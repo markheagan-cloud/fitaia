@@ -162,3 +162,28 @@ begin
 end $$;
 revoke execute on function public.sync_my_points(integer) from public, anon;
 grant execute on function public.sync_my_points(integer) to authenticated;
+
+-- Perso affiché aux autres membres : une image (dessin, jamais le selfie d'origine) dans le seau PRIVÉ « avatars »,
+-- chemin <mon id>/<nom>. Lisible par les membres connectés, sauf en cas de blocage dans un sens ou l'autre.
+-- avatar_id = 'photo:<cadrage>:<tête>:<chemin>' (cadrage et position de la tête pour l'affichage).
+alter table public.community_profiles drop constraint if exists community_profiles_avatar_id_len;
+alter table public.community_profiles add constraint community_profiles_avatar_id_len check (char_length(avatar_id) <= 200);
+do $do$
+begin
+  if to_regclass('storage.objects') is null then return; end if;
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('avatars', 'avatars', false, 3145728, array['image/jpeg','image/png','image/webp'])
+  on conflict (id) do nothing;
+  execute $p$create policy avatars_insert on storage.objects for insert to authenticated
+    with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+  execute $p$create policy avatars_update on storage.objects for update to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+  execute $p$create policy avatars_delete on storage.objects for delete to authenticated
+    using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+  execute $p$create policy avatars_read on storage.objects for select to authenticated
+    using (bucket_id = 'avatars' and (
+      (storage.foldername(name))[1] = auth.uid()::text
+      or not public.is_blocked(auth.uid(), ((storage.foldername(name))[1])::uuid)
+    ))$p$;
+end
+$do$;
