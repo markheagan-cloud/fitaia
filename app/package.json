@@ -19,7 +19,8 @@
     "build:ios": "eas build --platform ios --profile production",
     "build:android": "eas build --platform android --profile production",
     "avatar:build": "python tools/human-engine/build_prototype_avatar.py",
-    "avatar:premium": "python tools/premium-avatar/build_premium_avatar.py --src ../assets-src/mh"
+    "avatar:premium": "python tools/premium-avatar/build_premium_avatar.py --src ../assets-src/mh",
+    "rythme": "esbuild scripts/rythme-table.ts --bundle --platform=node --alias:@=./src --alias:react-native=./tests/rn-stub.js --loader:.jpg=file --loader:.png=file --outfile=.tests-out/rythme.js --log-level=error && node .tests-out/rythme.js"
   },
   "dependencies": {
     "@expo-google-fonts/dm-sans": "^0.4.2",

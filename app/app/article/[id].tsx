@@ -22,6 +22,8 @@ import {
 } from '@/shop/catalogue';
 import { OutfitArt, UpcomingArt, rarityOf, useMyOutfits } from '@/shop/ShopArt';
 import { useWishlist } from '@/shop/useWishlist';
+import { PERSONAS, daysToAfford, delayOf, inDays } from '@/shop/rythme';
+import { usePace } from '@/shop/usePace';
 
 const PIECES: PieceKind[] = ['haut', 'bas', 'chaussures', 'accessoire'];
 
@@ -37,6 +39,7 @@ export default function Article() {
   const wished = useWishlist((s) => s.ids.includes(String(id)));
   const toggleWish = useWishlist((s) => s.toggle);
   const [busy, setBusy] = useState(false);
+  const { pace, start, doneToday } = usePace();
   const now = new Date();
   const item = catalog.find((i) => i.id === id);
   const sheet = item ? sheetOf(item.id) : undefined;
@@ -115,6 +118,11 @@ export default function Article() {
   const collItems = catalog.filter((i) => sheetOf(i.id)?.collection === sheet.collection);
   const have = collItems.filter((i) => inventory?.items.some((x) => x.itemId === i.id)).length;
   const missing = price !== null ? Math.max(0, price - balance) : 0;
+  // Délai pour l'avoir en jouant : au rythme réel de la personne, et en mettant le paquet (3 défis, 3 repas par jour)
+  const wait = !owned && sale && price !== null && missing > 0 ? delayOf(daysToAfford(price, pace.week, start), doneToday) : null;
+  const waitMax = wait !== null && price !== null ? delayOf(daysToAfford(price, PERSONAS[0].week, start), doneToday) : null;
+  const daysLeft = lim && lim.open ? lim.daysLeft - 1 : null;
+  const tooLate = wait !== null && daysLeft !== null && wait > daysLeft;
 
   const cta = worn ? 'Sur ton perso' : owned ? 'La mettre sur mon perso' : !sale ? 'Édition terminée' : price === null ? 'Offerte, déjà à toi' : missing > 0 ? 'Il te manque ' + fmt(missing) + ' ' + CUR_NAMES[0] : 'Débloquer pour ' + fmt(price) + ' ' + CUR_NAMES[0];
   const canAct = !worn && (owned || (sale && price !== null && missing === 0));
@@ -181,7 +189,19 @@ export default function Article() {
             ['Rareté', r.label],
             ['Prix', price === null ? 'Offerte à l’inscription' : fmt(price) + ' ' + CUR_NAMES[0]],
             ['Ton solde', fmt(balance) + ' ' + CUR_NAMES[0]],
+            ...(wait !== null ? [[pace.mine ? 'À ton rythme' : 'En jouant', inDays(wait) + (pace.mine ? '' : ' (défi + 2 repas, 6 j / 7)')] as [string, string]] : []),
           ]} />
+          {wait !== null ? (
+            <View style={[styles.limit, { backgroundColor: t.surf }, shadow.card]}>
+              <Txt size={13} weight="bold">{tooLate ? 'À ce rythme, l’édition sera finie avant' : 'Deux façons de l’avoir'}</Txt>
+              <Txt size={13} lineHeight={19} color={t.ink2}>
+                {'En bossant : ' + (waitMax !== null && waitMax < (wait ?? 0) ? '3 défis et 3 repas par jour, tu l’as ' + inDays(waitMax) + (tooLate && daysLeft !== null && waitMax <= daysLeft ? ', avant la fin.' : '.') : 'défi du jour et repas, ' + inDays(wait) + '.')}
+              </Txt>
+              {lim ? (
+                <Txt size={13} lineHeight={19} color={t.ink2}>En euros : prévu avec les achats intégrés Apple, pas encore ouverts dans l’app.</Txt>
+              ) : null}
+            </View>
+          ) : null}
           <Txt size={12} lineHeight={17} color={t.ink2}>
             Dessinée sur ton perso, à ta silhouette. Illustration : le rendu peut varier un peu d’une tenue à l’autre.
           </Txt>

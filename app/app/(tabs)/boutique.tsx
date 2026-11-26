@@ -21,6 +21,8 @@ import {
 } from '@/shop/catalogue';
 import { OutfitArt, UpcomingArt, rarityOf, useMyOutfits } from '@/shop/ShopArt';
 import { useWishlist } from '@/shop/useWishlist';
+import { daysToAfford, delayOf, inDays, nextEvents } from '@/shop/rythme';
+import { usePace } from '@/shop/usePace';
 
 export default function Boutique() {
   const t = useTheme();
@@ -55,6 +57,10 @@ export default function Boutique() {
     .sort((a, b) => (sheetOf(a.id)!.limited!.until.localeCompare(sheetOf(b.id)!.limited!.until)) || (b.priceFitcoins ?? 0) - (a.priceFitcoins ?? 0))[0];
   // Ma liste : un article gardé de côté qui est en vente maintenant
   const wishOnSale = outfits.filter((i) => wish.includes(i.id) && buyable(i));
+  const { pace, start, doneToday } = usePace();
+  const goalDays = goal ? daysToAfford(goalPrice, pace.week, start) : null;
+  // Calendrier : prochains bonus et prochaines tenues, au rythme réel de la personne (ou au profil Régulier)
+  const agenda = nextEvents(outfits.filter(buyable).map((i) => ({ id: i.id, name: i.name, price: i.priceFitcoins ?? 0 })), pace, start, 5);
   const open = (id: string) => router.push({ pathname: '/article/[id]', params: { id } });
   const upcoming = UPCOMING.filter((u) => (filter === 'liste' ? wish.includes(u.id) : upcomingMatches(u, filter)));
 
@@ -107,7 +113,7 @@ export default function Boutique() {
                 <View style={{ width: `${Math.min(100, Math.round((balance / Math.max(1, goalPrice)) * 100))}%`, height: '100%', borderRadius: 3, backgroundColor: LIME }} />
               </View>
               <Txt size={12} num color={t.ink2}>
-                {balance >= goalPrice ? 'Tu peux la débloquer maintenant.' : 'Encore ' + fmt(goalPrice - balance) + ' ' + CUR_NAMES[0] + ' sur ' + fmt(goalPrice) + '.'}
+                {balance >= goalPrice ? 'Tu peux la débloquer maintenant.' : 'Encore ' + fmt(goalPrice - balance) + ' ' + CUR_NAMES[0] + ' · ' + (pace.mine ? 'à ton rythme, ' : 'en jouant chaque jour, ') + inDays(delayOf(goalDays, doneToday)) + '.'}
               </Txt>
             </View>
           </Press>
@@ -118,6 +124,29 @@ export default function Boutique() {
           </Txt>
         </Press>
       </View>
+
+      {/* Ton calendrier : ce qui tombe, et quand, si tu continues comme ça */}
+      {agenda.length > 0 ? (
+        <View style={[styles.note, { backgroundColor: t.surf }, shadow.card]}>
+          <Row style={{ paddingHorizontal: 0, paddingTop: 0 }}>
+            <Txt size={15} weight="bold">Ton calendrier</Txt>
+            <Txt size={12} color={t.ink2}>{pace.mine ? 'd’après tes 14 derniers jours' : 'défi du jour + 2 repas, 6 j / 7'}</Txt>
+          </Row>
+          {agenda.map((e, i) => (
+            <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={[styles.when, { backgroundColor: e.kind === 'palier' ? LIME : t.line }]}>
+                <Txt size={11} weight="bold" num color={OBSIDIAN}>{delayOf(e.day, doneToday) === 0 ? 'AUJ.' : delayOf(e.day, doneToday) === 1 ? 'DEMAIN' : 'J+' + delayOf(e.day, doneToday)}</Txt>
+              </View>
+              <Txt size={13} weight={e.kind === 'article' ? 'semibold' : 'regular'} style={{ flex: 1 }} numberOfLines={1}>
+                {e.kind === 'article' ? 'Tu peux prendre ' + e.label : e.label}
+              </Txt>
+            </View>
+          ))}
+          <Txt size={12} lineHeight={17} color={t.ink2}>
+            Calculé avec les vrais gains de l’app : +50 Fitcoins pour le défi du jour, +10 pour un repas, et les bonus d’étape du Parcours.
+          </Txt>
+        </View>
+      ) : null}
 
       {/* De ta liste, en vente maintenant */}
       {wishOnSale.length > 0 ? (
@@ -351,6 +380,7 @@ const styles = StyleSheet.create({
   pill: { borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10 },
   chip: { height: 38, borderRadius: 19, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
   note: { borderRadius: 24, padding: 16, gap: 8 },
+  when: { minWidth: 58, height: 24, borderRadius: 8, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   frame: { width: '48%', flexGrow: 1, maxWidth: '50%', borderRadius: 26, padding: 2.5 },
   skin: { flex: 1, borderRadius: 24, padding: 6, gap: 8 },

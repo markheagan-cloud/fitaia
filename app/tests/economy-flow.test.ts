@@ -37,7 +37,7 @@ runSuite('parcours économique de l’app', async (t) => {
   // premier défi du jour : 50 PF + 50 Fitcoins ; le même défi rejoué ne rapporte rien
   const a1 = await repo.progression.recordAction('challenge_completed', 'pushups:2026-10-20');
   t.ok(a1.ok && !a1.replayed && a1.award.points === 50, 'défi : 50 PF');
-  t.ok((await claimAll()) === 50, 'défi du jour : +50 Fitcoins');
+  t.ok((await claimAll()) === 150, 'premier défi : +50 Fitcoins du jour et +100 de bienvenue (first_challenge)');
   const a2 = await repo.progression.recordAction('challenge_completed', 'pushups:2026-10-20');
   t.ok(a2.ok && a2.replayed, 'même défi rejoué : idempotent');
   t.ok((await claimAll()) === 0, 'pas de deuxième récompense quotidienne');
@@ -47,11 +47,11 @@ runSuite('parcours économique de l’app', async (t) => {
   t.ok((await claimAll()) === 10, 'premier repas : +10 Fitcoins');
   await repo.progression.recordAction('meal_logged', 'meal:b');
   t.ok((await claimAll()) === 0, 'deuxième repas : pas de Fitcoins');
-  t.ok((await repo.economy.getBalance()).balance === 580, 'solde 520 + 50 + 10');
+  t.ok((await repo.economy.getBalance()).balance === 680, 'solde 520 + 50 + 100 (premier défi) + 10');
 
   // achat d'une tenue rare en Fitcoins, puis équipement
   const buy = await repo.economy.spendFitcoins({ itemId: 'outfit_cargo', requestId: '22222222-2222-4222-8222-222222222222' });
-  t.ok(buy.ok && buy.wallet.balance === 180, 'Cargo Urbain achetée 400');
+  t.ok(buy.ok && buy.wallet.balance === 280, 'Cargo Urbain achetée 400');
   t.ok((await repo.inventory.equip('outfit_cargo')).ok, 'tenue équipée');
   t.ok((await repo.inventory.getInventory()).equipped.FULL_OUTFIT === 'outfit_cargo', 'tenue portée enregistrée');
   const again = await repo.economy.spendFitcoins({ itemId: 'outfit_olive', requestId: '33333333-3333-4333-8333-333333333333' });
