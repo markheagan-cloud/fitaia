@@ -29,6 +29,7 @@ import { Figure, Head, HeadStack, IconButton, LiveDot, SectionHead, Sheet, Studi
 import { Icon, NEED_ICON, STATUS_ICON } from '@/community/components/icons';
 import type { IconName } from '@/community/components/icons';
 import { CR } from '@/community/routes';
+import { runningForum } from '@/community/models/forums';
 
 export default function CommunityHome() {
   const status = useCommunity((s) => s.status);
@@ -59,6 +60,9 @@ function Hub() {
   const encourage = useCommunity((s) => s.encourage);
   const setStatus = useCommunity((s) => s.setStatus);
   const say = useGame.getState().say;
+  const runCity = useCommunity((s) => s.forums?.city ?? null);
+  const sex = useGame((s) => s.profile.sex);
+  const updateMe = useCommunity((s) => s.updateMe);
   const points = useMyPoints();
   const now = useNow(30000);
   // dernière visite AVANT celle-ci : sert au fil « depuis ta dernière visite » et au retour après absence
@@ -73,6 +77,11 @@ function Hub() {
   useEffect(() => {
     if (me && me.points !== points) syncPoints(points);
   }, [points, me, syncPoints]);
+  // genre du profil FITAIA recopié dans le profil social (sert uniquement au filtre « Me proposer »)
+  const gender = sex === 'f' || sex === 'm' ? sex : undefined;
+  useEffect(() => {
+    if (me && me.gender !== gender) updateMe({ gender });
+  }, [me, gender, updateMe]);
   if (!me) return null;
 
   const hour = new Date(now).getHours();
@@ -336,6 +345,29 @@ function Hub() {
           {friends.length === 0 ? (
             <Txt size={13} color={t.ink2} style={{ paddingHorizontal: 4 }}>Un FitMate, c’est ton binôme de régularité. Tu peux en avoir trois.</Txt>
           ) : null}
+        </View>
+
+        {/* Forums ouverts et running club de ta ville */}
+        <View style={{ gap: 12 }}>
+          <SectionHead title="Forums et running club" tag={<Tag kind="demo" label="Aperçu" />} right={<TextLink label="Tout voir" onPress={() => router.push(CR.forums)} />} />
+          <View style={[styles.group, { backgroundColor: t.surf }, shadow.card]}>
+            <Press onPress={() => router.push(CR.forums)} pressScale={0.99} accessibilityLabel="Forums ouverts" style={styles.msgRow}>
+              <View style={[styles.feedIcon, { backgroundColor: c.head }]}><Icon name="users" size={20} color={t.ink} /></View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Txt size={15} weight="bold">Forums ouverts</Txt>
+                <Txt size={13} color={t.ink2} numberOfLines={2}>Perte de poids, muscle, repas… Tout le monde peut parler et partager ses photos.</Txt>
+              </View>
+              <Icon name="chevron" size={18} color={t.ink2} />
+            </Press>
+            <Press onPress={() => router.push(runCity ? CR.forum(runningForum(runCity).id) : CR.forums)} pressScale={0.99} accessibilityLabel="Running club" style={[styles.msgRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }]}>
+              <View style={[styles.feedIcon, { backgroundColor: LIME }]}><Icon name="shoe" size={20} color={OBSIDIAN} /></View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Txt size={15} weight="bold">{runCity ? 'Running club ' + runCity : 'Running club'}</Txt>
+                <Txt size={13} color={t.ink2} numberOfLines={2}>{runCity ? 'Une sortie toutes les deux semaines, puis on en parle dans le groupe.' : 'Choisis ta ville et cours avec d’autres membres toutes les deux semaines.'}</Txt>
+              </View>
+              <Icon name="chevron" size={18} color={t.ink2} />
+            </Press>
+          </View>
         </View>
 
         {/* Bientôt : Cercles */}

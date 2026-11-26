@@ -17,5 +17,7 @@ export const CR = {
   privacy: href('/communaute/confidentialite'),
   tabs: href('/(tabs)'),
   profile: (id: string) => href('/communaute/profil/' + encodeURIComponent(id)),
+  forums: href('/communaute/forums'),
+  forum: (id: string) => href('/communaute/forum/' + encodeURIComponent(id)),
   chat: (id: string) => href('/communaute/discussion/' + encodeURIComponent(id)),
 };

@@ -15,6 +15,10 @@ import {
 import { emptyState, newId, SocialEngine, SocialState } from './services/engine';
 import { demoProfiles, demoRefresh, demoReply, DEMO_IDS } from './services/devData';
 import type { NeedId, StatusId } from './models/intentions';
+import { checkPlace, checkPost, emptyForumState, forumById } from './models/forums';
+import type { ForumState, Pace } from './models/forums';
+import { DEMO_POST_IDS, demoForumPosts } from './services/demoForums';
+import type { MatchWith } from './models/types';
 
 export const COMMUNITY_MODE: 'local-demo' | 'serveur' = 'local-demo';
 
@@ -27,6 +31,8 @@ export type Onboarding = {
   slots: Slot[];
   activities: Activity[];
   support: SupportStyle[];
+  /** Genre du profil FITAIA (f/m) : sert uniquement au filtre « Me proposer ». */
+  gender?: 'f' | 'm';
 };
 
 type Result = { ok: boolean; reason?: string };
@@ -67,7 +73,28 @@ type State = {
   setNeed: (need: NeedId | null, shared?: boolean) => void;
   /** Démonstration : présence et état du jour des profils fictifs, recalculés à l'ouverture. */
   refreshDemo: () => void;
+  /** Filtre « Me proposer » : tout le monde, seulement des femmes ou seulement des hommes (réciproque). */
+  setMatchWith: (w: MatchWith, myGender?: 'f' | 'm') => void;
+
+  // ---------- forums ouverts et running clubs (mode local + démonstration)
+  forums: ForumState;
+  acceptForumRules: () => void;
+  joinForum: (forumId: string) => void;
+  leaveForum: (forumId: string) => void;
+  setRunCity: (city: string | null) => void;
+  postInForum: (forumId: string, text: string, photoUri?: string) => Result;
+  hideForumPost: (postId: string) => void;
+  reportForumPost: (postId: string, reason: string) => void;
+  proposeRun: (r: { forumId: string; startAt: number; everyTwoWeeks: boolean; place: string; distanceKm: number; pace: Pace }) => Result;
+  toggleGoing: (meetupId: string) => void;
+  cancelRun: (meetupId: string) => void;
 };
+
+/** Ajoute/rafraîchit les messages de démonstration des forums (les miens sont conservés tels quels). */
+function withDemoPosts(f: ForumState, now: number): ForumState {
+  const mine = f.posts.filter((p) => !DEMO_POST_IDS.has(p.id));
+  return { ...f, posts: [...demoForumPosts(now), ...mine] };
+}
 
 const engineOf = (s: SocialState) => new SocialEngine(s);
 
@@ -106,6 +133,7 @@ export const useCommunity = create<State>()(
         typingUntil: {},
         rev: 0,
         hydrated: false,
+        forums: emptyForumState(),
 
         activate: (o, points) =>
           run((e, me) => {
@@ -132,6 +160,7 @@ export const useCommunity = create<State>()(
               activities: o.activities,
               support: o.support,
               helpfulnessScore: prev?.helpfulnessScore ?? 0,
+              gender: o.gender ?? prev?.gender,
               joinedAt: prev?.joinedAt ?? now,
               lastActiveAt: now,
               // retour après « Quitter » : on redevient visible (le reste des réglages est conservé)
@@ -140,7 +169,7 @@ export const useCommunity = create<State>()(
                 : DEFAULT_PRIVACY,
             });
             for (const p of demoProfiles(now)) if (!e.s.profiles[p.userId]) e.upsertProfile(p);
-            set({ status: 'active' });
+            set({ status: 'active', forums: withDemoPosts(get().forums ?? emptyForumState(), now) });
           }),
 
         decline: () => set({ status: 'refuse' }),
@@ -226,17 +255,120 @@ export const useCommunity = create<State>()(
           run((e) => {
             for (const [id, p] of Object.entries(patch)) {
               const cur = e.s.profiles[id];
-              if (cur?.demo) e.s.profiles[id] = { ...cur, ...p };
+              if (cur?.demo) {
+                // v2 : les profils fictifs portent un genre (filtre « Me proposer »)
+                const fresh = cur.gender ? null : demoProfiles(now).find((d) => d.userId === id);
+                e.s.profiles[id] = { ...cur, ...p, ...(fresh ? { gender: fresh.gender } : {}) };
+              }
             }
           });
+          set({ forums: withDemoPosts(get().forums ?? emptyForumState(), now) });
+        },
+
+        setMatchWith: (w, myGender) =>
+          run((e, me) => {
+            const cur = e.s.profiles[me];
+            if (cur) e.upsertProfile({ ...cur, gender: myGender ?? cur.gender, privacy: { ...cur.privacy, matchWith: w } });
+          }),
+
+        acceptForumRules: () => set({ forums: { ...get().forums, rulesAcceptedAt: Date.now() } }),
+
+        joinForum: (id) => {
+          const f = get().forums;
+          if (!forumById(id) || f.joined.includes(id)) return;
+          set({ forums: { ...f, joined: [...f.joined, id] } });
+        },
+
+        leaveForum: (id) => {
+          const f = get().forums;
+          set({ forums: { ...f, joined: f.joined.filter((x) => x !== id) } });
+        },
+
+        setRunCity: (city) => {
+          const f = get().forums;
+          set({ forums: { ...f, city } });
+        },
+
+        postInForum: (forumId, text, photoUri) => {
+          const f = get().forums;
+          const me = get().myId;
+          if (get().status !== 'active') return { ok: false, reason: 'Rejoins d’abord la Communauté.' };
+          if (!forumById(forumId)) return { ok: false, reason: 'Forum introuvable.' };
+          if (!f.rulesAcceptedAt) return { ok: false, reason: 'Accepte d’abord les règles des forums.' };
+          const now = Date.now();
+          const mine = f.posts.filter((p) => p.authorId === me).map((p) => ({ createdAt: p.createdAt, text: p.text }));
+          const c = checkPost({ text, hasPhoto: !!photoUri, now, myRecent: mine });
+          if (!c.ok) return c;
+          const post = { id: newId('fp', now), forumId, authorId: me, text: text.trim(), photoUri, createdAt: now, state: 'ok' as const };
+          set({ forums: { ...f, posts: [...f.posts, post], joined: f.joined.includes(forumId) ? f.joined : [...f.joined, forumId] } });
+          return { ok: true };
+        },
+
+        hideForumPost: (postId) => {
+          const f = get().forums;
+          if (!f.hidden.includes(postId)) set({ forums: { ...f, hidden: [...f.hidden, postId] } });
+        },
+
+        reportForumPost: (postId, reason) => {
+          const f = get().forums;
+          const now = Date.now();
+          set({
+            forums: {
+              ...f,
+              reports: [...f.reports, { id: newId('fr', now), postId, reporterId: get().myId, reason, createdAt: now }],
+              hidden: f.hidden.includes(postId) ? f.hidden : [...f.hidden, postId],
+            },
+          });
+        },
+
+        proposeRun: (r) => {
+          const f = get().forums;
+          const me = get().myId;
+          const now = Date.now();
+          const fo = forumById(r.forumId);
+          if (!fo || fo.kind !== 'running') return { ok: false, reason: 'Running club introuvable.' };
+          if (!f.rulesAcceptedAt) return { ok: false, reason: 'Accepte d’abord les règles des forums.' };
+          if (r.startAt < now + 3600 * 1000) return { ok: false, reason: 'Choisis une date au moins une heure à l’avance.' };
+          if (r.startAt > now + 60 * 86400 * 1000) return { ok: false, reason: 'Choisis une date dans les deux prochains mois.' };
+          if (!(r.distanceKm >= 1 && r.distanceKm <= 42)) return { ok: false, reason: 'Distance entre 1 et 42 km.' };
+          const c = checkPlace(r.place);
+          if (!c.ok) return c;
+          const mineActive = f.meetups.filter((m) => m.organizerId === me && !m.cancelled && m.forumId === r.forumId);
+          if (mineActive.length >= 2) return { ok: false, reason: 'Deux sorties au maximum par organisateur dans un même club.' };
+          const meetup = { id: newId('run', now), organizerId: me, going: [me], createdAt: now, ...r, place: r.place.trim() };
+          set({ forums: { ...f, meetups: [...f.meetups, meetup], joined: f.joined.includes(r.forumId) ? f.joined : [...f.joined, r.forumId] } });
+          return { ok: true };
+        },
+
+        toggleGoing: (id) => {
+          const f = get().forums;
+          const me = get().myId;
+          set({
+            forums: {
+              ...f,
+              meetups: f.meetups.map((m) => (m.id !== id ? m : { ...m, going: m.going.includes(me) ? m.going.filter((x) => x !== me) : [...m.going, me] })),
+            },
+          });
+        },
+
+        cancelRun: (id) => {
+          const f = get().forums;
+          const me = get().myId;
+          set({ forums: { ...f, meetups: f.meetups.map((m) => (m.id === id && m.organizerId === me ? { ...m, cancelled: true } : m)) } });
         },
       };
     },
     {
       name: 'fitaia-community-v1',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ status: s.status, myId: s.myId, social: s.social, demoReplyIdx: s.demoReplyIdx, readAt: s.readAt, lastVisitAt: s.lastVisitAt }),
+      // v2 : forums ouverts et running clubs (absents avant : état vide)
+      migrate: (persisted, version) => {
+        const p = (persisted ?? {}) as Record<string, unknown>;
+        if (version < 2 || !p.forums) p.forums = emptyForumState();
+        return p as never;
+      },
+      partialize: (s) => ({ status: s.status, myId: s.myId, social: s.social, demoReplyIdx: s.demoReplyIdx, readAt: s.readAt, lastVisitAt: s.lastVisitAt, forums: s.forums }),
       onRehydrateStorage: () => () => {
         useCommunity.setState({ hydrated: true });
       },

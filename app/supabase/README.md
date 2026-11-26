@@ -72,3 +72,14 @@ node --experimental-strip-types --no-warnings --import ../ts-hook.mjs supabase/t
 `repository_contract` crée sa propre base, applique 0001 + 0002 et rejoue la suite de conformité à travers
 `createSupabaseRepositories` (une session psql par appel) ; sans PostgreSQL joignable il échoue, il ne se déclare
 jamais réussi sans avoir tourné.
+
+## Forums ouverts, running clubs, filtre « Me proposer » — `migrations/0004_forums.sql`
+**Prête, non déployée.** Dans l'app, les forums tournent en mode « local + démonstration » (annoncé à l'écran).
+Contenu : `forums` (5 forums thématiques + un running club par ville, liste fermée, jamais de GPS), règles acceptées
+avant toute publication, messages filtrés (débit, liens, numéros), signalement (message « en revue », masqué pour tous à
+3 signalements), blocage dans les deux sens, sorties de running club (lieu public, pas d'adresse, 2 sorties max par
+organisateur), « Je viens ». Filtre réciproque femmes / hommes dans `fitmatch_candidates()` (`gender`, `match_with`).
+```
+createdb t && psql -d t -f supabase/tests/supabase_stub.sql -f supabase/migrations/0001_community.sql -f supabase/migrations/0003_community_daily.sql -f supabase/migrations/0004_forums.sql -f supabase/tests/community_test.sql -f supabase/tests/community_daily_test.sql -f supabase/tests/forums_test.sql
+```
+Résultat attendu : `TESTS SQL COMMUNAUTE OK`, `TESTS SQL COMMUNAUTE (ETAT DU JOUR) OK`, `TESTS SQL FORUMS OK` (32 + 8 + 22 vérifications).

@@ -84,7 +84,19 @@ export type PrivacySettings = {
   bodyProgress: Visibility;       // progression physique de l'avatar : privée par défaut
   allowMessages: 'tous' | 'amis' | 'personne';
   allowFitMatch: boolean;
+  /**
+   * Préférence d'affichage choisie par la personne : ne me proposer (et ne me montrer à) que des femmes ou que des hommes.
+   * Absente = tout le monde. Réciproque : je ne suis proposé(e) qu'aux personnes que ce filtre autorise.
+   */
+  matchWith?: MatchWith;
 };
+
+export type MatchWith = 'tous' | 'f' | 'm';
+export const MATCH_WITH: { id: MatchWith; label: string }[] = [
+  { id: 'tous', label: 'Tout le monde' },
+  { id: 'f', label: 'Femmes' },
+  { id: 'm', label: 'Hommes' },
+];
 
 export const DEFAULT_PRIVACY: PrivacySettings = {
   profileVisible: true,
@@ -122,6 +134,11 @@ export type CommunityProfile = {
   need?: NeedId | null;
   needAt?: number;
   needPublic?: boolean;
+  /**
+   * Genre déclaré dans le profil FITAIA (f/m), utilisé SEULEMENT par le filtre « Me proposer » : jamais affiché sur le profil.
+   * Absent si la personne n'a pas répondu (« autre ») : elle n'apparaît alors pas quand quelqu'un filtre.
+   */
+  gender?: 'f' | 'm';
   /** Profil fictif servant aux essais : toujours signalé comme tel à l'écran. */
   demo?: boolean;
 };

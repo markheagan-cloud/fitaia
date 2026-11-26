@@ -71,6 +71,7 @@ export function demoProfiles(now = Date.now()): CommunityProfile[] {
     joinedAt: now - d.joinedDaysAgo * 86400000,
     lastActiveAt: now - d.activeMinutesAgo * 60000,
     privacy: { ...DEFAULT_PRIVACY, showAge: true, showCountry: true, allowMessages: 'tous' },
+    gender: d.sheet.appearance === 'fem' ? 'f' : 'm',
     demo: true,
   }));
 }

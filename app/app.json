@@ -13,7 +13,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie. Aucune image n’est conservée.",
-        "NSPhotoLibraryUsageDescription": "FITAIA accède à tes photos uniquement si tu choisis un selfie existant pour dessiner ton perso.",
+        "NSPhotoLibraryUsageDescription": "FITAIA accède à tes photos seulement quand tu en choisis une : un selfie pour dessiner ton perso, un repas à analyser ou une photo à partager dans un forum.",
         "NSMotionUsageDescription": "FITAIA lit tes pas pour valider le défi « Marcher 6 000 pas ».",
         "NSHealthShareUsageDescription": "FITAIA lit dans Santé tes pas, tes calories actives, ton rythme cardiaque et tes séances (mesurés par ton Apple Watch) pour les afficher dans l’app. Ces données restent sur ton iPhone.",
         "NSHealthUpdateUsageDescription": "FITAIA n’enregistre rien dans Santé."
@@ -50,7 +50,7 @@
         "expo-image-picker",
         {
           "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso et pour photographier tes repas.",
-          "photosPermission": "FITAIA accède à tes photos uniquement pour choisir un selfie.",
+          "photosPermission": "FITAIA accède à tes photos seulement quand tu en choisis une : un selfie pour dessiner ton perso, un repas à analyser ou une photo à partager dans un forum.",
           "microphonePermission": false
         }
       ],

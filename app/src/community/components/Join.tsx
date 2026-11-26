@@ -181,7 +181,7 @@ export function Join() {
         {step === 1 ? (
           <MainButton label="Continuer" disabled={!nameOk} onPress={() => setStep(2)} />
         ) : (
-          <MainButton label="Rejoindre la Communauté" disabled={!nameOk || !o.slots.length} onPress={() => activate(o, points)} />
+          <MainButton label="Rejoindre la Communauté" disabled={!nameOk || !o.slots.length} onPress={() => { const sx = useGame.getState().profile.sex; activate({ ...o, gender: sx === 'f' || sx === 'm' ? sx : undefined }, points); }} />
         )}
         <Txt size={12} color={t.ink2} style={{ textAlign: 'center', marginTop: 8 }}>Tu pourras tout changer dans Confidentialité.</Txt>
       </View>

@@ -63,6 +63,8 @@ function Root() {
         <Stack.Screen name="communaute/coup-de-pouce" />
         <Stack.Screen name="communaute/profil/[id]" />
         <Stack.Screen name="communaute/discussion/[id]" />
+        <Stack.Screen name="communaute/forums" />
+        <Stack.Screen name="communaute/forum/[id]" />
       </Stack>
       {!onboarded && pathname !== '/onboarding' ? <Redirect href="/onboarding" /> : null}
       {needsSelfie && pathname !== '/selfie' && pathname !== '/onboarding' ? <Redirect href="/selfie" /> : null}
