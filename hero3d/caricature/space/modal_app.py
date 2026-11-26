@@ -68,6 +68,12 @@ class CaricatureModel:
         return {k: self.pipe(prompt=p, image=portrait, generator=torch.Generator(device='cuda').manual_seed(recette.SEED), **common).images[0]
                 for k, p in recette.prompts_tenues(sex, sheet, only).items()}
 
+    def generate_melange(self, portrait, prompt):
+        import recette
+
+        common = dict(height=recette.SIZE, width=recette.SIZE, guidance_scale=recette.GUIDANCE, num_inference_steps=recette.STEPS)
+        return self.pipe(prompt=prompt, image=portrait, generator=self.torch.Generator(device='cuda').manual_seed(recette.SEED), **common).images[0]
+
     @modal.fastapi_endpoint(method='POST')
     async def caricature(self, request: Request):
         body = await request.json()
@@ -100,6 +106,8 @@ class CaricatureModel:
         expected = os.environ.get('FITAIA_CARICATURE_TOKEN', '')
         if expected and authorization != 'Bearer ' + expected:
             return {'ok': False, 'error': 'jeton refusé'}
+        if body.get('portrait') and body.get('mix'):  # s'habiller pièce par pièce : une image pour ce mélange
+            return api.melange_dict(body.get('portrait', ''), body.get('sex', 'm'), self.generate_melange, body.get('mix'), body.get('sheet'))
         if body.get('portrait'):  # second appel de l'app : les tenues de la boutique sur le perso déjà dessiné
             return api.tenues_dict(body.get('portrait', ''), body.get('sex', 'm'), self.generate_tenues, body.get('sheet'), body.get('only'))
         return api.caricature_dict(body.get('photo', ''), body.get('sex', 'm'), body.get('sheet'), self.generate_all)

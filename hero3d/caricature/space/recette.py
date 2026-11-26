@@ -55,6 +55,84 @@ TENUES = {
     'astro': 'Full body, heroic pose, very big head, one third of the figure, on a small body. {Il} wears a legendary astronaut outfit: white space suit with lime green glowing panels, helmet held under one arm, lime-soled boots. Background: starry space with a large planet glowing behind {lui}.',
     'royal': 'Full body, arms crossed, very big head, one third of the figure, on a small body. {Il} wears a legendary champion king outfit: deep purple velvet cape with gold trim over a black and gold athletic suit, small gold crown, gold sneakers. Background: dark hall with golden light rays behind {lui}.',
 }
+# Pièces de chaque tenue, pour s'habiller pièce par pièce (mélange de tenues, 26/11/2026). Mêmes vêtements que TENUES.
+# « plein » : la pièce du haut couvre tout le corps (combinaison) : on ne peut pas lui ajouter un bas.
+PIECES = {
+    'origine': {'haut': 'a red crew-neck t-shirt', 'bas': 'black jogging pants with a lime side stripe', 'chaussures': 'white sneakers'},
+    'cargo': {'haut': 'an open short-sleeve shirt with a pink and teal palm-leaf print over a white tank top', 'bas': 'sand cargo shorts',
+              'chaussures': 'white sneakers', 'accessoire': 'sunglasses pushed up on the head'},
+    'olive': {'haut': 'an olive waterproof shell jacket with taped seams over a black utility vest', 'bas': 'tapered black pants',
+              'chaussures': 'trail running shoes', 'accessoire': 'a small chest bag'},
+    'creme': {'haut': 'a cream linen suit jacket with rolled sleeves over a hot pink t-shirt', 'bas': 'cream linen suit trousers',
+              'chaussures': 'white loafers', 'accessoire': 'a thin gold chain'},
+    'titane': {'haut': 'brushed titanium armour plates over a black bodysuit with glowing cyan neon lines', 'bas': 'black bodysuit legs with glowing cyan neon lines',
+               'chaussures': 'neon-soled sneakers', 'accessoire': 'a glowing visor pushed up on the forehead'},
+    'atelier': {'haut': 'a black tailored long coat with gold embroidery over a black turtleneck', 'bas': 'black trousers',
+                'chaussures': 'black and gold sneakers', 'accessoire': 'a gold chain'},
+    'sprint': {'haut': 'a red sleeveless running top', 'bas': 'black split running shorts', 'chaussures': 'bright red running shoes',
+               'accessoire': 'a white headband'},
+    'dojo': {'haut': 'a white karate-style jacket with a black belt', 'bas': 'white karate trousers', 'chaussures': 'bare feet'},
+    'street': {'haut': 'an oversized graphite grey hoodie', 'bas': 'black joggers', 'chaussures': 'chunky white sneakers', 'accessoire': 'a black beanie'},
+    'plage': {'haut': 'an open white linen shirt{maillot}', 'bas': 'coral swim shorts with a white wave pattern', 'chaussures': 'flip-flops',
+              'accessoire': 'a towel over one shoulder'},
+    'ring': {'haut': 'an open black satin boxing robe with gold trim', 'bas': 'shiny gold boxing shorts with a black waistband',
+             'chaussures': 'black boxing boots', 'accessoire': 'red boxing gloves'},
+    'alpin': {'haut': 'an ice-blue technical ski jacket with white panels', 'bas': 'white ski trousers', 'chaussures': 'snow boots',
+              'accessoire': 'ski goggles on the forehead'},
+    'pilote': {'haut': 'a black racing suit with magenta and cyan neon stripes', 'plein': True, 'chaussures': 'racing boots',
+               'accessoire': 'a plain black helmet under one arm'},
+    'samourai': {'haut': 'black and red layered samurai-style armour with glowing magenta edges', 'bas': 'wide black trousers',
+                 'accessoire': 'a sheathed sword at the hip'},
+    'astro': {'haut': 'a white space suit with lime green glowing panels', 'plein': True, 'chaussures': 'lime-soled boots',
+              'accessoire': 'a space helmet held under one arm'},
+    'royal': {'haut': 'a deep purple velvet cape with gold trim over a black and gold athletic suit', 'bas': 'black and gold athletic trousers',
+              'chaussures': 'gold sneakers', 'accessoire': 'a small gold crown'},
+}
+EMPLACEMENTS = ('haut', 'bas', 'chaussures', 'accessoire')
+
+
+def decor(tenue):
+    """Fond d'une tenue (le texte après « Background: »), ou fond crème."""
+    t = TENUES.get(tenue, '')
+    return t.split('Background:', 1)[1].strip() if 'Background:' in t else 'Plain cream background.'
+
+
+def cle_melange(mix):
+    """Clé stable d'un mélange : m-<haut>-<bas>-<chaussures>-<accessoire>-<fond> (« x » = rien)."""
+    return 'm-' + '-'.join(mix.get(k) or 'x' for k in EMPLACEMENTS + ('fond',))
+
+
+def valider_melange(mix):
+    """Mélange valide : chaque pièce existe dans la tenue nommée ; un haut « plein » n'accepte pas de bas."""
+    if not isinstance(mix, dict):
+        raise ValueError('mélange absent')
+    if not mix.get('haut') or mix['haut'] not in PIECES:
+        raise ValueError('il faut un haut')
+    for k in EMPLACEMENTS:
+        v = mix.get(k)
+        if v and (v not in PIECES or k not in PIECES[v]):
+            raise ValueError('pièce inconnue : %s %s' % (k, v))
+    if PIECES[mix['haut']].get('plein') and mix.get('bas'):
+        raise ValueError('ce haut est une combinaison : pas de bas')
+    if not PIECES[mix['haut']].get('plein') and not mix.get('bas'):
+        raise ValueError('il faut un bas')
+    if mix.get('fond') and mix['fond'] not in TENUES:
+        raise ValueError('fond inconnu')
+
+
+def prompt_melange(sex, mix, sheet=None):
+    """Le perso habillé pièce par pièce (pièces de tenues différentes), même style que les tenues entières."""
+    valider_melange(mix)
+    m = _mots(sex)
+    meme = MEME.format(barbe=m['barbe'])
+    corps = ' ' + m['Il'] + ' has ' + silhouette(sheet if isinstance(sheet, dict) else {}) + '.'
+    pieces = [PIECES[mix[k]][k].format(**m) for k in EMPLACEMENTS if mix.get(k)]
+    if not mix.get('chaussures'):
+        pieces.append('plain white sneakers')
+    return (meme + corps + ' Full body, relaxed confident pose, very big head, one third of the figure, on a small body. '
+            + m['Il'] + ' wears ' + ', '.join(pieces[:-1]) + ' and ' + pieces[-1] + '. Background: ' + decor(mix.get('fond') or mix['haut']))
+
+
 # Les six tenues d'origine : ce que reçoit une app qui ne précise pas `only` (builds ≤ 7).
 TENUES_BASE = ('origine', 'cargo', 'olive', 'creme', 'titane', 'atelier')
 MAX_TENUES_PAR_APPEL = 6

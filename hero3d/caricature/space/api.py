@@ -81,3 +81,22 @@ def tenues_dict(portrait_b64, sex, generate_tenues, sheet=None, only=None):
                 'report': {'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}}
     except Exception as e:
         return {'ok': False, 'error': str(e)[:200]}
+
+
+def melange_dict(portrait_b64, sex, generate_melange, mix, sheet=None):
+    """Portrait + mélange {haut, bas, chaussures, accessoire, fond: identifiants de tenue} → {"ok", "cle", "image"}."""
+    t = time.time()
+    try:
+        if sex not in ('m', 'f'):
+            raise ValueError('sex doit valoir "m" ou "f"')
+        raw = base64.b64decode(portrait_b64 or '', validate=True)
+        if not raw or len(raw) > MAX_PHOTO:
+            raise ValueError('portrait absent ou trop lourd')
+        portrait = Image.open(io.BytesIO(raw)).convert('RGB')
+        portrait.thumbnail((768, 768))
+        prompt = recette.prompt_melange(sex, mix, sheet)
+        image = generate_melange(portrait, prompt)
+        return {'ok': True, 'cle': recette.cle_melange(mix), 'image': to_b64(image),
+                'report': {'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}}
+    except Exception as e:
+        return {'ok': False, 'error': str(e)[:200]}
