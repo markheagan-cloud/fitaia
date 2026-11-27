@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, useWindowDimensions, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -10,6 +10,7 @@ import { CUR_NAMES, MEALS, ORIGIN_LABEL, fmt } from '@/data/content';
 import { useCalories, useGame } from '@/store/useGame';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
+import { ScanPulse } from '@/ui/kit';
 import { Txt, Display } from '@/components/Txt';
 import { CoachAvatar } from '@/components/CoachAvatar';
 import { ManualMealSheet } from '@/components/ManualMealSheet';
@@ -129,7 +130,7 @@ export default function Scanner() {
         <Card radius={28} pad={16} elevated style={{ gap: 14 }}>
           {busy ? (
             <View style={{ alignItems: 'center', gap: 12, paddingVertical: 28 }}>
-              <ActivityIndicator color={LIME} size="large" />
+              <ScanPulse />
               <Txt size={15} weight="semibold">J’analyse ton assiette…</Txt>
               <Txt size={12} color={t.ink2}>Quelques secondes, un peu plus la première fois</Txt>
             </View>
@@ -141,6 +142,7 @@ export default function Scanner() {
                   {fmt(m.kcal)}
                   <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal</Display>
                 </Display>
+                <Txt size={12} lineHeight={17} color={t.ink2}>Estimation à partir de la photo : vérifie les aliments et la portion, la valeur réelle peut varier.</Txt>
               </View>
               <View style={{ gap: 6 }}>
                 {m.items.map((it) => (

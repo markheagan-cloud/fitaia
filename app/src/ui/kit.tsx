@@ -5,7 +5,7 @@
  */
 import React, { useEffect } from 'react';
 import { ScrollView, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
 import { RARITY_STYLE, V2, motion } from '@/theme/tokens';
@@ -192,3 +192,24 @@ const styles = StyleSheet.create({
   node: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   nodeDot: { width: 8, height: 8, borderRadius: 4 },
 });
+
+/** Analyse en cours : ondes lime qui partent du centre (organique, sans durée artificielle). */
+export function ScanPulse({ size = 96 }: { size?: number }) {
+  const reduced = useReducedMotion();
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }} accessibilityLabel="Analyse en cours">
+      {reduced ? null : [0, 1, 2].map((i) => <PulseRing key={i} size={size} delay={i * 450} />)}
+      <View style={{ width: size * 0.32, height: size * 0.32, borderRadius: size, backgroundColor: V2.lime }} />
+    </View>
+  );
+}
+
+function PulseRing({ size, delay }: { size: number; delay: number }) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    const id = setTimeout(() => p.set(withRepeat(withTiming(1, { duration: 1350, easing: Easing.out(Easing.quad) }), -1)), delay);
+    return () => clearTimeout(id);
+  }, [p, delay]);
+  const st = useAnimatedStyle(() => ({ opacity: 0.7 * (1 - p.get()), transform: [{ scale: 0.35 + p.get() * 0.65 }] }));
+  return <Animated.View style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, borderWidth: 3, borderColor: V2.lime }, st]} />;
+}
