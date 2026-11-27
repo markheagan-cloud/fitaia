@@ -171,7 +171,10 @@ def silhouette(sheet):
 def _mots(sex):
     f = sex == 'f'
     return dict(qui='woman' if f else 'man', lui='her' if f else 'him', Il='She' if f else 'He',
-                barbe='' if f else 'same beard, ', maillot=' over a coral one-piece sporty swimsuit' if f else '')
+                # 27/11/2026 : ne plus écrire « same beard » : le mot seul faisait pousser une barbe aux hommes rasés, et
+                # sans rien le corps « actuel » d'un barbu perdait sa barbe. Cette phrase garde les deux (contrôlé en 640
+                # sur un homme rasé et un barbu, 3 corps + 3 tenues chacun).
+                barbe='' if f else 'keep the face exactly as in the reference image, ', maillot=' over a coral one-piece sporty swimsuit' if f else '')
 
 
 def prompts(sex, sheet=None):
