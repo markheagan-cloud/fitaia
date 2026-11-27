@@ -19,7 +19,8 @@
         "EXPO_PUBLIC_MEAL_URL": "https://leperecastorof-blip--fitaia-caricature-mealvision-repas.us-east.modal.run",
         "EXPO_PUBLIC_SUPABASE_URL": "https://mbklplftzcptrsyarjlx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ia2xwbGZ0emNwdHJzeWFyamx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2NDcwODYsImV4cCI6MjExMTIyMzA4Nn0.j2X3u3-eAGpcj9enzX6pI1LT3XXdfZe5W7wK_nOYhkY"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
