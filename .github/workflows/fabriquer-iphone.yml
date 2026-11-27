@@ -35,6 +35,22 @@ jobs:
       EAS_SKIP_AUTO_FINGERPRINT: '1'
     steps:
       - uses: actions/checkout@v4
+      - name: Clés présentes ?
+        working-directory: .
+        env:
+          A: ${{ secrets.EXPO_TOKEN }}
+          B: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          C: ${{ secrets.ASC_KEY_ID }}
+          D: ${{ secrets.ASC_ISSUER_ID }}
+          E: ${{ secrets.CARICATURE_TOKEN }}
+        run: |
+          m=""
+          [ -n "$A" ] || m="$m EXPO_TOKEN"
+          [ -n "$B" ] || m="$m ASC_KEY_P8_BASE64"
+          [ -n "$C" ] || m="$m ASC_KEY_ID"
+          [ -n "$D" ] || m="$m ASC_ISSUER_ID"
+          [ -n "$E" ] || m="$m CARICATURE_TOKEN"
+          if [ -n "$m" ]; then echo "::error::Secrets manquants :$m"; exit 1; fi
       - uses: actions/setup-node@v4
         with:
           node-version: 22
