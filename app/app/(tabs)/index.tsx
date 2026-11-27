@@ -1,8 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Path } from 'react-native-svg';
-import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Breathe } from '@/fx/Breathe';
 import { fenetre, forme } from '@/coach/forme';
 import { useWatchTiles } from '@/services/watch';
@@ -10,14 +9,13 @@ import { streak } from '@/store/economy';
 import { challengeTarget } from '@/coach/challengeTarget';
 import { poseReady } from '@/pose/usePushupCamera';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
-import { RARITY, fmt, fmtKg } from '@/data/content';
+import { LIME, OBSIDIAN, RED, AMBER, V2, alert, shadow } from '@/theme/tokens';
+import { RARITY, fmt, fmtKg, todayLabel } from '@/data/content';
 import { useBody, useCalories, useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
-import { useDailyCoins } from '@/store/useEco';
-import { PROGRESSION_RULES } from '@/progression/progressionRules';
-
-const PF_CHALLENGE = PROGRESSION_RULES.challenge_completed.points;
+import { useEco } from '@/store/useEco';
+import { dailyEarnable } from '@/economy/dailyEarnings';
+import { FillBar, ProgressRing } from '@/ui/kit';
 import { useCountUp } from '@/fx/AnimatedNumber';
 import { Bar } from '@/fx/Bar';
 import { HeroAvatar } from '@/avatar/HeroAvatar';
@@ -25,7 +23,7 @@ import { RULES } from '@/store/economy';
 import { Screen, Card } from '@/components/Screen';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
-import { CoinIcon, PulseIcon } from '@/components/Icons';
+import { CoinIcon } from '@/components/Icons';
 import { CoachAvatar } from '@/components/CoachAvatar';
 import { CommunityEntry } from '@/community/components/CommunityEntry';
 
@@ -39,7 +37,6 @@ export default function Home() {
   const W = Math.max(0, width - 32);
   const cal = useCalories();
   const skin = useEquippedSkin();
-  const dailyCoins = useDailyCoins('daily_challenge');
   const { pushDone, openCoach } = useGame();
   const body = useBody();
   const history = useGame((x) => x.history);
@@ -69,38 +66,80 @@ export default function Home() {
     { label: 'Lipides', val: cal.l + ' g', pct: Math.min(1, cal.l / RULES.fatGoal) },
   ];
 
+  // Prochaine action utile, selon ce qui est déjà fait aujourd'hui et l'heure
+  const hour = new Date().getHours();
+  const mealsToday = useGame((x) => (x.meals[x.day] ?? []).length);
+  const statuses = useEco((x) => x.statuses);
+  const toEarn = dailyEarnable(statuses);
+  const next = !pushDone
+    ? { label: 'Faire le défi du jour', sub: (poseReady ? challengeTarget(history) : 5) + ' pompes, comptées par la caméra', go: () => router.navigate('/(tabs)/defis') }
+    : mealsToday === 0
+      ? { label: 'Enregistrer un repas', sub: 'Photo, code-barres ou recherche', go: () => router.navigate('/(tabs)/scanner') }
+      : hour >= 20
+        ? { label: 'Journée complète', sub: 'Repos, sommeil, eau : ton perso récupère aussi', go: () => router.navigate('/(tabs)/perso') }
+        : { label: 'Voir les défis bonus', sub: 'Squats, gainage, marche : à ton rythme', go: () => router.navigate('/(tabs)/defis') };
+  const greet = hour < 5 ? 'Bonne nuit' : hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
+
   return (
-    <Screen name="home">
-      {/* Perso */}
+    <Screen name="home" subtitle={greet + ' · ' + todayLabel()}>
+      {/* Perso, sur la même scène studio que le vestiaire */}
       <View accessibilityLabel="Ton personnage" style={[styles.hero, shadow.lg]}>
-        <Svg width={W} height={372} viewBox="0 0 358 372" preserveAspectRatio="none" style={StyleSheet.absoluteFill}>
-          <Path d="M0 70 L120 0 H190 L0 150 Z" fill="#E3E1DC" />
-          <Path d="M358 220 L230 372 H300 L358 300 Z" fill="#E3E1DC" />
-          <Path d="M250 0 H358 V90 Z" fill="#D2CFC8" />
-        </Svg>
+        <LinearGradient colors={['#1C2029', OBSIDIAN]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+        <View style={styles.heroLight} />
+        <LinearGradient colors={['rgba(169,147,255,0.22)', 'transparent']} start={{ x: 0, y: 0.5 }} end={{ x: 0.5, y: 0.5 }} style={StyleSheet.absoluteFill} />
+        <View style={styles.heroFloor} />
         <Breathe style={styles.heroImg}>
-          <HeroAvatar width={298} height={372} />
+          <HeroAvatar width={W} height={340} />
         </Breathe>
         <View style={styles.heroTag}>
-          <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: RARITY[skin.rarity].c }} />
-          <Txt size={12} weight="semibold" color="#F5F4F1">{skin.name}</Txt>
+          <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: RARITY[skin.rarity].c }} />
+          <Txt size={12} weight="semibold" color={V2.white}>{skin.name}</Txt>
         </View>
-        <Press onPress={() => router.navigate('/(tabs)/perso')} pressScale={0.98} style={[styles.levelBtn, shadow.md]}>
-          <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFill} />
+        <Press onPress={() => router.navigate('/(tabs)/perso')} pressScale={0.98} accessibilityLabel={'Niveau ' + body.level + ', ouvrir Mon perso'} style={styles.levelBtn}>
           <View style={styles.levelNum}>
-            <Display size={17} color={LIME} num letterSpacing={-0.3}>{body.level}</Display>
+            <Display size={17} color={V2.obsidian} num letterSpacing={-0.3}>{body.level}</Display>
           </View>
           <View style={{ flex: 1, gap: 6 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Txt size={13} weight="bold" color={OBSIDIAN}>{body.tier.reached ? 'Objectif atteint' : 'Palier ' + body.tier.current + ' sur 5'}</Txt>
-              <Txt size={13} num color="#5A5D63">{body.tier.reached ? fmtKg(body.now) + ' kg' : 'encore ' + fmtKg(body.tier.toNext) + ' kg'}</Txt>
+              <Txt size={13} weight="bold" color={V2.white}>{body.tier.reached ? 'Objectif atteint' : 'Palier ' + body.tier.current + ' sur 5'}</Txt>
+              <Txt size={13} num color={V2.grey}>{body.tier.reached ? fmtKg(body.now) + ' kg' : 'encore ' + fmtKg(body.tier.toNext) + ' kg'}</Txt>
             </View>
-            <Bar pct={body.tier.progress} color={OBSIDIAN} track="#D6D3CD" height={5} />
+            <FillBar pct={body.tier.progress} color={V2.violet} track="#2A2F39" height={5} />
           </View>
         </Press>
       </View>
 
-      {/* Forme : trois niveaux sur 4, tirés de ce qui a vraiment été fait, et la fenêtre d'entraînement du jour */}
+      {/* Ta journée : trois anneaux et la prochaine action utile */}
+      <Card radius={26} style={{ padding: 16, gap: 14 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          {[
+            { k: 'Défi', pct: pushDone ? 1 : 0, v: pushDone ? '✓' : '0/1', c: V2.lime },
+            { k: 'Repas', pct: Math.min(1, mealsToday / 3), v: mealsToday + '/3', c: '#3DDCCB' },
+            { k: 'Calories', pct: Math.min(1, cal.ratio), v: Math.round(Math.min(cal.ratio, 9.99) * 100) + '%', c: cal.over ? RED : cal.near ? AMBER : V2.violet },
+          ].map((r) => (
+            <View key={r.k} style={{ alignItems: 'center', gap: 6, flex: 1 }} accessible accessibilityLabel={r.k + ' : ' + r.v}>
+              <ProgressRing pct={r.pct} size={66} stroke={7} color={r.c}>
+                <Txt size={14} weight="bold" num>{r.v}</Txt>
+              </ProgressRing>
+              <Txt size={12} color={t.ink2}>{r.k}</Txt>
+            </View>
+          ))}
+        </View>
+        <Press haptic="medium" onPress={next.go} style={[styles.next, { backgroundColor: !pushDone || mealsToday === 0 ? V2.lime : t.strong }]}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Txt size={15} weight="bold" color={!pushDone || mealsToday === 0 ? V2.obsidian : t.strongInk}>{next.label}</Txt>
+            <Txt size={12} color={!pushDone || mealsToday === 0 ? '#2B3410' : t.strongInk2} numberOfLines={1}>{next.sub}</Txt>
+          </View>
+          {toEarn > 0 ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <CoinIcon size={13} />
+              <Txt size={14} weight="bold" num color={!pushDone || mealsToday === 0 ? V2.obsidian : t.strongInk}>{'+' + toEarn}</Txt>
+            </View>
+          ) : null}
+        </Press>
+      </Card>
+
+      {/* Forme : trois niveaux sur 4, tirés de ce qui a vraiment été fait */}
       <Card radius={26} style={{ padding: 16, gap: 12 }}>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           {jauges.map((j) => (
@@ -118,10 +157,7 @@ export default function Home() {
             </View>
           ))}
         </View>
-        <Press haptic="medium" onPress={() => router.navigate('/(tabs)/defis')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: win.open ? LIME : t.bg }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: win.open ? OBSIDIAN : LIME }} />
-          <Txt size={13} weight="semibold" color={win.open ? OBSIDIAN : t.ink} style={{ flex: 1 }}>{win.text}</Txt>
-        </Press>
+        <Txt size={12} color={t.ink2}>{win.text}</Txt>
       </Card>
 
       {/* Montre connectée : mesures du jour lues dans Santé (rien d'affiché tant qu'il n'y a pas de vraie mesure) */}
@@ -188,21 +224,6 @@ export default function Home() {
         </View>
       </Press>
 
-      {/* Défi du jour */}
-      <Press onPress={() => router.navigate('/(tabs)/defis')} pressScale={0.98} style={[styles.defi, { backgroundColor: t.strong }, shadow.md]}>
-        <View style={styles.defiIcon}>
-          <PulseIcon size={24} color={OBSIDIAN} strokeWidth={2.2} />
-        </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Txt size={15} weight="bold" color={t.strongInk}>{pushDone ? 'Défi du jour réussi' : 'Défi du jour : ' + (poseReady ? challengeTarget(history) : 5) + ' pompes'}</Txt>
-          <Txt size={13} color={t.strongInk2}>{pushDone ? 'Reviens demain pour le suivant' : 'Gratuit, comptées par la caméra'}</Txt>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <CoinIcon size={13} />
-          <Txt size={15} weight="bold" num color={t.strongInk}>{pushDone ? 'Gagné' : '+' + (dailyCoins || PF_CHALLENGE) + (dailyCoins ? '' : ' PF')}</Txt>
-        </View>
-      </Press>
-
       {/* Communauté (opt-in) */}
       <CommunityEntry />
     </Screen>
@@ -210,7 +231,10 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  hero: { height: 372, borderRadius: 32, backgroundColor: '#D6D3CC', overflow: 'hidden' },
+  hero: { height: 340, borderRadius: 30, backgroundColor: OBSIDIAN, overflow: 'hidden' },
+  heroLight: { position: 'absolute', alignSelf: 'center', top: -60, width: 340, height: 340, borderRadius: 170, backgroundColor: 'rgba(245,246,248,0.06)' },
+  heroFloor: { position: 'absolute', alignSelf: 'center', bottom: 30, width: 200, height: 22, borderRadius: 100, backgroundColor: 'rgba(0,0,0,0.5)' },
+  next: { flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 14 },
   heroImg: { position: 'absolute', bottom: 0, alignSelf: 'center' },
   heroTag: {
     position: 'absolute',
@@ -219,7 +243,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(28,29,31,0.88)',
+    backgroundColor: 'rgba(11,13,16,0.7)',
     borderRadius: 999,
     paddingVertical: 5,
     paddingLeft: 6,
@@ -233,14 +257,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: 'rgba(245,244,241,0.92)',
+    backgroundColor: 'rgba(23,26,32,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: 22,
     paddingVertical: 10,
     paddingLeft: 10,
     paddingRight: 14,
     overflow: 'hidden',
   },
-  levelNum: { width: 40, height: 40, borderRadius: 13, backgroundColor: OBSIDIAN, alignItems: 'center', justifyContent: 'center' },
+  levelNum: { width: 40, height: 40, borderRadius: 13, backgroundColor: V2.violet, alignItems: 'center', justifyContent: 'center' },
   alert: { flexDirection: 'row', gap: 12, alignItems: 'flex-start', borderRadius: 22, paddingVertical: 12, paddingLeft: 12, paddingRight: 14 },
   defi: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 24, padding: 14 },
   defiIcon: { width: 46, height: 46, borderRadius: 15, backgroundColor: LIME, alignItems: 'center', justifyContent: 'center' },

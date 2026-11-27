@@ -8,7 +8,7 @@ import { Animated, Easing, ScrollView, StyleSheet, View, useWindowDimensions } f
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
+import { buzz } from '@/services/haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LIME, OBSIDIAN } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
@@ -57,7 +57,7 @@ export default function Reveal() {
 
   useEffect(() => {
     if (!done) return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    buzz('success');
     playSfx('revelation');
     Animated.sequence([
       Animated.spring(pop, { toValue: 1, friction: 5, tension: 60, useNativeDriver: true }),

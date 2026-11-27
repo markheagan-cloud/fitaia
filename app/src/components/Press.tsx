@@ -1,6 +1,6 @@
 import React from 'react';
-import { Pressable, PressableProps, Platform, StyleProp, ViewStyle } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
+import { buzz } from '@/services/haptics';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { motion } from '@/theme/tokens';
 import { playSfx } from '@/services/sound';
@@ -40,9 +40,7 @@ export function Press({ style, pressScale = 0.95, haptic = 'light', onPress, onP
         onPressOut?.(e);
       }}
       onPress={(e) => {
-        if (haptic !== 'none' && Platform.OS !== 'web') {
-          Haptics.impactAsync(haptic === 'medium' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
+        if (haptic !== 'none') buzz(haptic);
         if (haptic === 'medium') playSfx('tap');
         onPress?.(e);
       }}

@@ -43,10 +43,11 @@ const VOLUME: Record<Sfx, number> = { tap: 0.35, succes: 0.8, pieces: 0.7, erreu
 };
 const MUSIC_VOLUME = 0.22;
 
-type SoundPrefs = { music: boolean; sfx: boolean; voice: boolean; set: (k: 'music' | 'sfx' | 'voice', v: boolean) => void };
+/** `haptics` : vibrations, réglables à part du son (cahier des charges V2, §15). */
+type SoundPrefs = { music: boolean; sfx: boolean; voice: boolean; haptics: boolean; set: (k: 'music' | 'sfx' | 'voice' | 'haptics', v: boolean) => void };
 export const useSound = create<SoundPrefs>()(
   persist(
-    (set) => ({ music: true, sfx: true, voice: true, set: (k, v) => { set({ [k]: v } as Partial<SoundPrefs>); syncMusic(); } }),
+    (set) => ({ music: true, sfx: true, voice: true, haptics: true, set: (k, v) => { set({ [k]: v } as Partial<SoundPrefs>); syncMusic(); } }),
     { name: 'fitaia-son', storage: createJSONStorage(() => AsyncStorage), onRehydrateStorage: () => () => syncMusic() },
   ),
 );

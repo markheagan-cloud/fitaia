@@ -1,17 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Image, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { buzz } from '@/services/haptics';
 import { useCelebrate } from './celebrate';
 import { useCountUp } from './AnimatedNumber';
 import { useGame } from '@/store/useGame';
-import { LIME, OBSIDIAN } from '@/theme/tokens';
+import { LIME, OBSIDIAN, RARITY_STYLE, V2 } from '@/theme/tokens';
+import type { Rarity } from '@/inventory/types';
+import { Press } from '@/components/Press';
 import { CUR_NAMES } from '@/data/content';
 import { Txt, Display } from '@/components/Txt';
 import { CoinIcon } from '@/components/Icons';
 import { playSfx } from '@/services/sound';
 
-const COLORS = [LIME, '#FF4FA3', '#FFC93C', '#27E0D0', '#F5F4F1'];
+const COLORS = [LIME, V2.violet, V2.gold, '#3DDCCB', V2.white];
+
+/** Intensité de la révélation selon la rareté : délai avant d'afficher la tenue, confettis, rayons, ondes, durée. */
+const TIER: Record<Rarity, { delay: number; bits: number; rays: boolean; rings: number; ms: number }> = {
+  COMMON: { delay: 0, bits: 18, rays: false, rings: 0, ms: 2600 },
+  RARE: { delay: 150, bits: 36, rays: false, rings: 2, ms: 3400 },
+  EPIC: { delay: 350, bits: 56, rays: true, rings: 3, ms: 4200 },
+  LEGENDARY: { delay: 800, bits: 80, rays: true, rings: 3, ms: 5200 },
+};
 const N = 36;
 
 /** Un confetti : tout est calculé sur le fil d'interface (reanimated), donc fluide même si l'app travaille. */
@@ -49,7 +59,7 @@ function Ring({ delay, color }: { delay: number; color: string }) {
 }
 
 /** Achat : rayons de lumière qui tournent derrière le perso. */
-function Rays() {
+function Rays({ color }: { color?: string }) {
   const r = useSharedValue(0);
   const o = useSharedValue(0);
   useEffect(() => {
@@ -60,8 +70,25 @@ function Rays() {
   return (
     <Animated.View style={[styles.rays, st]}>
       {Array.from({ length: 12 }, (_, i) => (
-        <View key={i} style={[styles.ray, { backgroundColor: COLORS[i % 4], transform: [{ rotate: `${i * 30}deg` }, { translateY: -150 }] }]} />
+        <View key={i} style={[styles.ray, { backgroundColor: color ?? COLORS[i % 4], transform: [{ rotate: `${i * 30}deg` }, { translateY: -150 }] }]} />
       ))}
+    </Animated.View>
+  );
+}
+
+/** Symbole de la rareté qui apparaît d'abord, seul, avant la tenue (révélation). */
+function Symbol({ rarity }: { rarity: Rarity }) {
+  const r = RARITY_STYLE[rarity];
+  const p = useSharedValue(0);
+  useEffect(() => {
+    const d = TIER[rarity].delay;
+    p.set(withSequence(withTiming(1, { duration: Math.min(380, d * 0.7), easing: Easing.out(Easing.back(2)) }), withDelay(Math.max(0, d * 0.3 - 120), withTiming(0, { duration: 200 }))));
+  }, [p, rarity]);
+  const st = useAnimatedStyle(() => ({ opacity: p.get(), transform: [{ scale: 0.4 + p.get() * 1.1 }] }));
+  return (
+    <Animated.View style={[styles.symbol, st]} pointerEvents="none">
+      <Txt size={96} color={r.c}>{r.symbol}</Txt>
+      <Txt size={14} weight="bold" color={r.c} style={{ letterSpacing: 3 }}>{r.label.toUpperCase()}</Txt>
     </Animated.View>
   );
 }
@@ -72,45 +99,64 @@ function Card({ id }: { id: number }) {
   const portrait = useGame((s) => s.caricature?.portraitUri);
   const reduced = useReducedMotion();
   const { width, height } = useWindowDimensions();
+  const rarity: Rarity | null = event.rarity ?? null;
+  const tier = rarity ? TIER[rarity] : null;
+  const accent = rarity ? RARITY_STYLE[rarity].c : LIME;
+  const reveal = !!rarity && !reduced && tier!.delay > 0;
   const scrim = useSharedValue(0);
   const pop = useSharedValue(reduced ? 1 : 0.6);
   const halo = useSharedValue(0);
   const [go, setGo] = useState(false); // les compteurs partent de 0 puis montent
+  const [shown, setShown] = useState(!reveal); // la tenue apparaît après le symbole de rareté
   const coins = useCountUp(go ? event.coins ?? 0 : 0, 900);
   const points = useCountUp(go ? event.points ?? 0 : 0, 900);
   const img = event.image ?? portrait;
   const achat = event.kind === 'achat';
+  const big = rarity === 'EPIC' || rarity === 'LEGENDARY';
 
   useEffect(() => {
     scrim.set(withTiming(1, { duration: 220 }));
-    pop.set(withSpring(1, { damping: 9, stiffness: 140 }));
-    halo.set(withSequence(withTiming(1, { duration: 500 }), withTiming(0.6, { duration: 900 })));
-    playSfx(achat ? 'achat' : 'succes');
-    if (Platform.OS !== 'web') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}), 260);
-      if (achat) [420, 560, 700].forEach((ms) => setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}), ms));
-    }
-    const g = setTimeout(() => setGo(true), 250);
-    const t = setTimeout(close, achat ? 4600 : 3400);
-    return () => { clearTimeout(g); clearTimeout(t); };
-  }, [id, scrim, pop, halo, close, achat]);
+    const delay = reveal ? tier!.delay : 0;
+    pop.set(withDelay(delay, withSpring(1, { damping: 9, stiffness: 140 })));
+    halo.set(withDelay(delay, withSequence(withTiming(1, { duration: 500 }), withTiming(0.6, { duration: 900 }))));
+    if (rarity === 'LEGENDARY' || rarity === 'EPIC') playSfx('revelation');
+    const s1 = setTimeout(() => {
+      setShown(true);
+      playSfx(achat ? 'achat' : 'succes');
+      buzz('success');
+      if (rarity !== 'COMMON') setTimeout(() => buzz('heavy'), 260);
+      if (big) [420, 560, 700].forEach((ms) => setTimeout(() => buzz('medium'), ms));
+    }, delay);
+    const g = setTimeout(() => setGo(true), delay + 250);
+    // avec des choix à faire, la carte attend ; sinon elle se ferme seule
+    const t = event.actions?.length ? null : setTimeout(close, delay + (tier ? tier.ms : achat ? 4600 : 3400));
+    return () => {
+      clearTimeout(s1);
+      clearTimeout(g);
+      if (t) clearTimeout(t);
+    };
+  }, [id, scrim, pop, halo, close, achat, rarity, reveal, tier, big, event.actions?.length]);
 
   const scrimSt = useAnimatedStyle(() => ({ opacity: scrim.get() }));
   const popSt = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
   const haloSt = useAnimatedStyle(() => ({ opacity: halo.get() * (img ? 0.55 : 0.18), transform: [{ scale: 0.8 + halo.get() * 0.5 }] }));
+  const bits = tier ? tier.bits : achat ? N * 2 : N;
+  const rays = tier ? tier.rays : achat;
+  const rings = tier ? tier.rings : achat ? 3 : 0;
 
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={event.title + '. Toucher pour continuer'} onPress={close} style={StyleSheet.absoluteFill}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimSt]} />
-      {!reduced ? Array.from({ length: achat ? N * 2 : N }, (_, i) => <Confetti key={id + ':' + i} i={i} w={width} h={height} />) : null}
-      <Animated.View style={[styles.center, popSt]}>
-        {achat && !reduced ? <Rays /> : null}
-        <Animated.View style={[styles.halo, haloSt]} />
-        {achat && !reduced ? [0, 220, 440].map((d, i) => <Ring key={d} delay={d} color={COLORS[i]} />) : null}
-        {img ? <Image source={{ uri: img }} style={styles.img} /> : null}
-        <Display size={32} color="#F5F4F1" style={{ textAlign: 'center' }}>{event.title}</Display>
-        {event.sub ? <Txt size={15} color="#C9CCD2" style={{ textAlign: 'center' }}>{event.sub}</Txt> : null}
+    <Pressable accessibilityRole="button" accessibilityLabel={event.title + (event.actions?.length ? '' : '. Toucher pour continuer')} onPress={event.actions?.length ? undefined : close} style={StyleSheet.absoluteFill}>
+      <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, rarity ? { backgroundColor: 'rgba(5,6,8,0.92)' } : null, scrimSt]} />
+      {reveal ? <Symbol rarity={rarity!} /> : null}
+      {shown && !reduced ? Array.from({ length: bits }, (_, i) => <Confetti key={id + ':' + i} i={i} w={width} h={height} />) : null}
+      <Animated.View style={[styles.center, popSt, { opacity: shown ? 1 : 0 }]}>
+        {shown && rays && !reduced ? <Rays color={rarity ? accent : undefined} /> : null}
+        <Animated.View style={[styles.halo, { backgroundColor: accent }, haloSt]} />
+        {shown && !reduced ? Array.from({ length: rings }, (_, i) => <Ring key={i} delay={i * 220} color={rarity ? accent : COLORS[i]} />) : null}
+        {img ? <Image source={{ uri: img }} style={[styles.img, { borderColor: accent }, rarity ? styles.imgTall : null]} resizeMode="cover" /> : null}
+        {rarity ? <Txt size={12} weight="bold" color={accent} style={{ letterSpacing: 2 }}>{RARITY_STYLE[rarity].symbol + ' ' + RARITY_STYLE[rarity].label.toUpperCase()}</Txt> : null}
+        <Display size={30} color={V2.white} style={{ textAlign: 'center' }}>{event.title}</Display>
+        {event.sub ? <Txt size={15} color="#C9CED6" style={{ textAlign: 'center' }}>{event.sub}</Txt> : null}
         {event.coins || event.points ? (
           <View style={styles.gains}>
             {event.coins ? (
@@ -120,13 +166,31 @@ function Card({ id }: { id: number }) {
               </View>
             ) : null}
             {event.points ? (
-              <View style={[styles.gain, { backgroundColor: '#F5F4F1' }]}>
+              <View style={[styles.gain, { backgroundColor: V2.white }]}>
                 <Txt size={20} weight="bold" num color={OBSIDIAN}>{'+' + points + ' PF'}</Txt>
               </View>
             ) : null}
           </View>
         ) : null}
-        <Txt size={12} color="#8A8E96">Touche pour continuer</Txt>
+        {event.actions?.length ? (
+          <View style={styles.actions}>
+            {event.actions.map((a) => (
+              <Press
+                key={a.label}
+                haptic={a.primary ? 'medium' : 'light'}
+                onPress={() => {
+                  close();
+                  a.onPress();
+                }}
+                style={[styles.action, a.primary ? { backgroundColor: LIME } : { borderWidth: 1, borderColor: 'rgba(245,246,248,0.3)' }]}
+              >
+                <Txt size={15} weight="bold" color={a.primary ? OBSIDIAN : V2.white}>{a.label}</Txt>
+              </Press>
+            ))}
+          </View>
+        ) : (
+          <Txt size={12} color={V2.grey}>Touche pour continuer</Txt>
+        )}
       </Animated.View>
     </Pressable>
   );
@@ -149,6 +213,10 @@ const styles = StyleSheet.create({
   ray: { position: 'absolute', width: 8, height: 200, borderRadius: 4 },
   halo: { position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: LIME },
   img: { width: 190, height: 190, borderRadius: 95, borderWidth: 4, borderColor: LIME, backgroundColor: '#26282C' },
+  imgTall: { width: 220, height: 300, borderRadius: 28, borderWidth: 3 },
+  symbol: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
+  actions: { alignSelf: 'stretch', gap: 10, marginTop: 10 },
+  action: { height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
   gains: { flexDirection: 'row', gap: 10, marginTop: 6 },
   gain: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: LIME, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 16 },
 });

@@ -16,7 +16,9 @@ import { PROGRESSION_RULES } from '@/progression/progressionRules';
 
 const PF_CHALLENGE = PROGRESSION_RULES.challenge_completed.points;
 import { RULES, dayKey, isActiveDay, weekDays } from '@/store/economy';
-import { Screen, Card, Row } from '@/components/Screen';
+import { Screen, Card } from '@/components/Screen';
+import { FillBar, SectionTitle } from '@/ui/kit';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { CheckIcon } from '@/components/Icons';
@@ -144,10 +146,7 @@ export default function Defis() {
         </Press>
       </View>
 
-      <Row>
-        <Txt size={16} weight="bold" color={screenAccent(t, 'defis')}>Autres défis</Txt>
-        <Txt size={12} color={t.ink2}>Remis à zéro dans {Math.max(1, 24 - new Date().getHours())} h</Txt>
-      </Row>
+      <SectionTitle title="Missions bonus" hint={eco.doneToday.length + ' / ' + OTHER_DEFIS.length + ' · nouvelles dans ' + Math.max(1, 24 - new Date().getHours()) + ' h'} />
       <Card style={{ paddingVertical: 4, paddingHorizontal: 14 }}>
         {OTHER_DEFIS.map((d, i) => {
           const done = eco.doneToday.indexOf(d.id) >= 0;
@@ -178,9 +177,7 @@ export default function Defis() {
                 <Txt size={15} weight="semibold">{d.name}</Txt>
                 <Txt size={12} color={done ? (t.dark ? LIME : '#3F5600') : t.ink2}>{subText}</Txt>
                 {d.kind !== 'camera' && !done ? (
-                  <View style={{ height: 4, borderRadius: 9, backgroundColor: t.track }}>
-                    <View style={{ width: `${Math.round(progress * 100)}%`, height: 4, borderRadius: 9, backgroundColor: progress >= 1 ? LIME : t.ink }} />
-                  </View>
+                  <FillBar pct={progress} height={4} color={progress >= 1 ? LIME : t.ink} />
                 ) : null}
               </View>
               {action ? (
@@ -188,9 +185,9 @@ export default function Defis() {
                   <Txt size={13} weight="bold" color={OBSIDIAN}>{actionLabel}</Txt>
                 </Press>
               ) : done ? (
-                <View style={[styles.check, { backgroundColor: LIME, width: 24, height: 24, borderRadius: 8 }]}>
+                <Animated.View entering={ZoomIn.springify().damping(12)} style={[styles.check, { backgroundColor: LIME, width: 26, height: 26, borderRadius: 13 }]}>
                   <CheckIcon size={13} color={OBSIDIAN} />
-                </View>
+                </Animated.View>
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Txt size={14} weight="bold" num>+{d.points} PF</Txt>
@@ -203,7 +200,7 @@ export default function Defis() {
 
       <Card style={{ gap: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Txt size={16} weight="bold" color={screenAccent(t, 'defis')}>Ta semaine</Txt>
+          <Txt size={16} weight="bold" color={screenAccent(t, 'defis')}>Régularité</Txt>
           <Txt size={14} num color={t.ink2}>{eco.activeDays} jour{eco.activeDays > 1 ? 's' : ''} sur 7</Txt>
         </View>
         <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -220,6 +217,9 @@ export default function Defis() {
         </View>
         <Txt size={13} color={t.ink2}>
           {fmt(weeklyPoints) + ' Points FITAIA cette semaine. Un défi rapporte ' + PF_CHALLENGE + ' PF, un repas enregistré ' + PROGRESSION_RULES.meal_logged.points + ' PF.'}
+        </Txt>
+        <Txt size={12} lineHeight={17} color={t.ink2}>
+          Un jour sans défi ne casse rien : la semaine compte tes jours actifs. Le repos et le sommeil comptent aussi pour ta forme.
         </Txt>
       </Card>
     </Screen>

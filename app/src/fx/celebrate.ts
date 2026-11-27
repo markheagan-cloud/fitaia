@@ -4,7 +4,14 @@
  */
 import { create } from 'zustand';
 
-export type Celebration = { title: string; sub?: string; coins?: number; points?: number; image?: string; kind?: 'achat' };
+import type { Rarity } from '@/inventory/types';
+
+export type CelebrationAction = { label: string; onPress: () => void; primary?: boolean };
+/**
+ * `rarity` règle l'intensité d'une révélation de tenue : commune rapide, légendaire = petite séquence (≈ 2 s).
+ * `actions` : choix proposés à la fin (porter maintenant / garder au vestiaire) ; la carte attend alors le choix.
+ */
+export type Celebration = { title: string; sub?: string; coins?: number; points?: number; image?: string; kind?: 'achat'; rarity?: Rarity; actions?: CelebrationAction[] };
 type S = { id: number; event: Celebration | null; celebrate: (e: Celebration) => void; close: () => void };
 
 export const useCelebrate = create<S>((set) => ({

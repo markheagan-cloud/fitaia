@@ -9,7 +9,9 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from 'react-na
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, shadow, screenAccent } from '@/theme/tokens';
+import { LIME, OBSIDIAN, VIOLET, shadow } from '@/theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { useGame } from '@/store/useGame';
 import { useEco } from '@/store/useEco';
 import { useCelebrate } from '@/fx/celebrate';
@@ -99,9 +101,16 @@ export default function Vestiaire() {
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}>
-        <View style={{ height: 400 + insets.top, backgroundColor: OBSIDIAN }}>
+        <View style={{ height: 430 + insets.top, backgroundColor: OBSIDIAN, overflow: 'hidden' }}>
+          {/* Studio : fond sobre, lumière principale douce, éclairage latéral, ombre au sol */}
+          <LinearGradient colors={['#1A1D24', OBSIDIAN]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+          <View style={[styles.keyLight, { top: insets.top - 40 }]} />
+          <LinearGradient colors={['rgba(169,147,255,0.22)', 'transparent']} start={{ x: 0, y: 0.5 }} end={{ x: 0.45, y: 0.5 }} style={StyleSheet.absoluteFill} />
+          {drawn ? <View style={styles.floor} /> : null}
           {drawn ? (
-            <Image source={{ uri: drawn }} style={{ width: '100%', height: '100%' }} resizeMode="cover" accessibilityLabel="Ton perso dans ce look" />
+            <Animated.View key={drawn} entering={FadeIn.duration(240)} style={{ flex: 1, paddingTop: insets.top + 20 }}>
+              <Image source={{ uri: drawn }} style={{ width: '100%', height: '100%' }} resizeMode="contain" accessibilityLabel="Ton perso dans ce look" />
+            </Animated.View>
           ) : caricature ? (
             <View style={styles.pending}>
               <Image source={{ uri: caricature.portraitUri }} style={styles.pendingFace} accessibilityLabel="Ton perso" />
@@ -125,9 +134,14 @@ export default function Vestiaire() {
         <Press accessibilityLabel="Fermer" onPress={close} style={[styles.close, { top: insets.top + 10 }]}>
           <CloseIcon size={14} color="#F5F4F1" />
         </Press>
+        {mixKey(mix) !== mixKey(startMix) ? (
+          <Press accessibilityLabel="Revenir à la tenue de départ" onPress={() => setMix(startMix)} style={[styles.undo, { top: insets.top + 10 }]}>
+            <Txt size={13} weight="bold" color="#F5F6F8">↺ Tenue d’avant</Txt>
+          </Press>
+        ) : null}
 
         <View style={styles.body}>
-          <Display size={30} color={screenAccent(t, 'shop')}>Mon vestiaire</Display>
+          <Display size={30} color={VIOLET}>Mon vestiaire</Display>
           <Txt size={14} lineHeight={20} color={t.ink2}>
             {owned.length + (owned.length > 1 ? ' tenues à toi. ' : ' tenue à toi. ') + 'Prends le haut de l’une, le bas d’une autre, les chaussures d’une troisième : chaque pièce que tu as débloquée se mélange.'}
           </Txt>
@@ -171,7 +185,7 @@ export default function Vestiaire() {
 
           {saved.length ? (
             <View style={{ gap: 6 }}>
-              <Txt size={16} weight="bold" color={screenAccent(t, 'shop')}>Mes looks</Txt>
+              <Txt size={16} weight="bold" color={VIOLET}>Mes looks</Txt>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {saved.filter((l) => mine[l.key]).map((l) => (
                   <Press key={l.key} accessibilityLabel="Reprendre ce look" onPress={() => setMix(l.mix)} style={[styles.look, { borderColor: l.key === key ? LIME : 'transparent' }]}>
@@ -214,6 +228,9 @@ function cropFor(row: Slot | 'fond') {
 
 const styles = StyleSheet.create({
   close: { position: 'absolute', right: 16, width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15,16,18,0.55)' },
+  keyLight: { position: 'absolute', alignSelf: 'center', width: 360, height: 360, borderRadius: 180, backgroundColor: 'rgba(245,246,248,0.07)' },
+  floor: { position: 'absolute', alignSelf: 'center', bottom: 18, width: 220, height: 26, borderRadius: 110, backgroundColor: 'rgba(0,0,0,0.55)' },
+  undo: { position: 'absolute', left: 16, height: 36, borderRadius: 18, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(15,16,18,0.55)' },
   pending: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 28 },
   pendingFace: { width: 150, height: 150, borderRadius: 75, opacity: 0.9 },
   small: { borderRadius: 14, paddingVertical: 10, paddingHorizontal: 16 },

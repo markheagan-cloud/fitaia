@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
+import { buzz } from '@/services/haptics';
 import { useEco } from '@/store/useEco';
 import { CoinIcon } from '@/components/Icons';
 
@@ -43,7 +43,7 @@ export function RewardBurst() {
   if (burst.id && live?.id !== burst.id) setLive({ id: burst.id, cur: 'earn' });
   useEffect(() => {
     if (!live) return;
-    if (Platform.OS !== 'web') Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    buzz('success');
     const t = setTimeout(() => setLive(null), 1500);
     return () => clearTimeout(t);
   }, [live]);

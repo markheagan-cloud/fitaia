@@ -138,6 +138,24 @@ export default function Article() {
   const euros = palier ? applePrice ?? eurosLabel(palier.euros) : null;
   const canPay = !owned && sale && euros !== null;
 
+  /** Révélation selon la rareté, puis le choix : la porter tout de suite ou la ranger au vestiaire. */
+  const reveal = (before: string | undefined, sub: string) => {
+    const sk = skinOf(item.id);
+    celebrate({
+      kind: 'achat',
+      rarity: item.rarity,
+      title: item.name,
+      sub,
+      image: sk ? mine?.[sk.id] : undefined,
+      actions: [
+        { label: 'La porter maintenant', primary: true, onPress: () => say(item.name + ' est sur ton perso', 'ok') },
+        ...(before && before !== item.id
+          ? [{ label: 'La garder au vestiaire', onPress: () => void equip(before).then((r) => say(r.ok ? 'Rangée dans ton vestiaire' : r.message, r.ok ? 'ok' : 'bad')) }]
+          : []),
+      ],
+    });
+  };
+
   const pay = async () => {
     if (paying || busy) return;
     if (!achatsPossibles()) {
@@ -146,9 +164,9 @@ export default function Article() {
     }
     setPaying(true);
     try {
+      const before = inventory?.equipped.FULL_OUTFIT;
       const res = await acheterEnEuros(item.id, (it) => grantPaid(it));
-      const sk = skinOf(item.id);
-      if (res.ok) celebrate({ kind: 'achat', title: item.name + ' débloquée', sub: 'Elle est à toi pour toujours, et déjà sur ton perso.', image: sk ? mine?.[sk.id] : undefined });
+      if (res.ok) reveal(before, 'Elle est à toi pour toujours.');
       else if (!res.annule) say(res.message, 'bad');
     } finally {
       setPaying(false);
@@ -166,9 +184,10 @@ export default function Article() {
     }
     setBusy(true);
     try {
+      const before = inventory?.equipped.FULL_OUTFIT;
       const res = owned ? await equip(item.id) : await buy(item.id);
-      const sk = skinOf(item.id);
-      if (res.ok && !owned) celebrate({ kind: 'achat', title: item.name + ' débloquée', sub: 'Elle est sur ton perso.', image: sk ? mine?.[sk.id] : undefined });
+      // célébration seulement APRÈS la confirmation du registre (jamais avant que la dépense soit enregistrée)
+      if (res.ok && !owned) reveal(before, 'Elle est à toi pour toujours.');
       else say(res.ok ? item.name + ' est sur ton perso' : res.message, res.ok ? 'ok' : 'bad');
     } catch {
       say('Action impossible pour le moment, réessaie', 'bad');
