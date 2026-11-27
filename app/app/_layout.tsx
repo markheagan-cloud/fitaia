@@ -73,6 +73,7 @@ function Root() {
         <Stack.Screen name="human-engine-debug" options={{ animation: 'slide_from_right', gestureEnabled: false }} />
         <Stack.Screen name="article/[id]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
         <Stack.Screen name="vestiaire" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
+        <Stack.Screen name="recettes" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
         <Stack.Screen name="corps" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
         <Stack.Screen name="communaute/index" />
         <Stack.Screen name="communaute/fitmatch" />

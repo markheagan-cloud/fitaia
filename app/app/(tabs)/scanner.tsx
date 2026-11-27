@@ -14,6 +14,7 @@ import { Txt, Display } from '@/components/Txt';
 import { CoachAvatar } from '@/components/CoachAvatar';
 import { ManualMealSheet } from '@/components/ManualMealSheet';
 import { MealJournal } from '@/components/MealJournal';
+import { RecipeSuggestions } from '@/components/RecipeSuggestions';
 import type { MealEntry } from '@/data/content';
 import { FoodSearch, PortionPicker } from '@/components/FoodSearch';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
@@ -259,6 +260,7 @@ export default function Scanner() {
               </View>
             </View>
           ) : null}
+          <RecipeSuggestions />
           <MealJournal onEdit={(m) => { setEditing(m); setManual(true); }} />
         </>
       ) : (

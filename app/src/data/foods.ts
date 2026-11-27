@@ -49,6 +49,7 @@ export const LOCAL_FOODS: LocalFood[] = [
   f('Muesli', 360, 10, 60, 7, 50),
   f('Semoule / couscous cuit', 112, 3.8, 23, 0.2, 150),
   f('Galette de riz', 385, 8, 82, 3, 9),
+  f('Tortilla de blé', 310, 8.5, 50, 7.5, 60),
   // Légumes
   f('Brocolis cuits', 35, 3, 4, 0.4, 150),
   f('Haricots verts cuits', 30, 2, 4, 0.2, 150),
@@ -62,6 +63,9 @@ export const LOCAL_FOODS: LocalFood[] = [
   f('Poivron', 25, 1, 4, 0.3, 100),
   f('Champignons', 22, 3, 1, 0.3, 100),
   f('Maïs doux', 95, 3, 18, 1.5, 80),
+  f('Oignon', 40, 1.1, 7.6, 0.1, 50),
+  f('Petits pois cuits', 80, 5, 11, 0.4, 150),
+  f('Tomates concassées (conserve)', 25, 1.2, 3.5, 0.2, 200),
   // Fruits
   f('Pomme', 52, 0.3, 12, 0.2, 150),
   f('Banane', 90, 1.1, 20, 0.3, 120),
@@ -78,6 +82,9 @@ export const LOCAL_FOODS: LocalFood[] = [
   f('Beurre de cacahuète', 590, 25, 15, 50, 20),
   f('Graines de chia', 490, 17, 7, 31, 15),
   f('Chocolat noir 70 %', 570, 8, 35, 42, 20),
+  f('Miel', 320, 0.4, 80, 0, 10),
+  f('Sauce soja', 60, 8, 6, 0.1, 10),
+  f('Jus de citron', 25, 0.4, 5, 0.2, 10),
   // Plats & snacks
   f('Pizza margherita', 265, 11, 33, 10, 300),
   f('Burger (cheeseburger)', 260, 14, 26, 11, 180),
