@@ -22,7 +22,13 @@ export type PoseEvent = {
   /** Les deux côtés du corps (`points` = le mieux vu sur cette image), pour garder le même côté pendant tout le défi. */
   left?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
   right?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+  /** Moteur qui a vu la personne : MediaPipe (principal) ou Apple Vision (secours). */
+  engine?: 'mediapipe' | 'vision';
+  /** MediaPipe seulement : position 3D des points (mètres, centrée sur les hanches), pour des angles vrais quel que soit l'angle de vue. */
+  world?: { left: Record<PoseJoint, PosePoint3>; right: Record<PoseJoint, PosePoint3> };
 };
+export type PoseJoint = 'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle';
+export type PosePoint3 = { x: number; y: number; z: number };
 
 export type FitaiaPoseViewProps = ViewProps & {
   active?: boolean;

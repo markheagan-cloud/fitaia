@@ -127,3 +127,26 @@ ok(pickVoice(voices.slice(0, 2)) === 'com.apple.voice.compact.fr-FR.Thomas', 'vo
 ok(pickVoice([]) === undefined, 'aucune voix française : voix par défaut du téléphone');
 ok(/plus bas/.test(rejectWhyPhrase('depth', 1)) && /hanches/.test(rejectWhyPhrase('align', 1)), 'correction vocale précise');
 console.log(n + ' tests au total');
+
+// ── MediaPipe : angles en 3D ──────────────────────────────────────────────────────────────────
+import { angle3, type Pose3 } from '../src/pose/repCounter';
+// Bras dans un plan tourné de 60° par rapport à la caméra : en 2D le coude à 90° paraît bien plus ouvert, en 3D il reste à 90°.
+const rot = (x: number, z: number, deg: number) => { const r = (deg * Math.PI) / 180; return { x: x * Math.cos(r), z: x * Math.sin(r) }; };
+function arm3(elbowDeg: number, viewDeg = 60): Pose3 {
+  // bras dans le plan (x, y), bras supérieur en diagonale ; avant-bras faisant elbowDeg avec lui au coude
+  const u = { x: Math.cos(Math.PI / 4), y: Math.sin(Math.PI / 4) };
+  const el = { x: 0.3 * u.x, y: 0.3 * u.y };
+  const back = Math.atan2(-u.y, -u.x); // direction coude → épaule
+  const f = back + (elbowDeg * Math.PI) / 180;
+  const wr = { x: el.x + 0.28 * Math.cos(f), y: el.y + 0.28 * Math.sin(f) };
+  const P = (q: { x: number; y: number }) => { const r = rot(q.x, 0, viewDeg); return { x: r.x, y: q.y, z: r.z }; };
+  return { shoulder: P({ x: 0, y: 0 }), elbow: P(el), wrist: P(wr), hip: { x: 0.9, y: 0.05, z: 0 }, knee: { x: 1.3, y: 0.08, z: 0 }, ankle: { x: 1.7, y: 0.1, z: 0 } };
+}
+const a3 = arm3(90);
+const flat = angle({ ...a3.shoulder, c: 1 }, { ...a3.elbow, c: 1 }, { ...a3.wrist, c: 1 });
+ok(Math.abs(angle3(a3.shoulder, a3.elbow, a3.wrist) - 90) < 0.5 && Math.abs(flat - 90) > 15, 'vue de biais : 3D lit 90° (' + flat.toFixed(0) + '° en 2D)');
+// Comptage avec la 3D : rep complète comptée même vue de biais
+const c4 = new PushupCounter();
+const ev4 = [175, 175, 150, 120, 95, 85, 80, 85, 100, 130, 160, 172, 176, 178].flatMap((a) => c4.update(unsquash(frame(175), ASPECT), arm3(a)));
+ok(ev4.some((e) => e.type === 'rep'), 'pompe comptée avec les angles 3D (vue de biais)');
+console.log(n + ' tests au total (3D compris)');

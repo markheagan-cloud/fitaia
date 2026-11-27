@@ -109,7 +109,9 @@ export function usePushupCamera(target = 5) {
       if (!raw) return;
       if (!side.current && ev.side) side.current = ev.side;
 
-      const events = counter.current.update(unsquash(raw, ev.aspect && ev.aspect > 0 ? ev.aspect : 0.5625));
+      const lockedSide = side.current ?? ev.side;
+      const p3 = ev.world && lockedSide ? ev.world[lockedSide] : undefined;
+      const events = counter.current.update(unsquash(raw, ev.aspect && ev.aspect > 0 ? ev.aspect : 0.5625), p3);
       for (const x of events) {
         if (x.type === 'rep') {
           playSfx('rep');

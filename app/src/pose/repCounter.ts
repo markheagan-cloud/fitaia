@@ -32,6 +32,17 @@ export function bodyTilt(p: Pose): number {
   return (Math.atan2(dy, dx) * 180) / Math.PI;
 }
 
+export type P3 = { x: number; y: number; z: number };
+export type Pose3 = Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', P3>;
+
+/** Angle en 3D (positions en mètres) : juste même si la personne n'est pas parfaitement de profil. */
+export function angle3(a: P3, b: P3, c: P3): number {
+  const u = [a.x - b.x, a.y - b.y, a.z - b.z], v = [c.x - b.x, c.y - b.y, c.z - b.z];
+  const dot = u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const m = Math.hypot(u[0], u[1], u[2]) * Math.hypot(v[0], v[1], v[2]) || 1;
+  return (Math.acos(Math.max(-1, Math.min(1, dot / m))) * 180) / Math.PI;
+}
+
 export function angle(a: Pt, b: Pt, c: Pt): number {
   const abx = a.x - b.x, aby = a.y - b.y, cbx = c.x - b.x, cby = c.y - b.y;
   const dot = abx * cbx + aby * cby;
@@ -70,8 +81,11 @@ export class PushupCounter {
     this.count = 0; this.phase = 'up'; this.reachedBottom = false; this.minElbow = 180; this.elbowS = 180; this.badFrames = 0; this.offPlank = 0;
   }
 
-  /** À appeler à chaque image (10–30 Hz). */
-  update(p: Pose): RepEvent[] {
+  /**
+   * À appeler à chaque image (10–30 Hz). `p` : points de l'image (visibilité, posture) ;
+   * `p3` (facultatif, MediaPipe) : mêmes points en 3D, utilisés pour les angles du coude et l'alignement.
+   */
+  update(p: Pose, p3?: Pose3): RepEvent[] {
     const ev: RepEvent[] = [];
     const pts = [p.shoulder, p.elbow, p.wrist, p.hip];
     if (pts.some((q) => q.c < THRESH.minConfidence) || !footOf(p)) {
@@ -91,10 +105,12 @@ export class PushupCounter {
     }
     this.offPlank = 0;
 
-    const raw = angle(p.shoulder, p.elbow, p.wrist);
+    const raw = p3 ? angle3(p3.shoulder, p3.elbow, p3.wrist) : angle(p.shoulder, p.elbow, p.wrist);
     this.elbowS = this.elbowS * THRESH.smooth + raw * (1 - THRESH.smooth);
     const e = this.elbowS;
-    const aligned = alignmentDeviation(p) <= THRESH.alignMaxDeg;
+    const foot3 = p3 ? (p.ankle.c >= THRESH.minConfidence ? p3.ankle : p3.knee) : null;
+    const dev = p3 && foot3 ? Math.abs(180 - angle3(p3.shoulder, p3.hip, foot3)) : alignmentDeviation(p);
+    const aligned = dev <= THRESH.alignMaxDeg;
 
     if (this.phase === 'up') {
       if (e < THRESH.elbowUp - 15) {

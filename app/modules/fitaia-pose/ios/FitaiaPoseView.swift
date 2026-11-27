@@ -3,7 +3,7 @@ import AVFoundation
 import Vision
 import ImageIO
 
-/// Vue caméra + détection de posture (Apple Vision). Émet `onPose` ≈ 15 fois par seconde, y compris quand personne n'est vu
+/// Vue caméra + détection de posture (MediaPipe Pose Landmarker, sinon Apple Vision). Émet `onPose` ≈ 15 fois par seconde, y compris quand personne n'est vu
 /// (`found: false`), pour que l'app puisse guider la personne à la voix.
 /// Points : épaule, coude, poignet, hanche, genou, cheville du côté le mieux vu, plus le nez, en coordonnées normalisées
 /// de l'image caméra en portrait (0–1, origine en haut à gauche, image NON inversée même avec la caméra avant).
@@ -24,6 +24,12 @@ class FitaiaPoseView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelegate {
   /// Une personne en position de pompe est allongée : Vision la reconnaît mieux « debout ». On essaie donc aussi l'image
   /// tournée d'un quart de tour, et on garde la dernière orientation qui a marché.
   private var orientations: [CGImagePropertyOrientation] = [.up, .right, .left]
+
+  #if canImport(MediaPipeTasksVision)
+  /// Moteur principal : MediaPipe (chargé à la première image, sur la file caméra). `nil` = on reste sur Apple Vision.
+  private var mediaPipe: FitaiaMediaPipePose?
+  private var mediaPipeTried = false
+  #endif
 
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
@@ -151,6 +157,7 @@ class FitaiaPoseView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelegate {
       "left": left,
       "right": right,
       "nose": pt(.nose),
+      "engine": "vision",
       "aspect": h > 0 ? w / h : 0.5625,
       "ts": CACurrentMediaTime() * 1000,
     ]
@@ -162,6 +169,26 @@ class FitaiaPoseView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelegate {
     if now - lastTs < minInterval { return }
     lastTs = now
     guard let pixel = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+    let w = Double(CVPixelBufferGetWidth(pixel)), h = Double(CVPixelBufferGetHeight(pixel))
+    let aspect = h > 0 ? w / h : 0.5625
+
+    #if canImport(MediaPipeTasksVision)
+    if !mediaPipeTried {
+      mediaPipeTried = true
+      mediaPipe = FitaiaMediaPipePose()
+    }
+    if let mp = mediaPipe {
+      if var payload = mp.analyse(pixel, tsMs: Int(now * 1000)) {
+        payload["aspect"] = aspect
+        payload["ts"] = now * 1000
+        emitPose(payload)
+      } else {
+        emitPose(["found": false, "ts": now * 1000, "engine": "mediapipe"])
+      }
+      return
+    }
+    #endif
+
     var best: (payload: [String: Any], score: Double, o: CGImagePropertyOrientation)?
     for o in orientations {
       if let r = analyse(pixel, o) {
