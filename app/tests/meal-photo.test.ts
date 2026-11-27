@@ -1,5 +1,5 @@
 /** Photo d'un repas → estimation (src/services/mealPhoto.ts), réponse réelle du service MealVision du 25/11/2026. */
-import { estimateToMeal, parseMealEstimate } from '../src/services/mealEstimate';
+import { estimateToMeal, mealErrorText, mealRetryable, parseMealEstimate } from '../src/services/mealEstimate';
 import { createCheck } from './helpers/check';
 
 const t = createCheck();
@@ -16,4 +16,8 @@ t.ok(parseMealEstimate('{"ok": true, "items": [{"name": "Eau", "kcal": 0}]}') ==
 let err = '';
 try { parseMealEstimate('pas du json'); } catch (x) { err = (x as Error).message; }
 t.ok(/illisible/.test(err), 'réponse illisible : message clair');
+t.ok(mealRetryable('Network request failed') && mealRetryable('Le serveur de dessin met trop de temps à répondre. Réessaie.') && mealRetryable('Serveur de dessin en erreur (502). Réessaie.'), 'réseau, délai, 502 : second essai');
+t.ok(!mealRetryable('Aucun aliment reconnu sur la photo. Rapproche-toi du plat, en pleine lumière.'), 'pas de repas : pas de second essai');
+t.ok(!/dessin|serveur/i.test(mealErrorText('Serveur de dessin en erreur (502). Réessaie.')) && !/dessin|jeton/i.test(mealErrorText('Serveur de dessin : accès refusé (jeton).')), 'messages sans terme technique');
+t.ok(mealErrorText('Aucun aliment reconnu sur la photo.') === 'Aucun aliment reconnu sur la photo.', 'message du service gardé tel quel');
 console.log(t.count() + ' vérifications OK');

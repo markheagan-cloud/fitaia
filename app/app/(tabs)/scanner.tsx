@@ -21,7 +21,7 @@ import { Food, fetchBarcode, toMeal } from '@/services/food';
 import { useDailyCoins } from '@/store/useEco';
 import { useCountUp } from '@/fx/AnimatedNumber';
 import * as ImagePicker from 'expo-image-picker';
-import { analyseMealPhoto, estimateToMeal, mealPhotoConfigured, type MealEstimate } from '@/services/mealPhoto';
+import { analyseMealPhoto, estimateToMeal, mealPhotoConfigured, warmMealPhoto, type MealEstimate } from '@/services/mealPhoto';
 
 const PORTIONS: [string, number][] = [['Petite', 0.7], ['Normale', 1], ['Grande', 1.3]];
 
@@ -48,6 +48,7 @@ export default function Scanner() {
   const [photoErr, setPhotoErr] = useState<string | null>(null);
 
   const takePhoto = async () => {
+    warmMealPhoto();
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     const res = perm.granted
       ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
@@ -129,7 +130,7 @@ export default function Scanner() {
             <View style={{ alignItems: 'center', gap: 12, paddingVertical: 28 }}>
               <ActivityIndicator color={LIME} size="large" />
               <Txt size={15} weight="semibold">J’analyse ton assiette…</Txt>
-              <Txt size={12} color={t.ink2}>Environ 20 à 40 secondes</Txt>
+              <Txt size={12} color={t.ink2}>Quelques secondes, un peu plus la première fois</Txt>
             </View>
           ) : m ? (
             <>
@@ -180,7 +181,16 @@ export default function Scanner() {
             <Txt size={14} weight="semibold">Annuler</Txt>
           </Press>
         ) : null}
-        <ManualMealSheet visible={manual} edit={null} onClose={() => setManual(false)} />
+        <ManualMealSheet
+          visible={manual}
+          edit={null}
+          prefill={m}
+          onClose={() => {
+            setManual(false);
+            // repas corrigé et validé dans la feuille : on quitte l'écran photo
+            if (useGame.getState().customMeal) { setMode('idle'); setEstimate(null); }
+          }}
+        />
       </Screen>
     );
   }

@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { LIME, OBSIDIAN, RED, AMBER, motion, shadow } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
-import type { MealEntry } from '@/data/content';
+import type { Meal, MealEntry } from '@/data/content';
 import { mealScore } from '@/store/economy';
 import { Press } from './Press';
 import { Txt, Display } from './Txt';
@@ -14,7 +14,7 @@ import { CloseIcon } from './Icons';
 const ease = Easing.bezier(motion.bezier[0], motion.bezier[1], motion.bezier[2], motion.bezier[3]);
 
 /** `edit` : repas du journal à corriger (sinon, saisie d'un nouveau repas). */
-type Props = { visible: boolean; onClose: () => void; edit?: MealEntry | null };
+type Props = { visible: boolean; onClose: () => void; edit?: MealEntry | null; prefill?: Meal | null };
 
 function Field({ label, value, onChange, unit, keyboard = 'numeric', autoFocus }: { label: string; value: string; onChange: (v: string) => void; unit?: string; keyboard?: 'numeric' | 'default'; autoFocus?: boolean }) {
   const t = useTheme();
@@ -39,7 +39,7 @@ function Field({ label, value, onChange, unit, keyboard = 'numeric', autoFocus }
 }
 
 /** Saisie manuelle d'un repas (nom, calories, macros → score) ou correction d'un repas déjà au journal. */
-export function ManualMealSheet({ visible, onClose, edit }: Props) {
+export function ManualMealSheet({ visible, onClose, edit, prefill }: Props) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const setCustomMeal = useGame((s) => s.setCustomMeal);
@@ -52,16 +52,17 @@ export function ManualMealSheet({ visible, onClose, edit }: Props) {
   const [l, setL] = useState('');
   // à chaque ouverture : champs vides pour un nouveau repas, valeurs actuelles pour une correction
   // (réglé pendant le rendu quand la feuille s'ouvre, sans effet en cascade)
-  const openKey = visible ? (edit ? 'edit:' + edit.id + ':' + edit.kcal : 'new') : null;
+  const openKey = visible ? (edit ? 'edit:' + edit.id + ':' + edit.kcal : prefill ? 'pre:' + prefill.name + ':' + prefill.kcal : 'new') : null;
   const [shownKey, setShownKey] = useState<string | null>(null);
   if (openKey !== shownKey) {
     setShownKey(openKey);
     if (openKey) {
-      setName(edit?.name ?? '');
-      setKcal(edit ? String(edit.kcal) : '');
-      setP(edit ? String(edit.p) : '');
-      setG(edit ? String(edit.g) : '');
-      setL(edit ? String(edit.l) : '');
+      const src = edit ?? prefill ?? null;
+      setName(src?.name ?? '');
+      setKcal(src ? String(src.kcal) : '');
+      setP(src ? String(src.p) : '');
+      setG(src ? String(src.g) : '');
+      setL(src ? String(src.l) : '');
     }
   }
 
@@ -86,8 +87,8 @@ export function ManualMealSheet({ visible, onClose, edit }: Props) {
       g: G,
       l: L,
       score,
-      items: [name.trim(), K + ' kcal', P + ' g de protéines'],
-      origin: 'manual',
+      items: prefill ? prefill.items : [name.trim(), K + ' kcal', P + ' g de protéines'],
+      origin: prefill?.origin ?? 'manual',
     });
     setName(''); setKcal(''); setP(''); setG(''); setL('');
     onClose();
@@ -104,7 +105,7 @@ export function ManualMealSheet({ visible, onClose, edit }: Props) {
           <View style={styles.grabWrap}><View style={[styles.grab, { backgroundColor: t.track }]} /></View>
           <View style={styles.head}>
             <View style={{ flex: 1, gap: 1 }}>
-              <Display size={20}>{edit ? 'Corriger le repas' : 'Écrire mon repas'}</Display>
+              <Display size={20}>{edit || prefill ? 'Corriger le repas' : 'Écrire mon repas'}</Display>
               <Txt size={12} color={t.ink2}>Les valeurs sont sur l’emballage ou l’appli du restaurant</Txt>
             </View>
             <Press accessibilityLabel="Fermer" onPress={onClose} style={[styles.close, { backgroundColor: t.surf }, shadow.sm]}>

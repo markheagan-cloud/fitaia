@@ -137,10 +137,33 @@ CONSIGNE_REPAS = (
 )
 
 
+def lire_reponse_repas(answer):
+    """JSON du modèle ; si la réponse est coupée ou entourée de texte, on garde les aliments complets."""
+    import json
+    import re
+
+    m = re.search(r'\{.*\}', answer, re.S)
+    if m:
+        try:
+            data = json.loads(m.group(0))
+            if isinstance(data, dict):
+                return data
+        except ValueError:
+            pass
+    items = []
+    for bloc in re.findall(r'\{[^{}]*"kcal"[^{}]*\}', answer):
+        try:
+            items.append(json.loads(bloc))
+        except ValueError:
+            continue
+    nom = re.search(r'"name"\s*:\s*"([^"]*)"\s*,\s*"items"', answer)
+    return {'name': nom.group(1) if nom else '', 'items': items}
+
+
 vision_image = base.pip_install('torchvision==0.23.0').add_local_python_source('recette', 'api')
 
 
-@app.cls(image=vision_image, gpu=['L4', 'A10G'], volumes={CACHE: volume}, secrets=secrets, timeout=300, scaledown_window=60)
+@app.cls(image=vision_image, gpu=['L4', 'A10G'], volumes={CACHE: volume}, secrets=secrets, timeout=300, scaledown_window=120)
 class MealVision:
     @modal.enter()
     def load(self):
@@ -169,19 +192,24 @@ class MealVision:
         text = self.proc.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
         inputs = self.proc(text=[text], images=[img], return_tensors='pt').to('cuda')
         with self.torch.inference_mode():
-            out = self.model.generate(**inputs, max_new_tokens=400, do_sample=False)
+            out = self.model.generate(**inputs, max_new_tokens=700, do_sample=False)
         answer = self.proc.batch_decode(out[:, inputs['input_ids'].shape[1]:], skip_special_tokens=True)[0]
-        m = re.search(r'\{.*\}', answer, re.S)
-        data = json.loads(m.group(0)) if m else {}
+        data = lire_reponse_repas(answer)
         items = []
-        for it in data.get('items', [])[:8]:
+        for it in (data.get('items') or [])[:10]:
+            if not isinstance(it, dict):
+                continue
             try:
                 row = {'name': str(it['name'])[:60], 'grams': max(0, round(float(it.get('grams', 0)))),
                        'kcal': max(0, round(float(it['kcal']))), 'p': max(0, round(float(it.get('p', 0)))),
                        'g': max(0, round(float(it.get('g', 0)))), 'l': max(0, round(float(it.get('l', 0))))}
             except (KeyError, TypeError, ValueError):
                 continue
-            if row['kcal'] <= 3000:
+            # calories incohérentes avec les macros (4/4/9) : on reprend le calcul des macros
+            calc = 4 * row['p'] + 4 * row['g'] + 9 * row['l']
+            if calc > 0 and (row['kcal'] == 0 or not 0.6 <= row['kcal'] / calc <= 1.6):
+                row['kcal'] = calc
+            if 0 < row['kcal'] <= 3000 and row['name'].strip():
                 items.append(row)
         if not items:
             return {'ok': False, 'error': 'Aucun aliment reconnu sur la photo. Rapproche-toi du plat, en pleine lumière.'}
@@ -196,10 +224,13 @@ class MealVision:
         expected = os.environ.get('FITAIA_CARICATURE_TOKEN', '')
         if expected and authorization != 'Bearer ' + expected:
             return {'ok': False, 'error': 'jeton refusé'}
+        if body.get('warm'):  # l'app réveille le service pendant que la personne cadre son assiette
+            return {'ok': True, 'warm': True}
         try:
             return self.analyse(body.get('photo', ''))
-        except Exception as e:  # message lisible pour l'app
-            return {'ok': False, 'error': str(e)[:200]}
+        except Exception as e:  # jamais de message technique à l'écran
+            print('repas: erreur', repr(e)[:300])
+            return {'ok': False, 'error': 'Photo illisible. Reprends-la bien cadrée sur le plat, en pleine lumière.'}
 
     @modal.fastapi_endpoint(method='POST')
     async def repas(self, request: Request):

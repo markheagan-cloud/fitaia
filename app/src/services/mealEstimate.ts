@@ -44,3 +44,15 @@ export function estimateToMeal(e: MealEstimate, factor = 1): Meal {
   };
 }
 
+
+/** Vrai si l'échec vient du réseau ou d'un service endormi : un second essai a de bonnes chances de passer. Pur, testé. */
+export function mealRetryable(message: string): boolean {
+  return /network request failed|timed out|trop de temps|en erreur \(5|saturé|réponse vide|illisible du service/i.test(message);
+}
+
+/** Message affiché sous la photo : jamais de terme technique ni de « serveur de dessin ». Pur, testé. */
+export function mealErrorText(message: string): string {
+  if (/jeton|introuvable/i.test(message)) return 'L’analyse photo est indisponible pour le moment. Cherche l’aliment par son nom ou scanne le code-barres.';
+  if (mealRetryable(message) || /serveur|réponse \d|failed|abort/i.test(message)) return 'L’analyse n’a pas abouti. Vérifie ta connexion et reprends la photo.';
+  return message;
+}
