@@ -25,7 +25,7 @@ import type { StatusId } from '@/community/models/intentions';
 import { Join } from '@/community/components/Join';
 import { AvatarPortrait } from '@/community/components/AvatarPortrait';
 import { MainButton, clock, since, useNow } from '@/community/components/ui';
-import { Figure, Head, HeadStack, IconButton, LiveDot, SectionHead, Sheet, Studio, Tag, TextLink, studio } from '@/community/components/kit';
+import { Figure, Head, HeadStack, IconButton, LiveDot, SectionHead, Sheet, Studio, Tag, TextLink, studio, vivid } from '@/community/components/kit';
 import { Icon, NEED_ICON, STATUS_ICON } from '@/community/components/icons';
 import type { IconName } from '@/community/components/icons';
 import { CR } from '@/community/routes';
@@ -48,6 +48,8 @@ const KIND_ICON: Record<FeedKind, IconName> = {
 function Hub() {
   const t = useTheme();
   const c = studio(t);
+  const v = vivid(t);
+  const KIND_COLOR: Record<FeedKind, string> = { reponse: v.turquoise, demande: v.violet, encouragement: v.rose, arrivee: v.jaune, objectif: v.orange, actif: v.vert };
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width: W } = useWindowDimensions();
@@ -127,9 +129,9 @@ function Hub() {
     return null;
   };
 
-  const stageH = 226;
-  const sideW = Math.round(Math.min(140, (W - 32) * 0.36));
-  const midW = Math.round(Math.min(184, (W - 32) * 0.47));
+  const stageH = Math.round(Math.min(330, Math.max(270, W * 0.78)));
+  const sideW = Math.round(Math.min(170, (W - 32) * 0.42));
+  const midW = Math.round(Math.min(230, (W - 32) * 0.58));
   const activeLabel =
     active.length === 0
       ? 'Personne n’est en ligne pour l’instant. Les personnes proches de toi passent surtout le soir.'
@@ -142,8 +144,10 @@ function Hub() {
       <ScrollView contentContainerStyle={{ paddingTop: insets.top + 60, paddingHorizontal: 16, paddingBottom: insets.bottom + 40, gap: 26 }} showsVerticalScrollIndicator={false}>
         {/* Bonjour */}
         <Animated.View entering={FadeInDown.duration(280)} style={{ gap: 10, paddingHorizontal: 4 }}>
-          <Display size={32} lineHeight={35}>
-            {welcome ? 'Content de te revoir, ' + me.displayName : greeting(hour) + ' ' + me.displayName + ' 👋'}
+          <Display size={36} lineHeight={39}>
+            {welcome ? 'Content de te revoir, ' : greeting(hour) + ' '}
+            <Display size={36} lineHeight={39} color={v.rose}>{me.displayName}</Display>
+            {welcome ? '' : ' 👋'}
           </Display>
           <Press onPress={() => setStatusSheet(true)} accessibilityLabel="Choisir ton état du jour" pressScale={0.97} style={[styles.myStatus, { backgroundColor: t.surf }, shadow.sm]}>
             <AvatarPortrait avatarId="moi" size={28} mode="tete" style={{ backgroundColor: c.head }} />
@@ -174,11 +178,11 @@ function Hub() {
                 const mid = faces.length === 3 ? i === 1 : i === 0;
                 const on = active.includes(id);
                 return (
-                  <Press key={id} onPress={() => router.push(CR.profile(id))} pressScale={0.97} accessibilityLabel={'Voir le profil de ' + p.displayName} style={{ alignItems: 'center', zIndex: mid ? 2 : 1, marginHorizontal: -16 }}>
+                  <Press key={id} onPress={() => router.push(CR.profile(id))} pressScale={0.97} accessibilityLabel={'Voir le profil de ' + p.displayName} style={{ alignItems: 'center', zIndex: mid ? 2 : 1, marginHorizontal: -22 }}>
                     <Figure avatarId={p.avatarId} size={mid ? midW : sideW} mode="buste" delay={80 + i * 70} breathe={false} from={i === 0 ? -12 : i === 2 ? 12 : 0} />
                     <View style={[styles.nameTag, { backgroundColor: c.glass }, shadow.sm]}>
                       {on ? <LiveDot size={8} ring={c.glass} /> : null}
-                      <Txt size={12} weight="bold">{p.displayName}</Txt>
+                      <Txt size={13.5} weight="bold">{p.displayName}</Txt>
                     </View>
                   </Press>
                 );
@@ -189,7 +193,7 @@ function Hub() {
           <View style={{ padding: 16, paddingTop: 14, gap: 14 }}>
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
               {active.length ? <View style={{ paddingTop: 5 }}><LiveDot size={10} ring={t.surf} /></View> : null}
-              <Txt size={15.5} weight="semibold" lineHeight={21} style={{ flex: 1 }}>{activeLabel}</Txt>
+              <Txt size={17} weight="bold" lineHeight={23} color={active.length ? v.vert : t.ink} style={{ flex: 1 }}>{activeLabel}</Txt>
             </View>
             <MainButton label="Trouver quelqu’un" onPress={() => router.push(CR.fitmatch)} />
           </View>
@@ -197,7 +201,7 @@ function Hub() {
 
         {/* Aujourd'hui dans ta communauté (fini : 3 au maximum) */}
         <Animated.View entering={FadeInDown.delay(120).duration(300)} style={{ gap: 12 }}>
-          <SectionHead title="Aujourd’hui dans ta communauté" tag={anySim ? <Tag kind="sim" /> : undefined} />
+          <SectionHead accent={v.orange} title="Aujourd’hui dans ta communauté" tag={anySim ? <Tag kind="sim" /> : undefined} />
           {feed.length ? (
             <View style={[styles.group, { backgroundColor: t.surf }, shadow.card]}>
               {feed.map((f, i) => {
@@ -207,26 +211,26 @@ function Hub() {
                   <Press key={f.id} onPress={() => openItem(f)} pressScale={0.99} accessibilityLabel={f.text} style={[styles.feedRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }]}>
                     <View>
                       {p ? (
-                        <Head avatarId={p.avatarId} size={46} />
+                        <Head avatarId={p.avatarId} size={50} />
                       ) : (
                         <View style={[styles.feedIcon, { backgroundColor: c.head }]}><Icon name="spark" size={20} color={t.ink} /></View>
                       )}
                       {p ? (
-                        <View style={[styles.kind, { backgroundColor: t.strong, borderColor: t.surf }]}>
-                          <Icon name={KIND_ICON[f.kind]} size={11} color={LIME} strokeWidth={2.3} />
+                        <View style={[styles.kind, { backgroundColor: KIND_COLOR[f.kind], borderColor: t.surf }]}>
+                          <Icon name={KIND_ICON[f.kind]} size={12} color={t.dark ? OBSIDIAN : '#FFFFFF'} strokeWidth={2.4} />
                         </View>
                       ) : null}
                     </View>
                     <View style={{ flex: 1, gap: 2 }}>
-                      <Txt size={14.5} weight="semibold" lineHeight={19}>{f.text}</Txt>
+                      <Txt size={16} weight="semibold" lineHeight={21}>{f.text}</Txt>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        {f.isNew ? <View style={[styles.newDot, { backgroundColor: LIME }]} /> : null}
-                        <Txt size={12} color={t.ink2}>{f.isNew ? 'Nouveau · ' : ''}{since(f.at, now)}</Txt>
+                        {f.isNew ? <View style={[styles.newDot, { backgroundColor: v.rose }]} /> : null}
+                        <Txt size={13} color={t.ink2}>{f.isNew ? <Txt size={13} weight="bold" color={v.rose}>Nouveau · </Txt> : null}{since(f.at, now)}</Txt>
                       </View>
                     </View>
                     {act ? (
                       <Press onPress={act.run} pressScale={0.94} accessibilityLabel={act.label} style={[styles.miniBtn, { backgroundColor: act.label === 'Envoyé' ? t.track : t.bg }]}>
-                        <Txt size={12.5} weight="bold" color={act.label === 'Envoyé' ? t.ink2 : t.ink}>{act.label}</Txt>
+                        <Txt size={13.5} weight="bold" color={act.label === 'Envoyé' ? t.ink2 : KIND_COLOR[f.kind]}>{act.label}</Txt>
                       </Press>
                     ) : null}
                   </Press>
@@ -247,8 +251,8 @@ function Hub() {
                 <Icon name={myNeed ? NEED_ICON[myNeed] : 'bolt'} size={22} color={OBSIDIAN} strokeWidth={2.1} />
               </View>
               <View style={{ flex: 1, gap: 2 }}>
-                <Display size={18} color={t.strongInk}>Besoin d’un coup de pouce ?</Display>
-                <Txt size={13} color={t.strongInk2}>
+                <Display size={21} color={LIME}>Besoin d’un coup de pouce ?</Display>
+                <Txt size={14.5} color={t.strongInk2}>
                   {myNeed ? 'Aujourd’hui : ' + needLabel(myNeed) + '. Voir qui peut t’aider.' : 'Dis ce dont tu as besoin, on te présente la bonne personne.'}
                 </Txt>
               </View>
@@ -270,6 +274,7 @@ function Hub() {
         {/* Tes messages */}
         <View style={{ gap: 12 }}>
           <SectionHead
+            accent={v.turquoise}
             title="Tes messages"
             tag={unreadIds.size ? <Tag kind="new" label={unreadIds.size + (unreadIds.size > 1 ? ' non lus' : ' non lu')} /> : undefined}
             right={convs.length ? <TextLink label="Tout voir" onPress={() => router.push(CR.messages)} /> : undefined}
@@ -287,16 +292,16 @@ function Hub() {
                 const preview = !last ? '' : last.moderationState !== 'ok' ? 'Message signalé' : (last.senderId === myId ? 'Toi : ' : '') + (r ? r.emoji + ' ' + r.label : last.content);
                 return (
                   <Press key={cv.id} onPress={() => router.push(CR.chat(other))} pressScale={0.99} style={[styles.msgRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }]}>
-                    <Head avatarId={card.avatarId} size={48} online={now - (engine.s.profiles[other]?.lastActiveAt ?? 0) < 15 * 60000} />
+                    <Head avatarId={card.avatarId} size={54} online={now - (engine.s.profiles[other]?.lastActiveAt ?? 0) < 15 * 60000} />
                     <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Txt size={15} weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>{card.displayName}</Txt>
+                        <Txt size={16.5} weight="bold" numberOfLines={1} style={{ flexShrink: 1 }}>{card.displayName}</Txt>
                         {card.demo ? <Tag kind="demo" /> : null}
                         <View style={{ flex: 1 }} />
-                        {last ? <Txt size={12} color={n ? t.ink : t.ink2} weight={n ? 'bold' : 'regular'}>{clock(last.createdAt, now)}</Txt> : null}
+                        {last ? <Txt size={12.5} color={n ? v.turquoise : t.ink2} weight={n ? 'bold' : 'regular'}>{clock(last.createdAt, now)}</Txt> : null}
                       </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        <Txt size={13.5} color={n ? t.ink : t.ink2} weight={n ? 'semibold' : 'regular'} numberOfLines={1} style={{ flex: 1 }}>{preview}</Txt>
+                        <Txt size={14.5} color={n ? t.ink : t.ink2} weight={n ? 'semibold' : 'regular'} numberOfLines={1} style={{ flex: 1 }}>{preview}</Txt>
                         {n ? <View style={[styles.count, { backgroundColor: LIME }]}><Txt size={11.5} weight="bold" color={OBSIDIAN}>{n}</Txt></View> : null}
                       </View>
                     </View>
@@ -318,7 +323,7 @@ function Hub() {
 
         {/* Tes personnes */}
         <View style={{ gap: 12 }}>
-          <SectionHead title="Tes personnes" sub={'FitMates : ' + fitmates.length + ' sur 3 · ' + friends.length + ' ami' + (friends.length > 1 ? 's' : '')} />
+          <SectionHead accent={v.rose} title="Tes personnes" sub={'FitMates : ' + fitmates.length + ' sur 3 · ' + friends.length + ' ami' + (friends.length > 1 ? 's' : '')} />
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 14, paddingHorizontal: 4 }}>
             {friends.map((fid) => {
               const card = engine.card(myId, fid);
@@ -326,9 +331,9 @@ function Hub() {
               const fit = fitmates.includes(fid);
               return (
                 <Press key={fid} onPress={() => router.push(CR.profile(fid))} pressScale={0.95} style={styles.person}>
-                  <Head avatarId={card.avatarId} size={66} ring={fit ? 'lime' : null} status={card.status} online={!card.status && now - (engine.s.profiles[fid]?.lastActiveAt ?? 0) < 15 * 60000} />
-                  <Txt size={13} weight="bold" numberOfLines={1}>{card.displayName}</Txt>
-                  <Txt size={11.5} color={t.ink2} numberOfLines={1}>{fit ? 'FitMate' : 'Ami'}</Txt>
+                  <Head avatarId={card.avatarId} size={76} ring={fit ? 'lime' : null} status={card.status} online={!card.status && now - (engine.s.profiles[fid]?.lastActiveAt ?? 0) < 15 * 60000} />
+                  <Txt size={14} weight="bold" numberOfLines={1}>{card.displayName}</Txt>
+                  <Txt size={12} weight={fit ? 'bold' : 'regular'} color={fit ? v.vert : t.ink2} numberOfLines={1}>{fit ? 'FitMate' : 'Ami'}</Txt>
                 </Press>
               );
             })}
@@ -349,21 +354,21 @@ function Hub() {
 
         {/* Forums ouverts et running club de ta ville */}
         <View style={{ gap: 12 }}>
-          <SectionHead title="Forums et running club" tag={<Tag kind="demo" label="Aperçu" />} right={<TextLink label="Tout voir" onPress={() => router.push(CR.forums)} />} />
+          <SectionHead accent={v.violet} title="Forums et running club" tag={<Tag kind="demo" label="Aperçu" />} right={<TextLink label="Tout voir" onPress={() => router.push(CR.forums)} />} />
           <View style={[styles.group, { backgroundColor: t.surf }, shadow.card]}>
             <Press onPress={() => router.push(CR.forums)} pressScale={0.99} accessibilityLabel="Forums ouverts" style={styles.msgRow}>
-              <View style={[styles.feedIcon, { backgroundColor: c.head }]}><Icon name="users" size={20} color={t.ink} /></View>
+              <View style={[styles.feedIcon, { backgroundColor: v.violet }]}><Icon name="users" size={22} color={t.dark ? OBSIDIAN : '#FFFFFF'} /></View>
               <View style={{ flex: 1, gap: 2 }}>
-                <Txt size={15} weight="bold">Forums ouverts</Txt>
-                <Txt size={13} color={t.ink2} numberOfLines={2}>Perte de poids, muscle, repas… Tout le monde peut parler et partager ses photos.</Txt>
+                <Txt size={16.5} weight="bold">Forums ouverts</Txt>
+                <Txt size={14} color={t.ink2} numberOfLines={2}>Perte de poids, muscle, repas… Tout le monde peut parler et partager ses photos.</Txt>
               </View>
               <Icon name="chevron" size={18} color={t.ink2} />
             </Press>
             <Press onPress={() => router.push(runCity ? CR.forum(runningForum(runCity).id) : CR.forums)} pressScale={0.99} accessibilityLabel="Running club" style={[styles.msgRow, { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.line }]}>
               <View style={[styles.feedIcon, { backgroundColor: LIME }]}><Icon name="shoe" size={20} color={OBSIDIAN} /></View>
               <View style={{ flex: 1, gap: 2 }}>
-                <Txt size={15} weight="bold">{runCity ? 'Running club ' + runCity : 'Running club'}</Txt>
-                <Txt size={13} color={t.ink2} numberOfLines={2}>{runCity ? 'Une sortie toutes les deux semaines, puis on en parle dans le groupe.' : 'Choisis ta ville et cours avec d’autres membres toutes les deux semaines.'}</Txt>
+                <Txt size={16.5} weight="bold">{runCity ? 'Running club ' + runCity : 'Running club'}</Txt>
+                <Txt size={14} color={t.ink2} numberOfLines={2}>{runCity ? 'Une sortie toutes les deux semaines, puis on en parle dans le groupe.' : 'Choisis ta ville et cours avec d’autres membres toutes les deux semaines.'}</Txt>
               </View>
               <Icon name="chevron" size={18} color={t.ink2} />
             </Press>
@@ -393,7 +398,7 @@ function Hub() {
 
       <View style={[styles.top, { paddingTop: insets.top + 6, backgroundColor: t.bg }]}>
         <IconButton icon="back" label="Retour" onPress={() => (router.canGoBack() ? router.back() : router.replace(CR.tabs))} size={40} />
-        <Txt size={15} weight="bold" style={{ flex: 1, textAlign: 'center' }}>Communauté</Txt>
+        <Display size={19} style={{ flex: 1, textAlign: 'center' }}>Communauté</Display>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <IconButton icon="chat" label="Messages" onPress={() => router.push(CR.messages)} size={40} badge={unreadIds.size || undefined} />
           <IconButton icon="shield" label="Confidentialité" onPress={() => router.push(CR.privacy)} size={40} />
@@ -443,8 +448,8 @@ const styles = StyleSheet.create({
   nameTag: { position: 'absolute', bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 26, borderRadius: 13 },
   group: { borderRadius: 26, paddingHorizontal: 14 },
   feedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
-  feedIcon: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
-  kind: { position: 'absolute', right: -3, bottom: -3, width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  feedIcon: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center' },
+  kind: { position: 'absolute', right: -4, bottom: -4, width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   newDot: { width: 7, height: 7, borderRadius: 4 },
   miniBtn: { height: 34, paddingHorizontal: 12, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   boost: { borderRadius: 26, padding: 16, gap: 14 },
@@ -453,8 +458,8 @@ const styles = StyleSheet.create({
   msgRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   count: { minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   empty: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 24, padding: 14 },
-  person: { width: 76, alignItems: 'center', gap: 4 },
-  addSlot: { width: 66, height: 66, borderRadius: 33, borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
+  person: { width: 86, alignItems: 'center', gap: 4 },
+  addSlot: { width: 76, height: 76, borderRadius: 38, borderWidth: 1.5, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   soon: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 24, borderWidth: 1.5, borderStyle: 'dashed', padding: 14 },
   soonIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   privacy: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 6, paddingVertical: 4 },

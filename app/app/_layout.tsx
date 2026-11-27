@@ -10,7 +10,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { Toast } from '@/components/Toast';
 import { Celebration } from '@/fx/Celebration';
-import { startMusic } from '@/services/sound';
+import { enterPlace, startMusic } from '@/services/sound';
 import { RewardBurst } from '@/fx/RewardBurst';
 import { CoachSheet } from '@/components/CoachSheet';
 import { useGame } from '@/store/useGame';
@@ -38,6 +38,7 @@ function Root() {
   const pathRef = React.useRef(pathname);
   useEffect(() => {
     pathRef.current = pathname;
+    enterPlace(pathname);
   }, [pathname]);
   useEffect(() => startCommunitySync(() => pathRef.current.startsWith('/communaute/discussion') || pathRef.current.startsWith('/communaute/forum/')), []);
   const serverError = useCommunity((s) => s.serverError);

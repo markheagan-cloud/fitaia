@@ -4,7 +4,7 @@
  */
 import { create } from 'zustand';
 
-export type Celebration = { title: string; sub?: string; coins?: number; points?: number; image?: string };
+export type Celebration = { title: string; sub?: string; coins?: number; points?: number; image?: string; kind?: 'achat' };
 type S = { id: number; event: Celebration | null; celebrate: (e: Celebration) => void; close: () => void };
 
 export const useCelebrate = create<S>((set) => ({

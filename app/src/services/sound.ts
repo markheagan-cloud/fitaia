@@ -16,7 +16,9 @@ import { Platform } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type Sfx = 'tap' | 'succes' | 'pieces' | 'erreur' | 'rep' | 'revelation';
+import { placeOf, type Place } from './placeSound';
+
+export type Sfx = 'tap' | 'succes' | 'pieces' | 'erreur' | 'rep' | 'revelation' | 'achat' | 'message' | `lieu_${Place}`;
 
 const FILES: Record<Sfx | 'musique', number> = {
   tap: require('../../assets/sounds/tap.wav'),
@@ -25,9 +27,19 @@ const FILES: Record<Sfx | 'musique', number> = {
   erreur: require('../../assets/sounds/erreur.wav'),
   rep: require('../../assets/sounds/rep.wav'),
   revelation: require('../../assets/sounds/revelation.wav'),
+  achat: require('../../assets/sounds/achat.wav'),
+  message: require('../../assets/sounds/message.wav'),
+  lieu_accueil: require('../../assets/sounds/lieu_accueil.wav'),
+  lieu_defis: require('../../assets/sounds/lieu_defis.wav'),
+  lieu_scan: require('../../assets/sounds/lieu_scan.wav'),
+  lieu_boutique: require('../../assets/sounds/lieu_boutique.wav'),
+  lieu_perso: require('../../assets/sounds/lieu_perso.wav'),
+  lieu_communaute: require('../../assets/sounds/lieu_communaute.wav'),
   musique: require('../../assets/sounds/musique.wav'),
 };
-const VOLUME: Record<Sfx, number> = { tap: 0.35, succes: 0.8, pieces: 0.7, erreur: 0.6, rep: 0.6, revelation: 0.9 };
+const VOLUME: Record<Sfx, number> = { tap: 0.35, succes: 0.8, pieces: 0.7, erreur: 0.6, rep: 0.6, revelation: 0.9, achat: 0.9, message: 0.5,
+  lieu_accueil: 0.4, lieu_defis: 0.45, lieu_scan: 0.4, lieu_boutique: 0.45, lieu_perso: 0.4, lieu_communaute: 0.45,
+};
 const MUSIC_VOLUME = 0.22;
 
 type SoundPrefs = { music: boolean; sfx: boolean; voice: boolean; set: (k: 'music' | 'sfx' | 'voice', v: boolean) => void };
@@ -60,6 +72,16 @@ export function playSfx(name: Sfx) {
   } catch {
     // le son n'est jamais bloquant
   }
+}
+
+let lastPlace: Place | null = null;
+/** Un son par endroit : joué quand on ENTRE dans un lieu (pas à chaque écran du même lieu, ni au lancement). */
+export function enterPlace(pathname: string) {
+  const place = placeOf(pathname);
+  if (!place || place === lastPlace) return;
+  const first = lastPlace === null;
+  lastPlace = place;
+  if (!first) playSfx(`lieu_${place}`);
 }
 
 function syncMusic() {

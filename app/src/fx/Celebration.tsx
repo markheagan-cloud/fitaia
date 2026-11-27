@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Image, Platform, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useCelebrate } from './celebrate';
 import { useCountUp } from './AnimatedNumber';
@@ -38,6 +38,34 @@ function Confetti({ i, w, h }: { i: number; w: number; h: number }) {
   return <Animated.View style={[styles.bit, { backgroundColor: COLORS[i % COLORS.length], width: 6 + seed2 * 6, height: 10 + seed * 8 }, st]} />;
 }
 
+/** Achat : onde de choc qui part du perso. */
+function Ring({ delay, color }: { delay: number; color: string }) {
+  const p = useSharedValue(0);
+  useEffect(() => {
+    p.set(withDelay(delay, withTiming(1, { duration: 900, easing: Easing.out(Easing.cubic) })));
+  }, [p, delay]);
+  const st = useAnimatedStyle(() => ({ opacity: (1 - p.get()) * 0.9, transform: [{ scale: 0.5 + p.get() * 2.6 }] }));
+  return <Animated.View style={[styles.ring, { borderColor: color }, st]} />;
+}
+
+/** Achat : rayons de lumière qui tournent derrière le perso. */
+function Rays() {
+  const r = useSharedValue(0);
+  const o = useSharedValue(0);
+  useEffect(() => {
+    o.set(withTiming(1, { duration: 400 }));
+    r.set(withRepeat(withTiming(1, { duration: 9000, easing: Easing.linear }), -1));
+  }, [r, o]);
+  const st = useAnimatedStyle(() => ({ opacity: o.get() * 0.26, transform: [{ rotate: `${r.get() * 360}deg` }] }));
+  return (
+    <Animated.View style={[styles.rays, st]}>
+      {Array.from({ length: 12 }, (_, i) => (
+        <View key={i} style={[styles.ray, { backgroundColor: COLORS[i % 4], transform: [{ rotate: `${i * 30}deg` }, { translateY: -150 }] }]} />
+      ))}
+    </Animated.View>
+  );
+}
+
 function Card({ id }: { id: number }) {
   const event = useCelebrate((s) => s.event)!;
   const close = useCelebrate((s) => s.close);
@@ -51,31 +79,35 @@ function Card({ id }: { id: number }) {
   const coins = useCountUp(go ? event.coins ?? 0 : 0, 900);
   const points = useCountUp(go ? event.points ?? 0 : 0, 900);
   const img = event.image ?? portrait;
+  const achat = event.kind === 'achat';
 
   useEffect(() => {
     scrim.set(withTiming(1, { duration: 220 }));
     pop.set(withSpring(1, { damping: 9, stiffness: 140 }));
     halo.set(withSequence(withTiming(1, { duration: 500 }), withTiming(0.6, { duration: 900 })));
-    playSfx('succes');
+    playSfx(achat ? 'achat' : 'succes');
     if (Platform.OS !== 'web') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {}), 260);
+      if (achat) [420, 560, 700].forEach((ms) => setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}), ms));
     }
     const g = setTimeout(() => setGo(true), 250);
-    const t = setTimeout(close, 3400);
+    const t = setTimeout(close, achat ? 4600 : 3400);
     return () => { clearTimeout(g); clearTimeout(t); };
-  }, [id, scrim, pop, halo, close]);
+  }, [id, scrim, pop, halo, close, achat]);
 
   const scrimSt = useAnimatedStyle(() => ({ opacity: scrim.get() }));
   const popSt = useAnimatedStyle(() => ({ transform: [{ scale: pop.get() }] }));
-  const haloSt = useAnimatedStyle(() => ({ opacity: halo.get() * 0.55, transform: [{ scale: 0.8 + halo.get() * 0.5 }] }));
+  const haloSt = useAnimatedStyle(() => ({ opacity: halo.get() * (img ? 0.55 : 0.18), transform: [{ scale: 0.8 + halo.get() * 0.5 }] }));
 
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={event.title + '. Toucher pour continuer'} onPress={close} style={StyleSheet.absoluteFill}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.scrim, scrimSt]} />
-      {!reduced ? Array.from({ length: N }, (_, i) => <Confetti key={id + ':' + i} i={i} w={width} h={height} />) : null}
+      {!reduced ? Array.from({ length: achat ? N * 2 : N }, (_, i) => <Confetti key={id + ':' + i} i={i} w={width} h={height} />) : null}
       <Animated.View style={[styles.center, popSt]}>
+        {achat && !reduced ? <Rays /> : null}
         <Animated.View style={[styles.halo, haloSt]} />
+        {achat && !reduced ? [0, 220, 440].map((d, i) => <Ring key={d} delay={d} color={COLORS[i]} />) : null}
         {img ? <Image source={{ uri: img }} style={styles.img} /> : null}
         <Display size={32} color="#F5F4F1" style={{ textAlign: 'center' }}>{event.title}</Display>
         {event.sub ? <Txt size={15} color="#C9CCD2" style={{ textAlign: 'center' }}>{event.sub}</Txt> : null}
@@ -112,6 +144,9 @@ const styles = StyleSheet.create({
   scrim: { backgroundColor: 'rgba(12,13,15,0.88)' },
   bit: { position: 'absolute', left: 0, top: 0, borderRadius: 2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 28 },
+  ring: { position: 'absolute', width: 200, height: 200, borderRadius: 100, borderWidth: 5 },
+  rays: { position: 'absolute', width: 2, height: 2, alignItems: 'center', justifyContent: 'center' },
+  ray: { position: 'absolute', width: 8, height: 200, borderRadius: 4 },
   halo: { position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: LIME },
   img: { width: 190, height: 190, borderRadius: 95, borderWidth: 4, borderColor: LIME, backgroundColor: '#26282C' },
   gains: { flexDirection: 'row', gap: 10, marginTop: 6 },

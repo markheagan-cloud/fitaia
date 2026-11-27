@@ -31,6 +31,22 @@ save('rep', note(N(10), 0.12, a=0.002, harm=(1, 0.2)), 0.55)
 rev = seq([note(N(s), 0.5) for s in (-9, -5, -2, 3, 7, 10, 15)], 0.11)
 save('revelation', seq([rev, sum(note(N(s), 1.6, a=0.02) for s in (3, 7, 10, 15))], 0.75))
 
+# Un son par endroit de l'app : même famille (deux ou trois notes douces), un motif différent par lieu
+BELL = (1, 0.45, 0.2, 0.08); SOFT = (1, 0.2)
+save('lieu_accueil', seq([note(N(3), 0.22, harm=SOFT), note(N(10), 0.4, harm=SOFT)], 0.08), 0.4)
+save('lieu_defis', seq([note(N(-2), 0.12, a=0.002, harm=(1, 0.5, 0.3)), note(N(-2), 0.12, a=0.002, harm=(1, 0.5, 0.3)), note(N(5), 0.3, harm=(1, 0.5, 0.3))], 0.09), 0.45)
+x = t(0.22); save('lieu_scan', np.sin(2 * np.pi * (700 + 1500 * x / 0.22) * x) * np.minimum(1, x / 0.01) * np.exp(-x * 9) + 0.6 * np.pad(note(N(22), 0.18, harm=SOFT), (int(SR * 0.12), 0))[:len(x)], 0.38)
+save('lieu_boutique', seq([note(N(15), 0.2, harm=BELL), note(N(19), 0.2, harm=BELL), note(N(22), 0.5, harm=BELL)], 0.07), 0.4)
+save('lieu_perso', seq([note(N(7), 0.25, a=0.02, harm=SOFT), note(N(12), 0.25, a=0.02, harm=SOFT), note(N(15), 0.5, a=0.02, harm=SOFT)], 0.1), 0.4)
+save('lieu_communaute', seq([note(N(10), 0.16, harm=(1, 0.3, 0.15)), note(N(15), 0.16, harm=(1, 0.3, 0.15)), note(N(12), 0.16, harm=(1, 0.3, 0.15)), note(N(17), 0.45, harm=(1, 0.3, 0.15))], 0.085), 0.4)
+x = t(0.16); save('message', np.sin(2 * np.pi * (520 + 900 * x / 0.16) * x) * np.minimum(1, x / 0.008) * np.exp(-x * 14), 0.45)
+# Achat : montée, accord tenu et pluie d'étincelles
+montee = seq([note(N(s), 0.16, harm=BELL) for s in (3, 7, 10, 15, 19, 22)], 0.06)
+accord = sum(note(N(s), 1.3, a=0.01, harm=BELL) for s in (15, 19, 22, 27))
+rng = np.random.default_rng(7)
+etincelles = seq([note(N(27 + int(rng.integers(0, 12))), 0.12, a=0.002, harm=(1, 0.2)) * 0.35 for _ in range(14)], 0.055)
+save('achat', seq([montee, accord + np.pad(etincelles, (0, max(0, len(accord) - len(etincelles))))[:len(accord)]], 0.36), 0.8)
+
 # Musique de fond : boucle de 16 temps × 4 mesures à 96 bpm, la mineur 7 → fa maj7 → do → sol (nappe + arpège + grosse caisse douce)
 bpm = 96; beat = 60 / bpm; bars = [(-12, (0, 3, 7, 10)), (-16, (0, 4, 7, 11)), (-9, (0, 4, 7, 12)), (-14, (0, 4, 7, 10))]
 L = int(SR * beat * 4 * len(bars)); mus = np.zeros(L + SR * 2)
