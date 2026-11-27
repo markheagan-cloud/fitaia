@@ -74,6 +74,9 @@ function Root() {
         <Stack.Screen name="article/[id]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
         <Stack.Screen name="vestiaire" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
         <Stack.Screen name="recettes" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
+        <Stack.Screen name="recette/[id]" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
+        <Stack.Screen name="cuisine/[id]" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+        <Stack.Screen name="frigo" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
         <Stack.Screen name="corps" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
         <Stack.Screen name="communaute/index" />
         <Stack.Screen name="communaute/fitmatch" />

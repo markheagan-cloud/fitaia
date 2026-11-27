@@ -97,7 +97,7 @@ type Actions = {
   setCustomMeal: (m: Meal | null) => void;
   addMeal: () => void;
   /** Modifie un repas du jour (nom, calories, macros) ; les totaux suivent. */
-  updateMeal: (id: string, patch: Partial<Pick<Meal, 'name' | 'kcal' | 'p' | 'g' | 'l' | 'score'>>) => void;
+  updateMeal: (id: string, patch: Partial<Pick<MealEntry, 'name' | 'kcal' | 'p' | 'g' | 'l' | 'score' | 'at'>>) => void;
   /** Retire un repas du jour (les points déjà accordés restent : ils sont plafonnés par jour côté serveur). */
   removeMeal: (id: string) => void;
   doSelfie: (onDone: () => void) => void;
