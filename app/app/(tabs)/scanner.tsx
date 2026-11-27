@@ -142,7 +142,6 @@ export default function Scanner() {
                   {fmt(m.kcal)}
                   <Display wide size={16} letterSpacing={0} color={t.ink2}> kcal</Display>
                 </Display>
-                <Txt size={12} lineHeight={17} color={t.ink2}>Estimation à partir de la photo : vérifie les aliments et la portion, la valeur réelle peut varier.</Txt>
               </View>
               <View style={{ gap: 6 }}>
                 {m.items.map((it) => (
