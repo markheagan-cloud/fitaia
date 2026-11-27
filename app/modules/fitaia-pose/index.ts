@@ -7,7 +7,19 @@ import type { ComponentType } from 'react';
 import type { ViewProps } from 'react-native';
 
 export type PosePoint = { x: number; y: number; c: number };
-export type PoseEvent = { found: boolean; side?: 'left' | 'right'; ts?: number; points?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint> };
+/**
+ * `points` et `nose` : coordonnées normalisées de l'image caméra en portrait (0–1, origine en haut à gauche, image non inversée).
+ * `aspect` : largeur / hauteur de cette image (≈ 0,56), pour calculer des angles justes.
+ * `found: false` arrive aussi quand personne n'est vu, pour guider la personne.
+ */
+export type PoseEvent = {
+  found: boolean;
+  side?: 'left' | 'right';
+  ts?: number;
+  aspect?: number;
+  nose?: PosePoint;
+  points?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+};
 
 export type FitaiaPoseViewProps = ViewProps & {
   active?: boolean;

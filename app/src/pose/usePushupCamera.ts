@@ -2,18 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { isPoseAvailable, PoseEvent } from '../../modules/fitaia-pose';
 import { useGame } from '@/store/useGame';
-import { PushupCounter } from './repCounter';
+import { PushupCounter, unsquash, type Pose } from './repCounter';
+import { PlacementGuide, type GuideStatus } from './placementGuide';
+import { playSfx, setFocus, speak } from '@/services/sound';
+import { rejectPhrase, repPhrase, startPhrase } from '@/coach/repVoice';
 
 /** Détection de posture réelle disponible ? (module natif iOS, version compilée uniquement) */
 export const poseReady = isPoseAvailable && Platform.OS === 'ios';
 
 /**
- * Pilote le défi « 5 pompes » avec la caméra : branche les événements de pose sur le compteur
- * et le compteur sur le store (reps, retours, validation, crédits).
+ * Pilote le défi « pompes » avec la caméra avant : la personne voit l'écran, la voix la guide pour se placer
+ * (« je ne vois pas tes jambes », bip + « c'est bon »), puis compte les pompes et corrige celles qui ne sont pas valides.
+ * Les pompes ne sont comptées qu'une fois la personne bien placée.
  */
-import { playSfx, setFocus, speak } from '@/services/sound';
-import { rejectPhrase, repPhrase, startPhrase } from '@/coach/repVoice';
-
 export function usePushupCamera(target = 5) {
   const running = useGame((s) => s.running);
   const pushDone = useGame((s) => s.pushDone);
@@ -22,26 +23,53 @@ export function usePushupCamera(target = 5) {
   const finish = useGame((s) => s.pushFinish);
   const abort = useGame((s) => s.pushAbort);
   const counter = useRef(new PushupCounter());
+  const guide = useRef(new PlacementGuide());
   const rejected = useRef(0);
+  const lastDraw = useRef(0);
   const [lastPose, setLastPose] = useState<PoseEvent | null>(null);
+  const [placement, setPlacement] = useState<GuideStatus>('searching');
 
   useEffect(() => {
     setFocus(running);
     if (running) speak(startPhrase);
     if (!running) {
       counter.current.reset();
+      guide.current.reset();
       rejected.current = 0;
     }
     return () => setFocus(false);
   }, [running]);
 
+  /** Départ du défi : on repart d'un placement vierge (squelette et statut effacés). */
+  const start = useCallback(() => {
+    counter.current.reset();
+    guide.current.reset();
+    rejected.current = 0;
+    setPlacement('searching');
+    setLastPose(null);
+    begin();
+  }, [begin]);
+
   const onPose = useCallback(
     (e: { nativeEvent: PoseEvent }) => {
       const ev = e.nativeEvent;
-      setLastPose(ev);
-      if (!running || !ev.found || !ev.points) return;
-      const p = ev.points;
-      const events = counter.current.update({ shoulder: p.shoulder, elbow: p.elbow, wrist: p.wrist, hip: p.hip, knee: p.knee, ankle: p.ankle });
+      if (!running) return;
+      const ts = typeof ev.ts === 'number' ? ev.ts : Date.now();
+      // squelette à l'écran ~10 fois par seconde (assez pour se voir, sans redessiner tout l'écran 15 fois par seconde)
+      if (ts - lastDraw.current >= 100 || !ev.found) {
+        lastDraw.current = ts;
+        setLastPose(ev);
+      }
+      const raw: Pose | undefined = ev.found && ev.points ? ev.points : undefined;
+
+      const g = guide.current.update({ found: ev.found, ts, pose: raw });
+      setPlacement(g.status);
+      if (g.beep) playSfx('rep');
+      if (g.say) speak(g.say);
+      if (g.text) update(counter.current.count, g.text, g.kind ?? 'info');
+      if (!guide.current.ready || !raw) return;
+
+      const events = counter.current.update(unsquash(raw, ev.aspect && ev.aspect > 0 ? ev.aspect : 0.5625));
       for (const x of events) {
         if (x.type === 'rep') {
           playSfx('rep');
@@ -52,18 +80,18 @@ export function usePushupCamera(target = 5) {
           rejected.current++;
           speak(rejectPhrase(rejected.current));
           update(counter.current.count, x.reason, 'bad');
-        } else if (x.type === 'tracking') {
-          update(counter.current.count, x.ok ? 'Corps détecté, 19 points suivis. Vas-y.' : (x.reason ?? 'Corps non détecté.'), x.ok ? 'info' : 'bad');
         }
+        // les pertes de suivi sont annoncées par le guide de placement
       }
     },
     [running, target, update, finish],
   );
 
   const onError = useCallback((e: { nativeEvent: { message: string } }) => {
-    update(0, e.nativeEvent.message, 'bad');
     abort();
+    update(0, e.nativeEvent.message, 'bad');
+    speak(e.nativeEvent.message);
   }, [update, abort]);
 
-  return { ready: poseReady, running, pushDone, begin, abort, onPose, onError, lastPose };
+  return { ready: poseReady, running, pushDone, begin: start, abort, onPose, onError, lastPose, placement };
 }

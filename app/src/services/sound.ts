@@ -107,6 +107,14 @@ export const startMusic = syncMusic;
 /** Début / fin d'un défi : la musique laisse la place à la voix. */
 export function setFocus(on: boolean) {
   focus = on;
+  // Pendant un défi, la voix du coach doit s'entendre même si l'iPhone est en mode silencieux (sinon iOS la coupe
+  // et la personne, au sol, n'a aucune indication) ; la musique d'une autre app baisse le temps de la phrase.
+  try {
+    ready = true;
+    setAudioModeAsync(on ? { playsInSilentMode: true, interruptionMode: 'duckOthers' } : { playsInSilentMode: false, interruptionMode: 'mixWithOthers' }).catch(() => {});
+  } catch {
+    // le son n'est jamais bloquant
+  }
   syncMusic();
 }
 

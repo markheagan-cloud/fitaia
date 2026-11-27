@@ -8,6 +8,7 @@ import { CUR_NAMES, OTHER_DEFIS, fmt } from '@/data/content';
 import { useSteps } from '@/hooks/useSteps';
 import { challengeTarget as poseTarget, nextRaise } from '@/coach/challengeTarget';
 import { usePushupCamera } from '@/pose/usePushupCamera';
+import { PoseSkeleton } from '@/pose/PoseSkeleton';
 import { FitaiaPoseView } from '../../modules/fitaia-pose';
 import { useEconomy, useGame } from '@/store/useGame';
 import { useDailyCoins, useEco } from '@/store/useEco';
@@ -26,7 +27,7 @@ const PANEL_H = 236;
 export default function Defis() {
   const t = useTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
   const panelW = Math.max(0, width - 32 - 16); // carte 8px de padding de chaque côté
   const { reps, running, pushDone, feedback, fbKind, phase, startPush } = useGame();
   const eco = useEconomy();
@@ -44,25 +45,32 @@ export default function Defis() {
   const ph = phase === 1;
   const pose = { head: ph ? 176 : 132, shoulder: ph ? 178 : 140, hip: ph ? 190 : 172, elbowX: ph ? 106 : 146, elbowY: ph ? 192 : 172 };
   const fb = fbKind === 'bad' ? { bg: '#3A1714', ink: '#FFB8AF' } : fbKind === 'good' ? { bg: '#22300C', ink: '#D6F57A' } : { bg: '#26282C', ink: '#D4D6DA' };
-  const status = running ? (cam.ready ? 'Analyse en direct' : 'Simulation') : pushDone ? 'Terminé' : cam.ready ? 'Caméra prête' : 'Caméra : version App Store';
+  const live = cam.ready && running;
+  // caméra en direct : aperçu haut (proche du format de la caméra) pour que la personne se voie en entier de loin
+  const camH = live ? Math.round(Math.min(panelW / 0.5625, winH * 0.6)) : PANEL_H;
+  const placing = live && cam.placement !== 'ready';
+  const status = live ? (cam.placement === 'ready' ? 'Bien placé · je compte' : cam.placement === 'partial' ? 'Place-toi en entier' : 'Je te cherche…') : running ? 'Simulation' : pushDone ? 'Terminé' : cam.ready ? 'Caméra prête' : 'Caméra : version App Store';
   const dot = running ? RED : pushDone ? LIME : '#8A8E96';
   const btn = pushDone ? 'Retour à l’accueil' : running ? 'Analyse en cours' : 'Commencer';
   const ok = running || pushDone;
-  const bad = fbKind === 'bad';
+  const bad = fbKind === 'bad' && !placing;
   const checks: { label: string; state: 'ok' | 'bad' | 'idle' }[] = [
-    { label: 'Coudes à 90° en bas', state: bad ? 'bad' : ok ? 'ok' : 'idle' },
-    { label: 'Corps gainé et aligné', state: ok ? 'ok' : 'idle' },
-    { label: 'Bras tendus en haut', state: ok ? 'ok' : 'idle' },
+    { label: 'Coudes à 90° en bas', state: bad ? 'bad' : ok && !placing ? 'ok' : 'idle' },
+    { label: 'Corps gainé et aligné', state: ok && !placing ? 'ok' : 'idle' },
+    { label: 'Bras tendus en haut', state: ok && !placing ? 'ok' : 'idle' },
   ];
 
   return (
     <Screen name="defis">
       <View accessibilityLabel="Défi pompes" style={[styles.pushCard, shadow.lg]}>
-        <View style={styles.cam}>
-          {cam.ready && running && FitaiaPoseView ? (
-            <FitaiaPoseView active position="back" onPose={cam.onPose} onError={cam.onError} style={StyleSheet.absoluteFill} />
+        <View style={[styles.cam, { height: camH }]}>
+          {live && FitaiaPoseView ? (
+            <FitaiaPoseView active position="front" onPose={cam.onPose} onError={cam.onError} style={StyleSheet.absoluteFill} />
           ) : null}
-          {running || pushDone ? (
+          {live && cam.lastPose ? (
+            <PoseSkeleton pose={cam.lastPose} width={panelW} height={camH} mirrored good={cam.placement === 'ready'} />
+          ) : null}
+          {(running || pushDone) && !live ? (
           <Svg width={panelW} height={PANEL_H} viewBox={`0 0 ${PANEL_W} ${PANEL_H}`} preserveAspectRatio="xMidYMid meet" style={StyleSheet.absoluteFill}>
             <Line x1={30} y1={206} x2={312} y2={206} stroke="#34373C" strokeWidth={2} />
             <G stroke={LIME} strokeWidth={4} strokeLinecap="round" opacity={cam.ready && running ? 0 : 1}>

@@ -15,7 +15,7 @@ export type RepEvent =
 
 export const THRESH = {
   minConfidence: 0.35,
-  elbowDown: 90, // angle coude ≤ 90° = position basse validée
+  elbowDown: 95, // angle coude ≤ 95° mesuré = position basse validée (90° demandés, 5° de marge pour l'estimation 2D de la caméra)
   elbowUp: 160, // angle coude ≥ 160° = bras tendus
   alignMaxDeg: 18, // écart max hanche / ligne épaule-cheville
   smooth: 0.5, // lissage exponentiel des angles
@@ -30,7 +30,20 @@ export function angle(a: Pt, b: Pt, c: Pt): number {
 
 /** Écart (°) entre la hanche et la ligne épaule→cheville : 0 = parfaitement gainé. */
 export function alignmentDeviation(p: Pose): number {
-  return Math.abs(180 - angle(p.shoulder, p.hip, p.ankle));
+  return Math.abs(180 - angle(p.shoulder, p.hip, footOf(p) ?? p.ankle));
+}
+
+/** Point bas du corps pour juger l'alignement : la cheville, sinon le genou (souvent mieux vu au ras du sol). */
+export function footOf(p: Pose): Pt | null {
+  if (p.ankle.c >= THRESH.minConfidence) return p.ankle;
+  if (p.knee.c >= THRESH.minConfidence) return p.knee;
+  return null;
+}
+
+/** Corrige l'écrasement de l'image : les coordonnées normalisées n'ont pas la même échelle en x et en y. */
+export function unsquash(p: Pose, aspect: number): Pose {
+  const f = (q: Pt): Pt => ({ x: q.x * aspect, y: q.y, c: q.c });
+  return { shoulder: f(p.shoulder), elbow: f(p.elbow), wrist: f(p.wrist), hip: f(p.hip), knee: f(p.knee), ankle: f(p.ankle) };
 }
 
 export class PushupCounter {
@@ -48,8 +61,8 @@ export class PushupCounter {
   /** À appeler à chaque image (10–30 Hz). */
   update(p: Pose): RepEvent[] {
     const ev: RepEvent[] = [];
-    const pts = [p.shoulder, p.elbow, p.wrist, p.hip, p.ankle];
-    if (pts.some((q) => q.c < THRESH.minConfidence)) {
+    const pts = [p.shoulder, p.elbow, p.wrist, p.hip];
+    if (pts.some((q) => q.c < THRESH.minConfidence) || !footOf(p)) {
       this.badFrames++;
       if (this.badFrames === 5) ev.push({ type: 'tracking', ok: false, reason: 'Je ne vois pas tout ton corps : recule un peu, de profil.' });
       return ev;

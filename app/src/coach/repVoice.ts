@@ -19,4 +19,4 @@ export function rejectPhrase(rejected: number): string {
   return rejected > 0 ? tips[(rejected - 1) % tips.length] : '';
 }
 
-export const startPhrase = 'Place-toi de profil. Je compte avec toi.';
+export const startPhrase = 'Pose le téléphone debout au sol, écran vers toi, à deux mètres sur le côté. Mets-toi de profil, je te dis quand c’est bon.';

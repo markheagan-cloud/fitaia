@@ -307,7 +307,7 @@ export const useGame = create<GameState>()(
         pushBeginReal: () => {
           const S = get();
           if (S.running || S.pushDone) return;
-          set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Place-toi de profil, corps entier visible.', fbKind: 'info' });
+          set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Pose le téléphone debout au sol, écran vers toi, à 2 m sur le côté. Mets-toi de profil : un bip et la voix te disent quand c’est bon.', fbKind: 'info' });
         },
         pushUpdate: (reps, feedback, kind) => set({ reps, feedback, fbKind: kind, phase: reps % 2 === 1 ? 1 : 0 }),
         pushAbort: () => {
