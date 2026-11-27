@@ -87,7 +87,7 @@ class CaricatureModel:
         return self._handle(body, authorization)
 
     @modal.method()
-    def essai(self, photos_b64: list, prompts: list, size: int = 512, steps: int = 4, seed: int = 11):
+    def essai(self, photos_b64: list, prompts: list, size: int = 512, steps: int = 4, seed: int = 11, fmt: str = 'PNG'):
         """Mise au point de la recette : une image par prompt, à partir des photos de référence données."""
         import base64, io
         from PIL import Image
@@ -97,7 +97,7 @@ class CaricatureModel:
         for p in prompts:
             g = self.torch.Generator(device='cuda').manual_seed(seed)
             im = self.pipe(prompt=p, image=ref_arg, generator=g, height=size, width=size, guidance_scale=1.0, num_inference_steps=steps).images[0]
-            b = io.BytesIO(); im.save(b, format='PNG'); out.append(base64.b64encode(b.getvalue()).decode())
+            b = io.BytesIO(); im.save(b, format=fmt, **({'quality': 93} if fmt == 'JPEG' else {})); out.append(base64.b64encode(b.getvalue()).decode())
         return out
 
     def _handle(self, body, authorization):
