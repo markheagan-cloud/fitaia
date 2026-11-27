@@ -15,10 +15,10 @@ export const CUR_NAMES: [string] = ['Fitcoins'];
 
 export type RarityKey = 'commune' | 'rare' | 'epique' | 'legendaire';
 export const RARITY: Record<RarityKey, { label: string; c: string }> = {
-  commune: { label: 'Commune', c: '#8A8E96' },
-  rare: { label: 'Rare', c: '#2F6BF0' },
-  epique: { label: 'Épique', c: '#8247E5' },
-  legendaire: { label: 'Légendaire', c: '#E9A10B' },
+  commune: { label: 'Commune', c: '#959CA8' },
+  rare: { label: 'Rare', c: '#4D9BFF' },
+  epique: { label: 'Épique', c: '#A993FF' },
+  legendaire: { label: 'Légendaire', c: '#FFCA65' },
 };
 
 export type Skin = {

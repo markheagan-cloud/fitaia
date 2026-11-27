@@ -3,10 +3,10 @@
  * l'image d'une autre tenue à la place). Et le pictogramme des articles « à venir », qui n'ont pas encore de dessin.
  */
 import React from 'react';
-import { Image, StyleProp, View, ViewStyle } from 'react-native';
+import { Image, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { OBSIDIAN } from '@/theme/tokens';
+import { OBSIDIAN, RARITY_STYLE } from '@/theme/tokens';
 import { RARITY } from '@/data/content';
 import type { Rarity } from '@/inventory/types';
 import { useGame } from '@/store/useGame';
@@ -25,18 +25,28 @@ export function useMyOutfits(): Record<string, string> | undefined {
   return caricature && caricature.base === base ? caricature.outfits : undefined;
 }
 
-export function OutfitArt({ itemId, rarity, height, style }: { itemId: string; rarity: Rarity; height: number; style?: StyleProp<ViewStyle> }) {
+export function OutfitArt({ itemId, rarity, height, style, contain }: { itemId: string; rarity: Rarity; height: number; style?: StyleProp<ViewStyle>; contain?: boolean }) {
   const mine = useMyOutfits();
+  const base = useAvatarBase();
+  const perso = useGame((s) => (s.caricature && s.caricature.base === base ? s.caricature.bodies.actuel ?? s.caricature.portraitUri : null));
   const hasPerso = useGame((s) => !!s.caricature);
   const sk = skinOf(itemId);
   const uri = sk ? mine?.[sk.id] : undefined;
-  if (uri) return <Image source={{ uri }} style={[{ width: '100%', height }, style as object]} resizeMode="cover" accessibilityIgnoresInvertColors />;
+  const r = RARITY_STYLE[rarity];
+  if (uri) return <Image source={{ uri }} style={[{ width: '100%', height }, style as object]} resizeMode={contain ? 'contain' : 'cover'} accessibilityIgnoresInvertColors />;
+  // Pas encore dessinée sur ce perso : on montre le perso lui-même, assombri, et on le dit (jamais une autre tenue)
   return (
-    <LinearGradient colors={[rarityOf(rarity).c, OBSIDIAN]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ width: '100%', height, alignItems: 'center', justifyContent: 'center', padding: 12 }, style]}>
-      <Txt size={12} weight="semibold" color="#F5F4F1" style={{ textAlign: 'center' }}>
-        {hasPerso ? 'Se dessine sur ton perso…' : 'Crée ton perso pour la voir sur toi'}
-      </Txt>
-    </LinearGradient>
+    <View style={[{ width: '100%', height, backgroundColor: r.deep, overflow: 'hidden' }, style]}>
+      {perso ? <Image source={{ uri: perso }} style={{ width: '100%', height, opacity: 0.35 }} resizeMode={contain ? 'contain' : 'cover'} /> : null}
+      <LinearGradient colors={['transparent', OBSIDIAN]} start={{ x: 0.5, y: 0.3 }} end={{ x: 0.5, y: 1 }} style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', padding: 10 }]}>
+        <View style={{ borderRadius: 999, paddingVertical: 5, paddingHorizontal: 10, backgroundColor: 'rgba(11,13,16,0.7)', borderWidth: 1, borderColor: r.c + '55' }}>
+          <Txt size={11} weight="semibold" color="#F5F6F8" style={{ textAlign: 'center' }}>
+            {hasPerso ? 'Dessin sur ton perso en cours' : 'Crée ton perso pour la voir sur toi'}
+          </Txt>
+        </View>
+      </View>
+    </View>
   );
 }
 

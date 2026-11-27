@@ -1,9 +1,24 @@
 /**
- * Design tokens FITAIA — source unique, extraits 1:1 de Main.dc.html (renderVals → t).
- * Ne pas modifier sans accord : la maquette fait foi.
+ * Design tokens FITAIA — source unique.
+ * V2 « Athletic Gaming » (cahier des charges de Mark, 27/11/2026) : obsidienne, graphite, lime = action et effort,
+ * violet = identité et personnage, or = uniquement les accomplissements prestigieux, bleu = rareté.
  */
-export const LIME = '#C8F03C';
-export const OBSIDIAN = '#1C1D1F';
+export const V2 = {
+  obsidian: '#0B0D10',
+  graphite: '#171A20',
+  graphite2: '#20242C',
+  lime: '#C8F53D',
+  violet: '#A993FF',
+  white: '#F5F6F8',
+  grey: '#959CA8',
+  blue: '#4D9BFF',
+  gold: '#FFCA65',
+  red: '#FF6B5E',
+} as const;
+export const LIME = V2.lime;
+export const OBSIDIAN = V2.obsidian;
+export const VIOLET = V2.violet;
+export const GOLD = V2.gold;
 export const RED = '#E2483D';
 export const AMBER = '#E9A10B';
 
@@ -24,32 +39,32 @@ export type Theme = {
 
 export const light: Theme = {
   dark: false,
-  bg: '#E6E4DF',
-  surf: '#F5F4F1',
-  ink: '#1C1D1F',
-  ink2: '#5A5D63',
-  track: '#D6D3CD',
-  line: '#CFCBC4',
-  strong: '#1C1D1F',
-  strongInk: '#F5F4F1',
-  strongInk2: '#A2A6AD',
-  glass: 'rgba(245,244,241,0.74)',
-  glassEdge: 'rgba(255,255,255,0.7)',
+  bg: '#ECEEF2',
+  surf: '#FFFFFF',
+  ink: '#0B0D10',
+  ink2: '#5B626E',
+  track: '#DDE1E7',
+  line: '#D8DCE3',
+  strong: '#0B0D10',
+  strongInk: '#F5F6F8',
+  strongInk2: '#959CA8',
+  glass: 'rgba(255,255,255,0.88)',
+  glassEdge: 'rgba(11,13,16,0.06)',
 };
 
 export const dark: Theme = {
   dark: true,
-  bg: '#121315',
-  surf: '#1D1F22',
-  ink: '#EDEEF0',
-  ink2: '#A2A6AD',
-  track: '#30333A',
-  line: '#30333A',
-  strong: '#26282C',
-  strongInk: '#EDEEF0',
-  strongInk2: '#A2A6AD',
-  glass: 'rgba(29,31,34,0.72)',
-  glassEdge: 'rgba(255,255,255,0.08)',
+  bg: V2.obsidian,
+  surf: V2.graphite,
+  ink: V2.white,
+  ink2: V2.grey,
+  track: '#262A33',
+  line: '#232730',
+  strong: V2.graphite2,
+  strongInk: V2.white,
+  strongInk2: V2.grey,
+  glass: 'rgba(23,26,32,0.9)',
+  glassEdge: 'rgba(255,255,255,0.07)',
 };
 
 /** Couleurs d'alerte (sur-budget / proche) selon le thème. */
@@ -105,12 +120,24 @@ export const CONTENT_W = 358; // 390 - 2*16 : largeur de référence de la maque
 /** Couleurs vives (demande du 27/11/2026) : lisibles en clair comme en sombre, pour les titres, pastilles et actions. */
 export function vivid(t: { dark: boolean }) {
   return t.dark
-    ? { rose: '#FF6FB5', turquoise: '#27E0D0', orange: '#FF9A5C', violet: '#A894FF', vert: LIME, jaune: '#FFC93C' }
-    : { rose: '#D81B7A', turquoise: '#008F86', orange: '#D9540F', violet: '#6A45E0', vert: '#5E7A00', jaune: '#A86F00' };
+    ? { rose: '#FF7AB8', turquoise: '#3DDCCB', orange: '#FF9A5C', violet: V2.violet, vert: V2.lime, jaune: V2.gold }
+    : { rose: '#C81C72', turquoise: '#00877E', orange: '#C9500E', violet: '#6A4FE0', vert: '#4F6B00', jaune: '#9A6500' };
 }
 /** Chaque écran a sa couleur (en-tête, onglet, titres de section). */
 export function screenAccent(t: { dark: boolean }, screen: string): string {
   const v = vivid(t);
-  const map: Record<string, string> = { home: v.vert, index: v.vert, defis: v.orange, scan: v.turquoise, scanner: v.turquoise, shop: v.violet, boutique: v.violet, perso: v.rose, selfie: v.rose, creator: v.rose };
+  const map: Record<string, string> = { home: v.vert, index: v.vert, defis: v.orange, scan: v.turquoise, scanner: v.turquoise, shop: v.violet, boutique: v.violet, perso: v.violet, selfie: v.violet, creator: v.violet };
   return map[screen] ?? v.vert;
 }
+
+/** Signature de chaque rareté (cahier des charges V2, §4.5) : couleur, fond de scène et intensité de la révélation. */
+export const RARITY_STYLE = {
+  COMMON: { c: V2.grey, deep: '#1B1E24', glow: 0, label: 'Commune', symbol: '●' },
+  RARE: { c: V2.blue, deep: '#0E1C33', glow: 0.18, label: 'Rare', symbol: '◆' },
+  EPIC: { c: V2.violet, deep: '#1E1638', glow: 0.28, label: 'Épique', symbol: '✦' },
+  LEGENDARY: { c: V2.gold, deep: '#2B1F0A', glow: 0.4, label: 'Légendaire', symbol: '★' },
+} as const;
+
+/** Espacements et rayons communs (multiples de 4). */
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+export const radius = { sm: 10, md: 16, lg: 22, xl: 28, pill: 999 } as const;

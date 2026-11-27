@@ -11,13 +11,13 @@ import { NAV_H, NAV_BOTTOM } from './GlassTabBar';
 const ease = Easing.bezier(motion.bezier[0], motion.bezier[1], motion.bezier[2], motion.bezier[3]);
 
 /** Écran standard : header + zone scrollable (padding bas = barre de nav + marge), fade-in .fx-in. */
-export function Screen({ name, children, gap = 12 }: { name: keyof typeof TITLES; children: React.ReactNode; gap?: number }) {
+export function Screen({ name, children, gap = 12, subtitle, right }: { name: keyof typeof TITLES; children: React.ReactNode; gap?: number; subtitle?: string; right?: React.ReactNode }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const bottomPad = Math.max(NAV_BOTTOM, insets.bottom + 6) + NAV_H + 32;
   return (
     <View style={[styles.root, { backgroundColor: t.bg }]}>
-      <Header screen={name} />
+      <Header screen={name} subtitle={subtitle} right={right} />
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad }]}
