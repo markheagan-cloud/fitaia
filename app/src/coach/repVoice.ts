@@ -20,3 +20,13 @@ export function rejectPhrase(rejected: number): string {
 }
 
 export const startPhrase = 'Pose le téléphone debout au sol, écran vers toi, à deux mètres sur le côté. Mets-toi de profil, je te dis quand c’est bon.';
+
+/** Correction qui dit exactement ce qui n'allait pas (profondeur ou alignement) ; à défaut, la correction alternée. */
+export function rejectWhyPhrase(why: 'depth' | 'align' | undefined, rejected: number): string {
+  if (why === 'depth') return 'Pas comptée. Descends plus bas, poitrine près du sol.';
+  if (why === 'align') return 'Pas comptée. Garde les hanches alignées, corps bien droit.';
+  return rejectPhrase(rejected);
+}
+
+/** Dite quand la personne est vue en entier mais pas en position de pompe (debout, assise…). */
+export const posturePhrase = 'Mets-toi en position de pompe, bras tendus, de profil.';

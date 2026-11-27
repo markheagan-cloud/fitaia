@@ -88,3 +88,42 @@ ok(Math.abs(left.x + leftM.x - 342) < 0.01, 'miroir caméra avant appliqué');
 
 ok(/écran vers toi/.test(startPhrase), 'consigne de départ : téléphone écran vers soi');
 console.log(n + ' tests placement/guidage OK');
+
+// ── Passe de fiabilité ───────────────────────────────────────────────────────────────────────
+import { poseForSide } from '../src/pose/sideLock';
+import { pickVoice } from '../src/services/voicePick';
+import { rejectWhyPhrase } from '../src/coach/repVoice';
+
+// Debout face au téléphone (corps vertical) : rien ne compte, et on demande de se mettre en position
+const standing = (elbow: number): Pose => {
+  const p = frame(elbow);
+  return { ...p, hip: { x: 0.25, y: 0.55, c: 0.8 }, knee: { x: 0.25, y: 0.7, c: 0.8 }, ankle: { x: 0.25, y: 0.85, c: 0.8 }, shoulder: { ...p.shoulder, x: 0.25, y: 0.35 } };
+};
+const c2 = new PushupCounter();
+const evs = [175, 120, 80, 120, 175, 175, 80, 175, 175, 175, 175, 175, 175, 175, 175, 175, 175, 175, 175, 175, 175, 175].flatMap((a) => c2.update(unsquash(standing(a), ASPECT)));
+ok(c2.count === 0 && !evs.some((e) => e.type === 'rep' || e.type === 'rejected'), 'debout : bras pliés jamais comptés ni reprochés');
+ok(evs.some((e) => e.type === 'posture'), 'debout : « mets-toi en position de pompe » demandé');
+
+// Petite flexion en ajustant ses mains (160°) : ni comptée, ni reprochée
+const c3 = new PushupCounter();
+const small = [178, 178, 160, 150, 145, 150, 165, 178, 178].flatMap((a) => c3.update(unsquash(frame(a), ASPECT)));
+ok(!small.some((e) => e.type === 'rejected' || e.type === 'rep'), 'petite flexion ignorée');
+
+// Côté verrouillé : on garde le bras gauche même si le droit est mieux vu sur une image
+const L = frame(90), R = frame(170);
+const sev = { found: true, side: 'right' as const, points: R, left: L, right: R };
+ok(poseForSide(sev, 'left') === L && poseForSide(sev, null) === R && poseForSide({ found: false }, 'left') === undefined, 'côté verrouillé respecté');
+
+// Voix : française, améliorée de préférence, jamais une voix fantaisie
+const voices = [
+  { identifier: 'com.apple.eloquence.fr-FR.Grandma', name: 'Grand-mère', quality: 'Enhanced', language: 'fr-FR' },
+  { identifier: 'com.apple.voice.compact.fr-FR.Thomas', name: 'Thomas', quality: 'Default', language: 'fr-FR' },
+  { identifier: 'com.apple.voice.enhanced.fr-FR.Audrey', name: 'Audrey', quality: 'Enhanced', language: 'fr-FR' },
+  { identifier: 'com.apple.voice.enhanced.fr-CA.Amelie', name: 'Amélie', quality: 'Enhanced', language: 'fr-CA' },
+  { identifier: 'com.apple.speech.synthesis.voice.Albert', name: 'Albert', quality: 'Default', language: 'fr-FR' },
+];
+ok(pickVoice(voices) === 'com.apple.voice.enhanced.fr-FR.Audrey', 'voix choisie : française améliorée');
+ok(pickVoice(voices.slice(0, 2)) === 'com.apple.voice.compact.fr-FR.Thomas', 'voix fantaisie écartée');
+ok(pickVoice([]) === undefined, 'aucune voix française : voix par défaut du téléphone');
+ok(/plus bas/.test(rejectWhyPhrase('depth', 1)) && /hanches/.test(rejectWhyPhrase('align', 1)), 'correction vocale précise');
+console.log(n + ' tests au total');

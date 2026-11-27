@@ -148,6 +148,8 @@ class FitaiaPoseView: ExpoView, AVCaptureVideoDataOutputSampleBufferDelegate {
       "found": true,
       "side": useLeft ? "left" : "right",
       "points": useLeft ? left : right,
+      "left": left,
+      "right": right,
       "nose": pt(.nose),
       "aspect": h > 0 ? w / h : 0.5625,
       "ts": CACurrentMediaTime() * 1000,

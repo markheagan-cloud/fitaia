@@ -10,7 +10,8 @@ export type Pose = {
 
 export type RepEvent =
   | { type: 'rep'; count: number }
-  | { type: 'rejected'; reason: string }
+  | { type: 'rejected'; reason: string; why?: 'depth' | 'align' }
+  | { type: 'posture' }
   | { type: 'tracking'; ok: boolean; reason?: string };
 
 export const THRESH = {
@@ -19,7 +20,17 @@ export const THRESH = {
   elbowUp: 160, // angle coude ≥ 160° = bras tendus
   alignMaxDeg: 18, // écart max hanche / ligne épaule-cheville
   smooth: 0.5, // lissage exponentiel des angles
+  attemptMax: 135, // une descente qui ne passe pas sous 135° n'est pas une tentative (on ajuste ses mains) : ni comptée ni reprochée
+  plankMaxTilt: 40, // ligne épaule → pieds à moins de 40° de l'horizontale = en position de pompe (debout ou à genoux redressé = non)
+  postureFrames: 20, // ≈ 1,3 s hors position avant de le dire
 } as const;
+
+/** Inclinaison (°) de la ligne épaule → pieds par rapport à l'horizontale (0 = allongé, 90 = debout). Coordonnées non écrasées. */
+export function bodyTilt(p: Pose): number {
+  const f = footOf(p) ?? p.ankle;
+  const dx = Math.abs(f.x - p.shoulder.x), dy = Math.abs(f.y - p.shoulder.y);
+  return (Math.atan2(dy, dx) * 180) / Math.PI;
+}
 
 export function angle(a: Pt, b: Pt, c: Pt): number {
   const abx = a.x - b.x, aby = a.y - b.y, cbx = c.x - b.x, cby = c.y - b.y;
@@ -53,9 +64,10 @@ export class PushupCounter {
   private minElbow = 180;
   private elbowS = 180;
   private badFrames = 0;
+  private offPlank = 0;
 
   reset() {
-    this.count = 0; this.phase = 'up'; this.reachedBottom = false; this.minElbow = 180; this.elbowS = 180; this.badFrames = 0;
+    this.count = 0; this.phase = 'up'; this.reachedBottom = false; this.minElbow = 180; this.elbowS = 180; this.badFrames = 0; this.offPlank = 0;
   }
 
   /** À appeler à chaque image (10–30 Hz). */
@@ -69,6 +81,15 @@ export class PushupCounter {
     }
     if (this.badFrames >= 5) ev.push({ type: 'tracking', ok: true });
     this.badFrames = 0;
+
+    // Debout, assis ou en train de s'installer : rien ne compte et la descente en cours est oubliée.
+    if (bodyTilt(p) > THRESH.plankMaxTilt) {
+      this.offPlank++;
+      if (this.offPlank === THRESH.postureFrames) ev.push({ type: 'posture' });
+      this.phase = 'up'; this.reachedBottom = false; this.minElbow = 180; this.elbowS = 180;
+      return ev;
+    }
+    this.offPlank = 0;
 
     const raw = angle(p.shoulder, p.elbow, p.wrist);
     this.elbowS = this.elbowS * THRESH.smooth + raw * (1 - THRESH.smooth);
@@ -86,8 +107,10 @@ export class PushupCounter {
       if (e <= THRESH.elbowDown) this.reachedBottom = true;
       if (e >= THRESH.elbowUp) {
         // remontée terminée : on juge la rep
-        if (!this.reachedBottom) ev.push({ type: 'rejected', reason: 'Pas comptée : descends jusqu’à 90° aux coudes (' + Math.round(this.minElbow) + '° atteint).' });
-        else if (!aligned) ev.push({ type: 'rejected', reason: 'Pas comptée : garde le corps gainé et aligné.' });
+        if (!this.reachedBottom) {
+          // petite flexion (on ajuste ses mains) : pas une tentative, on ne la reproche pas
+          if (this.minElbow <= THRESH.attemptMax) ev.push({ type: 'rejected', why: 'depth', reason: 'Pas comptée : descends jusqu’à 90° aux coudes (' + Math.round(this.minElbow) + '° atteint).' });
+        } else if (!aligned) ev.push({ type: 'rejected', why: 'align', reason: 'Pas comptée : garde le corps gainé et aligné.' });
         else {
           this.count++;
           ev.push({ type: 'rep', count: this.count });

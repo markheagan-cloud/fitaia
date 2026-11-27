@@ -17,6 +17,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { placeOf, type Place } from './placeSound';
+import { pickVoice } from './voicePick';
 
 export type Sfx = 'tap' | 'succes' | 'pieces' | 'erreur' | 'rep' | 'revelation' | 'achat' | 'message' | `lieu_${Place}`;
 
@@ -118,12 +119,31 @@ export function setFocus(on: boolean) {
   syncMusic();
 }
 
-export function speak(text: string) {
+let voiceId: string | undefined;
+let voicePicked = false;
+
+function loadVoice() {
+  if (voicePicked) return;
+  voicePicked = true;
+  Speech.getAvailableVoicesAsync()
+    .then((v) => { voiceId = pickVoice(v); })
+    .catch(() => {});
+}
+
+/**
+ * Fait parler le coach. `now` (défaut) coupe la phrase en cours : pour le comptage, qui doit tomber pile sur la pompe.
+ * `queue` attend la fin de la phrase en cours : pour les consignes, qui ne doivent pas couper un chiffre.
+ */
+export function speak(text: string, mode: 'now' | 'queue' = 'now') {
   if (!text || !useSound.getState().voice || Platform.OS === 'web') return;
   try {
-    Speech.stop().catch(() => {});
-    Speech.speak(text, { language: 'fr-FR', rate: 1.05, pitch: 1.0 });
+    loadVoice();
+    if (mode === 'now') Speech.stop().catch(() => {});
+    Speech.speak(text, { language: 'fr-FR', voice: voiceId, rate: 1.0, pitch: 1.0 });
   } catch {
     // idem
   }
 }
+
+/** À appeler à l'ouverture d'un défi : la liste des voix est prête avant la première phrase. */
+export const prepareVoice = loadVoice;

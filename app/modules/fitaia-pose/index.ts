@@ -19,6 +19,9 @@ export type PoseEvent = {
   aspect?: number;
   nose?: PosePoint;
   points?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+  /** Les deux côtés du corps (`points` = le mieux vu sur cette image), pour garder le même côté pendant tout le défi. */
+  left?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+  right?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
 };
 
 export type FitaiaPoseViewProps = ViewProps & {
