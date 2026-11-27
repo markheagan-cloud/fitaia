@@ -59,6 +59,7 @@ export default function Creator() {
   const setCharacter = useGame((s) => s.setCharacter);
   const setAvatar = useGame((s) => s.setAvatar);
   const selfieUri = useGame((s) => s.selfieUri);
+  const altCount = useGame((s) => s.caricatureAlts.length);
   const caricature = useGame((s) => s.caricature);
   const caricatureJob = useGame((s) => s.caricatureJob);
   const createMyCaricature = useGame((s) => s.createMyCaricature);
@@ -130,7 +131,12 @@ export default function Creator() {
         </Press>
         {!drawing ? (
           <Press onPress={() => router.push('/selfie')} style={[styles.ghost, { borderColor: t.line }]}>
-            <Txt size={14} weight="semibold">Reprendre mon selfie</Txt>
+            <Txt size={14} weight="semibold">Refaire une photo pour un autre perso</Txt>
+          </Press>
+        ) : null}
+        {!drawing && caricature && altCount > 0 ? (
+          <Press onPress={() => router.push('/reveal')} style={[styles.ghost, { borderColor: t.line }]}>
+            <Txt size={14} weight="semibold">Choisir parmi mes {altCount + 1} persos</Txt>
           </Press>
         ) : null}
         {caricatureJob.state === 'failed' && caricatureJob.error ? <Txt size={13} color="#B4342A" style={{ paddingHorizontal: 4 }}>{caricatureJob.error}</Txt> : null}

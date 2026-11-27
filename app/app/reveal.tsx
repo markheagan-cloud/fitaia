@@ -17,6 +17,7 @@ import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { scheduleDailyMissions } from '@/services/reminders';
 import { playSfx } from '@/services/sound';
+import { photosLeft } from '@/avatar/persoChoice';
 
 const STEP: Record<string, string> = { queued: 'Envoi de ton selfie…', running: 'Ton perso se dessine…', saving: 'Dernières touches…' };
 
@@ -27,6 +28,10 @@ export default function Reveal() {
   const caricature = useGame((s) => s.caricature);
   const job = useGame((s) => s.caricatureJob);
   const createMyCaricature = useGame((s) => s.createMyCaricature);
+  const alts = useGame((s) => s.caricatureAlts);
+  const chooseCaricature = useGame((s) => s.chooseCaricature);
+  const persos = caricature ? [caricature, ...alts].sort((a, b) => a.at - b.at) : [];
+  const left = photosLeft(caricature, alts);
   const failed = job.state === 'failed';
   const done = !!caricature && job.state === 'idle';
   const size = Math.min(width - 64, 320);
@@ -93,6 +98,23 @@ export default function Reveal() {
                 : (STEP[job.state] ?? 'Ton perso se dessine…') + ' Moins d’une minute.'}
           </Txt>
 
+          {done && persos.length > 1 ? (
+            <View style={{ alignSelf: 'stretch', gap: 10, alignItems: 'center' }}>
+              <Txt size={13} weight="semibold" color="#F5F4F1">Tes persos : touche celui que tu préfères</Txt>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                {persos.map((p, i) => {
+                  const on = p.id === caricature?.id;
+                  return (
+                    <Press key={p.id} haptic="medium" accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={'Perso ' + (i + 1) + (on ? ', choisi' : '')} onPress={() => chooseCaricature(p.id)} style={{ alignItems: 'center', gap: 4 }}>
+                      <Image source={{ uri: p.portraitUri }} style={{ width: 84, height: 84, borderRadius: 42, borderWidth: 3, borderColor: on ? LIME : '#4A4D52', opacity: on ? 1 : 0.75 }} contentFit="cover" />
+                      <Txt size={12} weight={on ? 'bold' : 'semibold'} color={on ? LIME : '#B7BBC2'}>{on ? 'Choisi' : 'Perso ' + (i + 1)}</Txt>
+                    </Press>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
           {done && shown.length ? (
             <Animated.View style={{ alignSelf: 'stretch', gap: 10, opacity: rise, transform: [{ translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] }}>
               <Txt size={13} weight="semibold" color="#F5F4F1">Tes tenues, sur toi</Txt>
@@ -111,11 +133,18 @@ export default function Reveal() {
           ) : null}
 
           {done ? (
+            <Press onPress={() => router.replace('/selfie')} style={[styles.btn, { borderWidth: 1, borderColor: '#4A4D52', height: 50 }]}>
+              <Txt size={14.5} weight="semibold" color="#F5F4F1">
+                {left > 0 ? 'Il ne me plaît pas : refaire une photo (' + left + ' sur 3 restante' + (left > 1 ? 's' : '') + ')' : 'Refaire une photo (remplace un ancien perso)'}
+              </Txt>
+            </Press>
+          ) : null}
+          {done ? (
             <Press haptic="medium" onPress={() => {
               void scheduleDailyMissions();
               router.replace('/(tabs)');
             }} style={[styles.btn, { backgroundColor: LIME }]}>
-              <Txt size={16} weight="bold" color={OBSIDIAN}>Entrer dans FITAIA</Txt>
+              <Txt size={16} weight="bold" color={OBSIDIAN}>{persos.length > 1 ? 'Garder ce perso' : 'Entrer dans FITAIA'}</Txt>
             </Press>
           ) : failed ? (
             <>

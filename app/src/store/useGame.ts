@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { avatarBase, defaultSheetFor } from '@/avatar/identity';
 import { deleteAvatar3d, deleteAvatar3dPortrait, type Avatar3d } from '@/services/avatar3d';
+import { addPerso, choosePerso } from '@/avatar/persoChoice';
 import { caricatureConfigured, completeOutfits, createCaricature, deleteCaricature, drawMix, type Caricature } from '@/services/caricature';
 import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -41,6 +42,8 @@ type Persisted = {
   avatar: { uri: string; outfit: string; createdAt: number } | null; // perso dessiné depuis le selfie
   avatar3d: Avatar3d | null; // avatar 3D personnel (GLB construit depuis le selfie, enregistré sur le téléphone)
   caricature: Caricature | null; // perso caricature personnel (selfie → portrait + 3 bustes, enregistrés sur le téléphone)
+  /** Les autres persos au choix (deux au plus) : chaque nouvelle photo en ajoute un, la personne garde son préféré. */
+  caricatureAlts: Caricature[];
   character: CharacterSheet; // fiche du créateur (gratuit, illimité)
   characterReady: boolean; // le perso FITAIA Studio (vectoriel) remplace l'image par défaut
   profile: Profile; // sexe, âge, taille, poids de départ, objectif, activité, rythme
@@ -110,6 +113,7 @@ type Actions = {
   /** Portrait pris sur le GLB personnel (null : à reprendre). */
   setAvatar3dPortrait: (uri: string | null, goalUri?: string | null) => void;
   setCaricature: (c: Caricature | null) => void;
+  chooseCaricature: (id: string) => void;
   /** Création du perso caricature en arrière-plan (non persisté) : l'app reste utilisable pendant les minutes de calcul. */
   caricatureJob: { state: 'idle' | 'queued' | 'running' | 'saving' | 'failed'; error: string };
   /** Lance la création depuis le selfie gardé ; sans effet si elle tourne déjà ou si le serveur n'est pas configuré. */
@@ -225,6 +229,7 @@ export const useGame = create<GameState>()(
         avatar: null,
         avatar3d: null,
         caricature: null,
+        caricatureAlts: [],
         caricatureJob: { state: 'idle', error: '' },
         character: DEFAULT_SHEET,
         characterReady: false,
@@ -434,6 +439,12 @@ export const useGame = create<GameState>()(
           if (old && old.id !== c?.id) deleteCaricature(old);
           set({ caricature: c });
         },
+        chooseCaricature: (id) => {
+          const next = choosePerso(get().caricature, get().caricatureAlts, id);
+          if (next.current?.id !== id) return;
+          set({ caricature: next.current, caricatureAlts: next.alts });
+          void get().completeMyOutfits();
+        },
         createMyCaricature: async () => {
           const s = get();
           const selfie = s.selfieUri;
@@ -444,8 +455,10 @@ export const useGame = create<GameState>()(
             // taille et poids du profil : le corps « actuel » et les tenues suivent la silhouette de la personne
             const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
             const c = await createCaricature(selfie, base, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, (state) => set({ caricatureJob: { state, error: '' } }));
-            get().setCaricature(c);
-            set({ caricatureJob: { state: 'idle', error: '' } });
+            // l'ancien perso n'est pas effacé : il reste proposé, jusqu'à trois persos au choix
+            const next = addPerso(get().caricature, get().caricatureAlts, c);
+            next.dropped.forEach(deleteCaricature);
+            set({ caricature: next.current, caricatureAlts: next.alts, caricatureJob: { state: 'idle', error: '' } });
             get().say('Ton perso à ton image est prêt', 'ok');
             void get().completeMyOutfits();
           } catch (e) {
@@ -529,7 +542,7 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 14,
+      version: 15,
       // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         // champs des anciennes versions, lus seulement pour les convertir
@@ -587,6 +600,7 @@ export const useGame = create<GameState>()(
         }
         if (version < 13) s.avatar3d = s.avatar3d ?? null;
         if (version < 14) s.caricature = s.caricature ?? null;
+        if (version < 15) s.caricatureAlts = s.caricatureAlts ?? [];
         return s as Persisted;
       },
       storage: createJSONStorage(() => AsyncStorage),
@@ -606,6 +620,7 @@ export const useGame = create<GameState>()(
         avatar: s.avatar,
         avatar3d: s.avatar3d,
         caricature: s.caricature,
+        caricatureAlts: s.caricatureAlts,
         character: s.character,
         characterReady: s.characterReady,
         profile: s.profile,
@@ -627,17 +642,22 @@ export const useGame = create<GameState>()(
         const portrait = findDeviceFile(state.avatar3d?.portraitUri);
         const goalPortrait = findDeviceFile(state.avatar3d?.goalPortraitUri);
         // caricature : les quatre PNG doivent être là, sinon on oublie le perso (jamais un perso à moitié)
-        const c = state.caricature;
-        const cPortrait = findDeviceFile(c?.portraitUri);
-        const cBodies = c ? { surpoids: findDeviceFile(c.bodies.surpoids), actuel: findDeviceFile(c.bodies.actuel), athletique: findDeviceFile(c.bodies.athletique) } : null;
-        const caricature = c && cPortrait && cBodies && cBodies.surpoids && cBodies.actuel && cBodies.athletique
-          ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique }, outfits: foundOutfits(c.outfits) }
-          : null;
+        const found = (c: Caricature | null | undefined): Caricature | null => {
+          const cPortrait = findDeviceFile(c?.portraitUri);
+          const cBodies = c ? { surpoids: findDeviceFile(c.bodies.surpoids), actuel: findDeviceFile(c.bodies.actuel), athletique: findDeviceFile(c.bodies.athletique) } : null;
+          return c && cPortrait && cBodies && cBodies.surpoids && cBodies.actuel && cBodies.athletique
+            ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique }, outfits: foundOutfits(c.outfits) }
+            : null;
+        };
+        const alts = (state.caricatureAlts ?? []).map(found).filter((x): x is Caricature => !!x);
+        // si le perso affiché a disparu mais qu'un autre reste, c'est lui qu'on affiche
+        const caricature = found(state.caricature) ?? alts.shift() ?? null;
         useGame.setState({
           hydrated: true,
           selfieUri: selfie,
           avatar3d: state.avatar3d && glb ? { ...state.avatar3d, uri: glb, portraitUri: portrait, goalPortraitUri: goalPortrait } : null,
           caricature,
+          caricatureAlts: alts,
         });
         // registre Phase 2 : amorçage (tenue de départ) et conversion unique de l'ancienne économie
         void useEco

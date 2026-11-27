@@ -85,7 +85,7 @@ export default function Selfie() {
 
   const ring = phase === 'error' ? RED : phase === 'captured' ? AMBER : LIME;
   const hint =
-    phase === 'idle' ? (existing ? 'Tu as déjà un selfie. En reprendre un ?' : 'Regarde l’objectif, lumière de face. Ton perso naît de cette photo.') :
+    phase === 'idle' ? (existing ? 'Nouvelle photo, nouveau perso. Tes persos précédents restent au choix.' : 'Regarde l’objectif, lumière de face. Ton perso naît de cette photo.') :
     phase === 'captured' ? 'On garde celle-ci ?' :
     error;
   const btn = phase === 'idle' ? 'Prendre mon selfie' : phase === 'captured' ? 'Créer mon perso' : 'Réessayer';
