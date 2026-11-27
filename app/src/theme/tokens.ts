@@ -101,3 +101,16 @@ export const shadow = {
 } as const;
 
 export const CONTENT_W = 358; // 390 - 2*16 : largeur de référence de la maquette
+
+/** Couleurs vives (demande du 27/11/2026) : lisibles en clair comme en sombre, pour les titres, pastilles et actions. */
+export function vivid(t: { dark: boolean }) {
+  return t.dark
+    ? { rose: '#FF6FB5', turquoise: '#27E0D0', orange: '#FF9A5C', violet: '#A894FF', vert: LIME, jaune: '#FFC93C' }
+    : { rose: '#D81B7A', turquoise: '#008F86', orange: '#D9540F', violet: '#6A45E0', vert: '#5E7A00', jaune: '#A86F00' };
+}
+/** Chaque écran a sa couleur (en-tête, onglet, titres de section). */
+export function screenAccent(t: { dark: boolean }, screen: string): string {
+  const v = vivid(t);
+  const map: Record<string, string> = { home: v.vert, index: v.vert, defis: v.orange, scan: v.turquoise, scanner: v.turquoise, shop: v.violet, boutique: v.violet, perso: v.rose, selfie: v.rose, creator: v.rose };
+  return map[screen] ?? v.vert;
+}

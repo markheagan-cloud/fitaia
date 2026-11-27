@@ -5,7 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { recentMeals } from '@/coach/recentMeals';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, RED, AMBER, alert, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, RED, AMBER, alert, shadow, screenAccent } from '@/theme/tokens';
 import { CUR_NAMES, MEALS, ORIGIN_LABEL, fmt } from '@/data/content';
 import { useCalories, useGame } from '@/store/useGame';
 import { Screen, Card } from '@/components/Screen';
@@ -249,7 +249,7 @@ export default function Scanner() {
           </Press>
           {recents.length ? (
             <View style={{ gap: 8 }}>
-              <Txt size={13} weight="bold">Refaire un repas</Txt>
+              <Txt size={16} weight="bold" color={screenAccent(t, 'scan')}>Refaire un repas</Txt>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {recents.map((m) => (
                   <Press key={m.name + m.kcal} haptic="medium" accessibilityLabel={'Refaire ' + m.name} onPress={() => setCustomMeal(m)} style={{ borderRadius: 999, borderWidth: 1, borderColor: t.line, backgroundColor: t.surf, paddingVertical: 8, paddingHorizontal: 12, maxWidth: '100%' }}>

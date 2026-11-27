@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Image, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, shadow, screenAccent } from '@/theme/tokens';
 import { useBody, useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
 import { transactionLabel, useEco } from '@/store/useEco';
@@ -114,7 +114,7 @@ export default function Perso() {
       </View>
 
       <Card style={{ gap: 10 }}>
-        <Txt size={14} weight="bold">Son</Txt>
+        <Txt size={16} weight="bold" color={screenAccent(t, 'perso')}>Son</Txt>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {([['music', 'Musique'], ['sfx', 'Bruitages'], ['voice', 'Voix du coach']] as const).map(([k, label]) => {
             const on = sound[k];
@@ -169,7 +169,7 @@ export default function Perso() {
       {recent.length ? (
         <Card style={{ gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Txt size={14} weight="bold">Derniers mouvements</Txt>
+            <Txt size={16} weight="bold" color={screenAccent(t, 'perso')}>Derniers mouvements</Txt>
             <Txt size={12} color={t.ink2}>{ledger.length >= 30 ? "30 derniers" : ledger.length + " au total"}</Txt>
           </View>
           {recent.map((e) => {

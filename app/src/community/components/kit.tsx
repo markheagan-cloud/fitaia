@@ -132,12 +132,7 @@ export function Tag({ kind, label, style }: { kind: TagKind; label?: string; sty
 }
 
 /** Titre de section : Archivo, phrase normale (pas de majuscules décoratives). */
-/** Couleurs vives de la Communauté, lisibles en clair comme en sombre (texte et pastilles). */
-export function vivid(t: { dark: boolean }) {
-  return t.dark
-    ? { rose: '#FF6FB5', turquoise: '#27E0D0', orange: '#FF9A5C', violet: '#A894FF', vert: LIME, jaune: '#FFC93C' }
-    : { rose: '#D81B7A', turquoise: '#008F86', orange: '#D9540F', violet: '#6A45E0', vert: '#5E7A00', jaune: '#A86F00' };
-}
+export { vivid } from '@/theme/tokens';
 
 export function SectionHead({ title, right, tag, sub, accent }: { title: string; right?: React.ReactNode; tag?: React.ReactNode; sub?: string; accent?: string }) {
   const t = useTheme();

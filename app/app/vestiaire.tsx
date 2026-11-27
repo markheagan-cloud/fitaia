@@ -9,7 +9,7 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, View } from 'react-na
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, shadow, screenAccent } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
 import { useEco } from '@/store/useEco';
 import { useCelebrate } from '@/fx/celebrate';
@@ -127,7 +127,7 @@ export default function Vestiaire() {
         </Press>
 
         <View style={styles.body}>
-          <Display size={28}>Mon vestiaire</Display>
+          <Display size={30} color={screenAccent(t, 'shop')}>Mon vestiaire</Display>
           <Txt size={14} lineHeight={20} color={t.ink2}>
             {owned.length + (owned.length > 1 ? ' tenues à toi. ' : ' tenue à toi. ') + 'Prends le haut de l’une, le bas d’une autre, les chaussures d’une troisième : chaque pièce que tu as débloquée se mélange.'}
           </Txt>
@@ -171,7 +171,7 @@ export default function Vestiaire() {
 
           {saved.length ? (
             <View style={{ gap: 6 }}>
-              <Txt size={15} weight="bold">Mes looks</Txt>
+              <Txt size={16} weight="bold" color={screenAccent(t, 'shop')}>Mes looks</Txt>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {saved.filter((l) => mine[l.key]).map((l) => (
                   <Press key={l.key} accessibilityLabel="Reprendre ce look" onPress={() => setMix(l.mix)} style={[styles.look, { borderColor: l.key === key ? LIME : 'transparent' }]}>

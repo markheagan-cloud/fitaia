@@ -12,7 +12,7 @@ import { LIME, font } from '@/theme/tokens';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { useGame } from '@/store/useGame';
-import { useCommunity } from '../store';
+import { COMMUNITY_MODE, useCommunity } from '../store';
 import type { Onboarding } from '../store';
 import { useMyPoints } from '../hooks/usePoints';
 import { AGE_RANGES, ACTIVITIES, GOALS, SLOTS, SUPPORT } from '../models/types';
@@ -89,6 +89,7 @@ export function Join() {
                 Rencontre des personnes qui vivent un parcours proche du tien. Discute, échange et progresse ensemble.
               </Txt>
             </Animated.View>
+            {COMMUNITY_MODE === 'local-demo' ? (
             <Animated.View entering={FadeInDown.delay(200).duration(300)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <HeadStack ids={FACES.map((a) => ({ avatarId: a }))} size={46} ring={t.bg} />
               <View style={{ flex: 1, gap: 3 }}>
@@ -98,6 +99,7 @@ export function Join() {
                 </View>
               </View>
             </Animated.View>
+            ) : null}
             <Animated.View entering={FadeInDown.delay(260).duration(300)} style={[styles.lock, { backgroundColor: t.surf }]}>
               <View style={[styles.lockIcon, { backgroundColor: t.strong }]}>
                 <Icon name="lock" size={18} color={LIME} strokeWidth={2.1} />

@@ -3,7 +3,7 @@ import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Line, Circle, G } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, RED, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, RED, shadow, screenAccent } from '@/theme/tokens';
 import { CUR_NAMES, OTHER_DEFIS, fmt } from '@/data/content';
 import { useSteps } from '@/hooks/useSteps';
 import { challengeTarget as poseTarget, nextRaise } from '@/coach/challengeTarget';
@@ -137,7 +137,7 @@ export default function Defis() {
       </View>
 
       <Row>
-        <Txt size={15} weight="bold">Autres défis</Txt>
+        <Txt size={16} weight="bold" color={screenAccent(t, 'defis')}>Autres défis</Txt>
         <Txt size={12} color={t.ink2}>Remis à zéro dans {Math.max(1, 24 - new Date().getHours())} h</Txt>
       </Row>
       <Card style={{ paddingVertical: 4, paddingHorizontal: 14 }}>
@@ -195,7 +195,7 @@ export default function Defis() {
 
       <Card style={{ gap: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Txt size={14} weight="bold">Ta semaine</Txt>
+          <Txt size={16} weight="bold" color={screenAccent(t, 'defis')}>Ta semaine</Txt>
           <Txt size={14} num color={t.ink2}>{eco.activeDays} jour{eco.activeDays > 1 ? 's' : ''} sur 7</Txt>
         </View>
         <View style={{ flexDirection: 'row', gap: 4 }}>

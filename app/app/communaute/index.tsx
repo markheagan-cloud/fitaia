@@ -13,7 +13,7 @@ import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { useGame } from '@/store/useGame';
-import { useCommunity, useSocial } from '@/community/store';
+import { COMMUNITY_MODE, useCommunity, useSocial } from '@/community/store';
 import { useMyPoints } from '@/community/hooks/usePoints';
 import { unreadConversations, unreadCount } from '@/community/services/inbox';
 import { activeNearby, feedEvents, greeting, todayFeed, welcomeBack } from '@/community/services/feed';
@@ -134,7 +134,7 @@ function Hub() {
   const midW = Math.round(Math.min(230, (W - 32) * 0.58));
   const activeLabel =
     active.length === 0
-      ? 'Personne n’est en ligne pour l’instant. Les personnes proches de toi passent surtout le soir.'
+      ? (faces.length ? 'Personne n’est en ligne pour l’instant. Les personnes proches de toi passent surtout le soir.' : 'Tu fais partie des premiers ici. Invite tes amis, ou lance la discussion dans les forums.')
       : active.length === 1
         ? '1 personne avec un parcours proche du tien est active'
         : active.length + ' personnes avec un parcours proche du tien sont actives';
@@ -170,6 +170,7 @@ function Hub() {
 
         {/* Il se passe quelque chose ici : trois personnes, une action */}
         <Animated.View entering={FadeInDown.delay(60).duration(300)} style={[styles.hero, { backgroundColor: t.surf }, shadow.lg]}>
+          {faces.length ? (
           <Studio height={stageH} glowY={0.6}>
             <View style={styles.trio}>
               {faces.map((id, i) => {
@@ -190,6 +191,7 @@ function Hub() {
             </View>
             {faces.some((id) => engine.s.profiles[id]?.demo) ? <Tag kind="demo" style={{ position: 'absolute', top: 12, right: 12 }} /> : null}
           </Studio>
+          ) : null}
           <View style={{ padding: 16, paddingTop: 14, gap: 14 }}>
             <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
               {active.length ? <View style={{ paddingTop: 5 }}><LiveDot size={10} ring={t.surf} /></View> : null}
@@ -354,7 +356,7 @@ function Hub() {
 
         {/* Forums ouverts et running club de ta ville */}
         <View style={{ gap: 12 }}>
-          <SectionHead accent={v.violet} title="Forums et running club" tag={<Tag kind="demo" label="Aperçu" />} right={<TextLink label="Tout voir" onPress={() => router.push(CR.forums)} />} />
+          <SectionHead accent={v.violet} title="Forums et running club" tag={COMMUNITY_MODE === 'local-demo' ? <Tag kind="demo" label="Aperçu" /> : undefined} right={<TextLink label="Tout voir" onPress={() => router.push(CR.forums)} />} />
           <View style={[styles.group, { backgroundColor: t.surf }, shadow.card]}>
             <Press onPress={() => router.push(CR.forums)} pressScale={0.99} accessibilityLabel="Forums ouverts" style={styles.msgRow}>
               <View style={[styles.feedIcon, { backgroundColor: v.violet }]}><Icon name="users" size={22} color={t.dark ? OBSIDIAN : '#FFFFFF'} /></View>
@@ -375,8 +377,8 @@ function Hub() {
           </View>
         </View>
 
-        {/* Bientôt : Cercles */}
-        <View style={[styles.soon, { borderColor: t.line }]}>
+        {/* Bientôt : Cercles (aperçu seulement : rien d'annoncé dans la version en ligne) */}
+        {COMMUNITY_MODE === 'local-demo' ? <View style={[styles.soon, { borderColor: t.line }]}>
           <View style={[styles.soonIcon, { backgroundColor: t.track }]}>
             <Icon name="circles" size={20} color={t.ink2} />
           </View>
@@ -387,7 +389,7 @@ function Hub() {
             </View>
             <Txt size={12.5} color={t.ink2}>De petits groupes pour avancer ensemble. Ton profil et tes amis seront conservés.</Txt>
           </View>
-        </View>
+        </View> : null}
 
         <Press onPress={() => router.push(CR.privacy)} pressScale={0.99} style={styles.privacy}>
           <Icon name="lock" size={15} color={t.ink2} />

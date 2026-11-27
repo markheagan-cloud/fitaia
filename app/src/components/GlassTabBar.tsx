@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ParamListBase, TabNavigationState } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, screenAccent, shadow } from '@/theme/tokens';
 import { useGame } from '@/store/useGame';
 import { Press } from './Press';
 import { Txt } from './Txt';
@@ -59,7 +59,8 @@ export function GlassTabBar({ state, descriptors, navigation }: GlassTabBarProps
             </Press>
           );
         }
-        const color = focused ? t.ink : t.ink2;
+        const accent = screenAccent(t, route.name);
+        const color = focused ? accent : t.ink2;
         const Icon = ICONS[route.name];
         return (
           <Press
@@ -74,7 +75,7 @@ export function GlassTabBar({ state, descriptors, navigation }: GlassTabBarProps
           >
             {Icon ? <Icon color={color} /> : null}
             <Txt size={11} weight={focused ? 'bold' : 'medium'} color={color}>{label}</Txt>
-            <View style={{ width: 18, height: 4, borderRadius: 2, marginTop: 2, backgroundColor: focused ? LIME : 'transparent' }} />
+            <View style={{ width: 18, height: 4, borderRadius: 2, marginTop: 2, backgroundColor: focused ? accent : 'transparent' }} />
           </Press>
         );
       })}

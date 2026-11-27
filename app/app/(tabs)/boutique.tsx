@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { View, Image, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, shadow, screenAccent } from '@/theme/tokens';
 import { CUR_NAMES, fmt } from '@/data/content';
 import { useGame } from '@/store/useGame';
 import { useDailyCoins, useEco } from '@/store/useEco';
@@ -159,7 +159,7 @@ export default function Boutique() {
       {agenda.length > 0 ? (
         <View style={[styles.note, { backgroundColor: t.surf }, shadow.card]}>
           <Row style={{ paddingHorizontal: 0, paddingTop: 0 }}>
-            <Txt size={15} weight="bold">Ton calendrier</Txt>
+            <Txt size={16} weight="bold" color={screenAccent(t, 'shop')}>Ton calendrier</Txt>
             <Txt size={12} color={t.ink2}>{pace.mine ? 'd’après tes 14 derniers jours' : 'défi du jour + 2 repas, 6 j / 7'}</Txt>
           </Row>
           {agenda.map((e, i) => (
@@ -260,7 +260,7 @@ export default function Boutique() {
       ) : null}
       {filter === 'chaussures' ? (
         <View style={[styles.note, { backgroundColor: t.surf }, shadow.card]}>
-          <Txt size={14} weight="bold">Les chaussures à part arrivent</Txt>
+          <Txt size={16} weight="bold" color={screenAccent(t, 'shop')}>Les chaussures à part arrivent</Txt>
           <Txt size={13} lineHeight={19} color={t.ink2}>
             Aujourd’hui, chaque tenue a ses propres chaussures (elles sont dans sa fiche). Bientôt, tu pourras choisir une paire et la garder avec n’importe quelle tenue. Garde de côté celles qui te plaisent.
           </Txt>
@@ -268,7 +268,7 @@ export default function Boutique() {
       ) : null}
       {filter === 'liste' && wish.length === 0 ? (
         <View style={[styles.note, { backgroundColor: t.surf }, shadow.card]}>
-          <Txt size={14} weight="bold">Ta liste est vide</Txt>
+          <Txt size={16} weight="bold" color={screenAccent(t, 'shop')}>Ta liste est vide</Txt>
           <Txt size={13} lineHeight={19} color={t.ink2}>Ouvre un article et touche « Garder dans ma liste ». On te le montre ici, et en haut de la boutique dès qu’il est en vente.</Txt>
         </View>
       ) : null}
@@ -288,7 +288,7 @@ export default function Boutique() {
       {/* Les engagements de la boutique : ce que les joueurs reprochent le plus aux boutiques de jeux */}
       {filter === 'tout' || filter === 'avenir' ? (
         <View style={[styles.note, { backgroundColor: t.surf }, shadow.card]}>
-          <Txt size={14} weight="bold">Comment marche la boutique</Txt>
+          <Txt size={16} weight="bold" color={screenAccent(t, 'shop')}>Comment marche la boutique</Txt>
           {[
             'Tu vois chaque tenue sur ton perso avant de la prendre.',
             'Aucun coffre ni tirage au hasard : tu choisis, tu sais ce que tu as.',

@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, shadow } from '@/theme/tokens';
+import { LIME, screenAccent, shadow } from '@/theme/tokens';
 import { CUR_NAMES, TITLES, fmt, todayLabel } from '@/data/content';
 import { useBody, useEconomy, useGame } from '@/store/useGame';
 import { useBalance } from '@/store/useEco';
@@ -50,7 +50,7 @@ export function Header({ screen }: { screen: keyof typeof TITLES }) {
           <LiveDot bg={t.bg} />
         </View>
         <View style={{ gap: 1, flexShrink: 1, minWidth: 0 }}>
-          <Display size={20} numberOfLines={1}>{title}</Display>
+          <Display size={22} color={screenAccent(t, screen)} numberOfLines={1}>{title}</Display>
           <Txt size={12} color={t.ink2} numberOfLines={1}>{sub}</Txt>
         </View>
       </Press>
