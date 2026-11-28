@@ -33,6 +33,8 @@ export const GUIDE = {
   gapMs: 2500,
   /** Marge au bord de l'image : un point plus près du bord = la personne est coupée. */
   edge: 0.03,
+  /** Bien placé mais rien ne se passe : la voix relance au bout de… (elle ne se tait jamais plus longtemps). */
+  idleMs: 9000,
 } as const;
 
 export const PHRASES = {
@@ -43,7 +45,28 @@ export const PHRASES = {
   edge: 'Tu sors de l’image. Recule un peu le téléphone.',
   ready: 'C’est bon, je te vois en entier. Bras tendus, et descends quand tu veux.',
   lost: 'Je ne te vois plus en entier.',
+  go: 'Je te vois bien. Descends, poitrine près du sol, puis remonte bras tendus.',
 } as const;
+
+/** Relance vocale : pendant le défi, la voix ne reste jamais muette plus de quelques secondes. */
+export class CoachPacer {
+  private last = 0;
+  /** À appeler à chaque phrase dite (consigne, comptage, correction). */
+  note(ts: number) {
+    this.last = ts;
+  }
+  reset(ts = 0) {
+    this.last = ts;
+  }
+  /** Phrase de relance si la personne est bien placée et que rien n'a été dit depuis un moment. */
+  idle(ts: number, ready: boolean, count: number, target: number): string | undefined {
+    if (!ready || ts - this.last < GUIDE.idleMs) return undefined;
+    this.last = ts;
+    if (count <= 0) return PHRASES.go;
+    const left = target - count;
+    return left === 1 ? 'Encore une, tu y es presque.' : 'Continue, encore ' + left + '.';
+  }
+}
 
 type Missing = keyof Pick<typeof PHRASES, 'legs' | 'arms' | 'torso' | 'edge'>;
 

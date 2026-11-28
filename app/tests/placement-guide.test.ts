@@ -150,3 +150,17 @@ const c4 = new PushupCounter();
 const ev4 = [175, 175, 150, 120, 95, 85, 80, 85, 100, 130, 160, 172, 176, 178].flatMap((a) => c4.update(unsquash(frame(175), ASPECT), arm3(a)));
 ok(ev4.some((e) => e.type === 'rep'), 'pompe comptée avec les angles 3D (vue de biais)');
 console.log(n + ' tests au total (3D compris)');
+
+// ── Voix jamais muette ─────────────────────────────────────────────────────────────────────────
+import { CoachPacer } from '../src/pose/placementGuide';
+const pc = new CoachPacer();
+pc.note(1000);
+ok(pc.idle(5000, true, 0, 5) === undefined, 'pas de relance juste après une phrase');
+ok(pc.idle(10500, true, 0, 5) === PHRASES.go, 'relance « descends » après 9 s de silence');
+ok(pc.idle(12000, true, 0, 5) === undefined && /encore 3/.test(pc.idle(20000, true, 2, 5) ?? ''), 'relance espacée, avec le nombre restant');
+ok(pc.idle(40000, false, 2, 5) === undefined, 'pas de relance quand mal placé (le guide parle déjà)');
+// Debout longtemps : la consigne de position est redite (≈ toutes les 8 s), pas une seule fois
+const c5 = new PushupCounter();
+const st = Array.from({ length: 300 }, () => 175).flatMap((a) => c5.update(unsquash(standing(a), ASPECT)));
+ok(st.filter((e) => e.type === 'posture').length >= 3, 'consigne de position redite tant qu’on est debout (' + st.filter((e) => e.type === 'posture').length + ' fois en 20 s)');
+console.log(n + ' tests au total (voix comprise)');

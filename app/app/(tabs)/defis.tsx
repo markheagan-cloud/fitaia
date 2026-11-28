@@ -8,7 +8,7 @@ import { CUR_NAMES, OTHER_DEFIS, fmt } from '@/data/content';
 import { useSteps } from '@/hooks/useSteps';
 import { challengeTarget as poseTarget, nextRaise } from '@/coach/challengeTarget';
 import { usePushupCamera } from '@/pose/usePushupCamera';
-import { PoseSkeleton } from '@/pose/PoseSkeleton';
+import { PushupLive } from '@/pose/PushupLive';
 import { FitaiaPoseView } from '../../modules/fitaia-pose';
 import { useEconomy, useGame } from '@/store/useGame';
 import { useDailyCoins, useEco } from '@/store/useEco';
@@ -29,7 +29,7 @@ const PANEL_H = 236;
 export default function Defis() {
   const t = useTheme();
   const router = useRouter();
-  const { width, height: winH } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const panelW = Math.max(0, width - 32 - 16); // carte 8px de padding de chaque côté
   const { reps, running, pushDone, feedback, fbKind, phase, startPush } = useGame();
   const eco = useEconomy();
@@ -48,8 +48,8 @@ export default function Defis() {
   const pose = { head: ph ? 176 : 132, shoulder: ph ? 178 : 140, hip: ph ? 190 : 172, elbowX: ph ? 106 : 146, elbowY: ph ? 192 : 172 };
   const fb = fbKind === 'bad' ? { bg: '#3A1714', ink: '#FFB8AF' } : fbKind === 'good' ? { bg: '#22300C', ink: '#D6F57A' } : { bg: '#26282C', ink: '#D4D6DA' };
   const live = cam.ready && running;
-  // caméra en direct : aperçu haut (proche du format de la caméra) pour que la personne se voie en entier de loin
-  const camH = live ? Math.round(Math.min(panelW / 0.5625, winH * 0.6)) : PANEL_H;
+  // caméra en direct : plein écran (PushupLive), la carte garde sa taille
+  const camH = PANEL_H;
   const placing = live && cam.placement !== 'ready';
   const status = live ? (cam.placement === 'ready' ? 'Bien placé · je compte' : cam.placement === 'partial' ? 'Place-toi en entier' : 'Je te cherche…') : running ? 'Simulation' : pushDone ? 'Terminé' : cam.ready ? 'Caméra prête' : 'Caméra : version App Store';
   const dot = running ? RED : pushDone ? LIME : '#8A8E96';
@@ -67,10 +67,17 @@ export default function Defis() {
       <View accessibilityLabel="Défi pompes" style={[styles.pushCard, shadow.lg]}>
         <View style={[styles.cam, { height: camH }]}>
           {live && FitaiaPoseView ? (
-            <FitaiaPoseView active position="front" onPose={cam.onPose} onError={cam.onError} style={StyleSheet.absoluteFill} />
-          ) : null}
-          {live && cam.lastPose ? (
-            <PoseSkeleton pose={cam.lastPose} width={panelW} height={camH} mirrored good={cam.placement === 'ready'} />
+            <PushupLive
+              reps={reps}
+              target={target}
+              feedback={feedback}
+              fbKind={fbKind}
+              placement={cam.placement}
+              lastPose={cam.lastPose}
+              onPose={cam.onPose}
+              onError={cam.onError}
+              onStop={cam.abort}
+            />
           ) : null}
           {(running || pushDone) && !live ? (
           <Svg width={panelW} height={PANEL_H} viewBox={`0 0 ${PANEL_W} ${PANEL_H}`} preserveAspectRatio="xMidYMid meet" style={StyleSheet.absoluteFill}>
