@@ -1,6 +1,6 @@
 import { caricatureConfigured } from '@/services/caricature';
 import React, { useEffect } from 'react';
-import { ImageStyle, StyleProp, ViewStyle } from 'react-native';
+import { ActivityIndicator, Image, ImageStyle, Pressable, StyleProp, Text, View, ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useBody, useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
@@ -67,7 +67,13 @@ export function useHeroSource(): HeroChoice {
  */
 export function HeroAvatar({ width, height, style, idle = true }: { width: number; height: number; style?: StyleProp<ViewStyle & ImageStyle>; idle?: boolean }) {
   const imgStyle = style as StyleProp<ImageStyle>;
-  const { source, label } = useHeroSource();
+  const { source, label, pending } = useHeroSource();
+  const job = useGame((s) => s.caricatureJob.state);
+  const create = useGame((s) => s.createMyCaricature);
+  useEffect(() => {
+    // perso jamais dessiné et rien en cours (app fermée pendant le dessin…) : on relance tout seul, une fois
+    if (pending && job === 'idle') void create();
+  }, [pending, job, create]);
   const reduced = useReducedMotion();
   const t = useSharedValue(0);
   useEffect(() => {
@@ -83,6 +89,25 @@ export function HeroAvatar({ width, height, style, idle = true }: { width: numbe
       transform: [{ scaleY: 1 + 0.008 * v }, { scaleX: 1 + 0.004 * v }, { rotateZ: `${(v - 0.5) * 0.5}deg` }],
     };
   });
+  if (pending) {
+    // Le perso se dessine : jamais la photo brute à sa place. Fond = selfie très flouté et assombri, message clair.
+    const failed = job === 'failed';
+    const big = height >= 200;
+    return (
+      <Pressable disabled={!failed} onPress={() => void create()} accessibilityRole={failed ? 'button' : undefined}
+        accessibilityLabel={failed ? 'Le dessin de ton perso a été interrompu, toucher pour relancer' : 'Ton perso se dessine'}
+        style={[{ width, height, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#14171D' }, style as StyleProp<ViewStyle>]}>
+        <Image source={{ uri: pending }} blurRadius={40} resizeMode="cover" style={{ position: 'absolute', width, height, opacity: 0.35 }} />
+        {failed ? null : <ActivityIndicator color="#C8F03C" size={big ? 'large' : 'small'} />}
+        {big ? (
+          <View style={{ alignItems: 'center', gap: 4, marginTop: 14, paddingHorizontal: 24 }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', textAlign: 'center' }}>{failed ? 'Le dessin a été interrompu' : 'Ton perso se dessine…'}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, textAlign: 'center' }}>{failed ? 'Touche ici pour relancer' : 'Environ 30 secondes, tu peux continuer'}</Text>
+          </View>
+        ) : null}
+      </Pressable>
+    );
+  }
   return (
     <Animated.Image source={source} accessibilityLabel={label} style={[{ width, height }, imgStyle, anim]} resizeMode="cover" />
   );

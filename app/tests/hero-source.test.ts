@@ -41,4 +41,11 @@ t.equal(src(heroSourceFor({ ...base, stage: null, ready: true })), 'preview-masc
 t.equal(src(heroSourceFor({ ...base, stage: null })), 'skin-origine', 'homme sans créateur : illustration de la tenue');
 t.equal(src(heroSourceFor({ ...base, base: 'f', stage: null })), 'preview-fem', 'femme sans créateur : base féminine, jamais un homme');
 
+// Perso pas encore dessiné : la photo brute n'est JAMAIS l'image du perso (bug vu sur l'Accueil le 28/11/2026)
+const wait = heroSourceFor({ ...base, pendingSelfie: 'file://selfie.jpg' });
+t.equal(wait.pending, 'file://selfie.jpg', 'perso en cours de dessin : état d’attente annoncé');
+t.equal(src(wait), 'usine-surpoids', '… l’image reste un repli, pas le selfie');
+t.ok(!wait.personal, '… et elle n’est pas annoncée comme personnelle');
+t.ok(!heroSourceFor({ ...base, pendingSelfie: 'file://selfie.jpg', caricature: { base: 'm', portraitUri: 'toon' } }).pending, 'perso dessiné : plus d’attente');
+
 console.log(t.count() + ' tests image du perso OK');
