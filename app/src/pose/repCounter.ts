@@ -81,6 +81,11 @@ export class PushupCounter {
     this.count = 0; this.phase = 'up'; this.reachedBottom = false; this.minElbow = 180; this.elbowS = 180; this.badFrames = 0; this.offPlank = 0;
   }
 
+  /** En position de pompe (corps allongé) sur la dernière image analysée. */
+  get inPosition() {
+    return this.offPlank === 0;
+  }
+
   /**
    * À appeler à chaque image (10–30 Hz). `p` : points de l'image (visibilité, posture) ;
    * `p3` (facultatif, MediaPipe) : mêmes points en 3D, utilisés pour les angles du coude et l'alignement.
@@ -99,7 +104,8 @@ export class PushupCounter {
     // Debout, assis ou en train de s'installer : rien ne compte et la descente en cours est oubliée.
     if (bodyTilt(p) > THRESH.plankMaxTilt) {
       this.offPlank++;
-      if (this.offPlank === THRESH.postureFrames) ev.push({ type: 'posture' });
+      // dit au bout de ≈ 1,3 s, puis redit toutes les ≈ 8 s tant que la personne n'est pas en position
+      if (this.offPlank === THRESH.postureFrames || (this.offPlank > THRESH.postureFrames && (this.offPlank - THRESH.postureFrames) % 120 === 0)) ev.push({ type: 'posture' });
       this.phase = 'up'; this.reachedBottom = false; this.minElbow = 180; this.elbowS = 180;
       return ev;
     }

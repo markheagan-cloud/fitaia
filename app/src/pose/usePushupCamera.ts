@@ -5,7 +5,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { isPoseAvailable, PoseEvent } from '../../modules/fitaia-pose';
 import { useGame } from '@/store/useGame';
 import { PushupCounter, unsquash } from './repCounter';
-import { PlacementGuide, type GuideStatus } from './placementGuide';
+import { CoachPacer, PlacementGuide, type GuideStatus } from './placementGuide';
 import { poseForSide } from './sideLock';
 import { playSfx, prepareVoice, setFocus, speak } from '@/services/sound';
 import { posturePhrase, rejectWhyPhrase, repPhrase, startPhrase } from '@/coach/repVoice';
@@ -30,6 +30,7 @@ export function usePushupCamera(target = 5) {
   const abort = useGame((s) => s.pushAbort);
   const counter = useRef(new PushupCounter());
   const guide = useRef(new PlacementGuide());
+  const pacer = useRef(new CoachPacer());
   const side = useRef<'left' | 'right' | null>(null);
   const rejected = useRef(0);
   const lastDraw = useRef(0);
@@ -79,6 +80,7 @@ export function usePushupCamera(target = 5) {
     guide.current.reset();
     side.current = null;
     rejected.current = 0;
+    pacer.current.reset();
     setPlacement('searching');
     setLastPose(null);
     begin();
@@ -95,12 +97,18 @@ export function usePushupCamera(target = 5) {
         setLastPose(ev);
       }
       const raw = poseForSide(ev, side.current);
+      // chaque phrase dite repousse la relance : la voix parle régulièrement sans jamais se répéter en boucle
+      const say = (text: string, mode: 'now' | 'queue' = 'now') => {
+        if (!text) return;
+        speak(text, mode);
+        pacer.current.note(ts);
+      };
 
       const wasReady = guide.current.ready;
       const g = guide.current.update({ found: ev.found, ts, pose: raw });
       setPlacement(g.status);
       if (g.beep) playSfx('rep');
-      if (g.say) speak(g.say, 'queue');
+      if (g.say) say(g.say, 'queue');
       if (g.text) update(counter.current.count, g.text, g.kind ?? 'info');
       if (!guide.current.ready) {
         if (wasReady) side.current = null; // perdu : on reprendra le côté le mieux vu
@@ -115,19 +123,22 @@ export function usePushupCamera(target = 5) {
       for (const x of events) {
         if (x.type === 'rep') {
           playSfx('rep');
-          speak(repPhrase(x.count, target));
+          say(repPhrase(x.count, target));
           if (x.count >= target) finish(rejected.current, target);
           else update(x.count, 'Pompe ' + x.count + ' validée, amplitude complète.', 'good');
         } else if (x.type === 'rejected') {
           rejected.current++;
-          speak(rejectWhyPhrase(x.why, rejected.current));
+          say(rejectWhyPhrase(x.why, rejected.current));
           update(counter.current.count, x.reason, 'bad');
         } else if (x.type === 'posture') {
-          speak(posturePhrase, 'queue');
+          say(posturePhrase, 'queue');
           update(counter.current.count, posturePhrase, 'info');
         }
         // les pertes de suivi sont annoncées par le guide de placement
       }
+      if (!counter.current.inPosition || !useGame.getState().running) return;
+      const nudge = pacer.current.idle(ts, true, counter.current.count, target);
+      if (nudge) say(nudge, 'queue');
     },
     [running, target, update, finish],
   );
