@@ -15,10 +15,10 @@ export const CUR_NAMES: [string] = ['Fitcoins'];
 
 export type RarityKey = 'commune' | 'rare' | 'epique' | 'legendaire';
 export const RARITY: Record<RarityKey, { label: string; c: string }> = {
-  commune: { label: 'Commune', c: '#8A8E96' },
-  rare: { label: 'Rare', c: '#2F6BF0' },
-  epique: { label: 'Épique', c: '#8247E5' },
-  legendaire: { label: 'Légendaire', c: '#E9A10B' },
+  commune: { label: 'Commune', c: '#959CA8' },
+  rare: { label: 'Rare', c: '#4D9BFF' },
+  epique: { label: 'Épique', c: '#A993FF' },
+  legendaire: { label: 'Légendaire', c: '#FFCA65' },
 };
 
 export type Skin = {
@@ -38,13 +38,23 @@ export const SKINS: Skin[] = [
   { id: 'creme', name: 'Crème Studio', rarity: 'epique', img: IMG.p2, cur: 'store', price: 0 },
   { id: 'titane', name: 'Titane Néon', rarity: 'legendaire', img: IMG.p3, cur: 'store', price: 0 },
   { id: 'atelier', name: 'Atelier Noir', rarity: 'legendaire', img: IMG.p4, cur: 'store', price: 0 },
+  { id: 'sprint', name: 'Sprint Rouge', rarity: 'commune', img: IMG.p1, cur: 'earn', price: 150 },
+  { id: 'dojo', name: 'Dojo Blanc', rarity: 'commune', img: IMG.p2, cur: 'earn', price: 200 },
+  { id: 'street', name: 'Street Graphite', rarity: 'rare', img: IMG.p3, cur: 'earn', price: 350 },
+  { id: 'plage', name: 'Plage Corail', rarity: 'rare', img: IMG.p4, cur: 'earn', price: 450 },
+  { id: 'ring', name: 'Ring Doré', rarity: 'rare', img: IMG.p5, cur: 'earn', price: 550 },
+  { id: 'alpin', name: 'Alpin Givre', rarity: 'epique', img: IMG.p6, cur: 'earn', price: 700 },
+  { id: 'pilote', name: 'Pilote Néon', rarity: 'epique', img: IMG.p1, cur: 'earn', price: 1100 },
+  { id: 'samourai', name: 'Samouraï Néon', rarity: 'legendaire', img: IMG.p2, cur: 'earn', price: 1600 },
+  { id: 'astro', name: 'Astro Lime', rarity: 'legendaire', img: IMG.p3, cur: 'earn', price: 2000 },
+  { id: 'royal', name: 'Royal Or', rarity: 'legendaire', img: IMG.p4, cur: 'earn', price: 2400 },
 ];
 
 /**
  * Repas. `origin` dit d'où viennent les valeurs (affiché au membre) : emballage lu par code-barres ou recherche
  * Open Food Facts, moyenne d'un aliment courant (estimation), ou saisie manuelle.
  */
-export type MealOrigin = 'openfoodfacts' | 'average' | 'manual';
+export type MealOrigin = 'openfoodfacts' | 'average' | 'manual' | 'photo';
 export type Meal = { name: string; kcal: number; p: number; g: number; l: number; score: number; items: string[]; origin?: MealOrigin };
 /** Repas enregistré au journal du jour (modifiable et supprimable). */
 export type MealEntry = Meal & { id: string; at: number };
@@ -53,6 +63,7 @@ export const ORIGIN_LABEL: Record<MealOrigin, string> = {
   openfoodfacts: 'Valeurs de l’emballage (Open Food Facts)',
   average: 'Estimation : valeurs moyennes de l’aliment',
   manual: 'Saisie manuelle',
+  photo: 'D’après ta photo',
 };
 export const MEALS: Meal[] = [
   { name: 'Bowl poulet, riz, brocolis', kcal: 620, p: 48, g: 70, l: 14, score: 86, items: ['Poulet grillé, 150 g', 'Riz basmati, 120 g', 'Brocolis, 80 g'] },

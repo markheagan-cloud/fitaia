@@ -19,6 +19,8 @@ export type Caricature = {
   portraitUri: string;
   /** Le même personnage selon le corps (illustrations, pas une prédiction). */
   bodies: Record<BodyKey, string>;
+  /** Les tenues de la boutique portées par CE perso (identifiant de tenue → image). Absent tant qu'elles ne sont pas dessinées. */
+  outfits?: Record<string, string>;
   /** Ce que le serveur dit ne pas garantir (texte lisible). */
   limits: string[];
   model: string | null;
@@ -59,7 +61,7 @@ export function finishedSpaceCaricature(json: string, id: string): CaricatureJob
 }
 
 /** Nom du fichier gardé sur le téléphone (retrouvé par son nom après une mise à jour de l'app). */
-export function caricatureFileName(id: string, which: 'portrait' | BodyKey): string {
+export function caricatureFileName(id: string, which: string): string {
   return 'caricature-' + id + '-' + which + '.png';
 }
 
@@ -76,4 +78,31 @@ export function buildCaricature(r: CaricatureJobResult, base: AvatarBase, files:
     seed: typeof r.report.graine === 'number' ? r.report.graine : null,
     durationS: typeof r.report.duree_s === 'number' ? Math.round(r.report.duree_s) : null,
   };
+}
+
+/** Réponse JSON « tenues » du service ({"ok", "tenues": {id: png base64}}) → images par tenue, ou null si elle est vide ou invalide. */
+/** Réponse du mode « mix » : {ok, cle, image} → clé et image base64 ; erreur lisible sinon (jamais d'image inventée). */
+export function finishedMix(json: string): { key: string; image: string } {
+  let r: { ok?: boolean; cle?: unknown; image?: unknown; error?: unknown };
+  try {
+    r = JSON.parse(json);
+  } catch {
+    throw new Error('Réponse illisible du serveur de dessin.');
+  }
+  if (!r || r.ok !== true) throw new Error(typeof r?.error === 'string' && r.error ? r.error : 'Mélange impossible à dessiner.');
+  if (typeof r.cle !== 'string' || !/^m-[a-z0-9_-]+$/.test(r.cle) || typeof r.image !== 'string' || !r.image) throw new Error('Réponse incomplète du serveur de dessin.');
+  return { key: r.cle, image: r.image };
+}
+
+export function finishedOutfits(json: string): Record<string, string> | null {
+  let r: { ok?: boolean; tenues?: Record<string, unknown> };
+  try {
+    r = JSON.parse(json);
+  } catch {
+    return null;
+  }
+  if (!r || typeof r !== 'object' || !r.ok || !r.tenues || typeof r.tenues !== 'object') return null;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(r.tenues)) if (typeof v === 'string' && v && /^[a-z0-9_-]+$/.test(k)) out[k] = v;
+  return Object.keys(out).length ? out : null;
 }

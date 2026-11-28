@@ -244,6 +244,18 @@ export const REASON_LABELS: Record<ReasonCode, string> = {
 };
 
 /**
+ * Filtre « Me proposer » (femmes / hommes / tout le monde), appliqué dans les DEUX sens :
+ * je ne vois que ce que j'ai choisi, et je n'apparais pas chez quelqu'un qui a choisi l'autre option.
+ */
+export function genderAllows(me: CommunityProfile, other: CommunityProfile): boolean {
+  const mine = me.privacy.matchWith ?? 'tous';
+  const theirs = other.privacy.matchWith ?? 'tous';
+  if (mine !== 'tous' && other.gender !== mine) return false;
+  if (theirs !== 'tous' && me.gender !== theirs) return false;
+  return true;
+}
+
+/**
  * Suggestions : profils éligibles, hors personnes bloquées (dans les deux sens), déjà amies ou déjà passées,
  * triés par compatibilité puis activité récente.
  */
@@ -255,7 +267,7 @@ export function suggest(
   limit = 10,
 ): FitMatchCandidate[] {
   return pool
-    .filter((p) => !exclude.has(p.userId))
+    .filter((p) => !exclude.has(p.userId) && genderAllows(me, p))
     .map((p) => ({ p, r: compatibility(me, p, now) }))
     .filter(({ r }) => r.eligible && r.score >= 35)
     .sort((x, y) => y.r.score - x.r.score || y.p.lastActiveAt - x.p.lastActiveAt)

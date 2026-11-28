@@ -4,13 +4,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, shadow } from '@/theme/tokens';
-import { CUR_NAMES, TITLES, fmt, todayLabel } from '@/data/content';
+import { LIME, screenAccent, shadow } from '@/theme/tokens';
+import { CUR_NAMES, TITLES, todayLabel } from '@/data/content';
 import { useBody, useEconomy, useGame } from '@/store/useGame';
 import { useBalance } from '@/store/useEco';
 import { Press } from './Press';
 import { Txt, Display } from './Txt';
-import { CoinIcon } from './Icons';
+import { CoinCounter } from '@/ui/kit';
 import { CoachAvatar } from './CoachAvatar';
 
 export const HEADER_CONTENT_H = 48; // 40px avatar + padding 8 bas
@@ -25,7 +25,7 @@ function LiveDot({ bg }: { bg: string }) {
 }
 
 /** En-tête commun : coach + titre d'écran + solde de Fitcoins. Fidèle au <header> de la maquette. */
-export function Header({ screen }: { screen: keyof typeof TITLES }) {
+export function Header({ screen, subtitle, right }: { screen: keyof typeof TITLES; subtitle?: string; right?: React.ReactNode }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -34,7 +34,7 @@ export function Header({ screen }: { screen: keyof typeof TITLES }) {
   const eco = useEconomy();
   const body = useBody();
   const [title, baseSub] = TITLES[screen];
-  const sub = screen === 'defis' && eco.streak >= 2 ? 'Série de ' + eco.streak + ' jours' : screen === 'home' ? todayLabel() : screen === 'perso' ? 'Niveau ' + body.level : baseSub;
+  const sub = subtitle ?? (screen === 'defis' && eco.streak >= 2 ? 'Série de ' + eco.streak + ' jours' : screen === 'home' ? todayLabel() : screen === 'perso' ? 'Niveau ' + body.level : baseSub);
 
   return (
     <View
@@ -50,12 +50,13 @@ export function Header({ screen }: { screen: keyof typeof TITLES }) {
           <LiveDot bg={t.bg} />
         </View>
         <View style={{ gap: 1, flexShrink: 1, minWidth: 0 }}>
-          <Display size={20} numberOfLines={1}>{title}</Display>
+          <Display size={22} color={screenAccent(t, screen)} numberOfLines={1}>{title}</Display>
           <Txt size={12} color={t.ink2} numberOfLines={1}>{sub}</Txt>
         </View>
       </Press>
 
-      <View style={{ flexDirection: 'row', gap: 6 }}>
+      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+        {right}
         <Press
           accessibilityLabel={CUR_NAMES[0] + ' : en gagner avec les défis'}
           onPress={() => {
@@ -64,8 +65,7 @@ export function Header({ screen }: { screen: keyof typeof TITLES }) {
           }}
           style={[styles.pill, { backgroundColor: t.strong }, shadow.sm]}
         >
-          <CoinIcon size={15} />
-          <Txt size={14} weight="bold" num color={t.strongInk}>{fmt(earn)}</Txt>
+          <CoinCounter value={earn} size={14} color={t.strongInk} />
         </Press>
       </View>
     </View>

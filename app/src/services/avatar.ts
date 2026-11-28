@@ -71,13 +71,15 @@ async function generateWithHF(prompt: string, signal?: AbortSignal): Promise<str
 }
 
 /** Réduit et recadre le selfie : carré centré, 768 px, JPEG. Renvoie l'URI locale et la base64. */
-export async function prepareSelfie(uri: string, width: number, height: number): Promise<{ uri: string; base64: string }> {
+export async function prepareSelfie(uri: string, width: number, height: number, mirror = false): Promise<{ uri: string; base64: string }> {
   const side = Math.min(width, height);
   const originX = Math.max(0, Math.round((width - side) / 2));
   const originY = Math.max(0, Math.round((height - side) / 2));
   const out = await ImageManipulator.manipulateAsync(
     uri,
-    [{ crop: { originX, originY, width: side, height: side } }, { resize: { width: 768, height: 768 } }],
+    // mirror : la caméra avant montre un aperçu en miroir mais enregistre la photo retournée ; on la remet comme la
+    // personne se voit (sinon son visage lui paraît « à l'envers »)
+    [{ crop: { originX, originY, width: side, height: side } }, { resize: { width: 768, height: 768 } }, ...(mirror ? [{ flip: ImageManipulator.FlipType.Horizontal }] : [])],
     { compress: 0.82, format: ImageManipulator.SaveFormat.JPEG, base64: true },
   );
   return { uri: out.uri, base64: out.base64 ?? '' };

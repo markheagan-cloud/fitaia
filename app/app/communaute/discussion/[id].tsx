@@ -3,6 +3,7 @@
  * L'aide se retire d'elle-même après quelques échanges (assistLevel) : la discussion devient normale.
  * Signalement d'un message par appui long ; limites anti-harcèlement appliquées par le moteur (2 messages avant réponse…).
  */
+import { playSfx } from '@/services/sound';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, ScrollView, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -102,6 +103,7 @@ export default function Discussion() {
   const submit = (content: string, type: 'texte' | 'encouragement' = 'texte') => {
     const r = send(id, content, type);
     if (!r.ok) return say(r.reason ?? 'Message non envoyé', 'bad');
+    playSfx('message');
     if (type === 'texte') setText('');
   };
 

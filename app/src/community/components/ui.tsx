@@ -87,9 +87,9 @@ export function Chip({ label, on, onPress }: { label: string; on: boolean; onPre
       accessibilityRole="checkbox"
       accessibilityState={{ checked: on }}
       onPress={onPress}
-      style={[styles.chip, { backgroundColor: on ? t.strong : t.surf, borderColor: on ? t.strong : t.line }]}
+      style={[styles.chip, { backgroundColor: on ? LIME : t.surf, borderColor: on ? LIME : t.line, borderWidth: on ? 2 : 1 }]}
     >
-      <Txt size={13} weight="semibold" color={on ? t.strongInk : t.ink}>{label}</Txt>
+      <Txt size={13} weight="semibold" color={on ? OBSIDIAN : t.ink}>{label}</Txt>
     </Press>
   );
 }

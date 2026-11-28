@@ -3,10 +3,12 @@ import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Line, Circle, G } from 'react-native-svg';
 import { useTheme } from '@/theme/ThemeProvider';
-import { LIME, OBSIDIAN, RED, shadow } from '@/theme/tokens';
+import { LIME, OBSIDIAN, RED, shadow, screenAccent } from '@/theme/tokens';
 import { CUR_NAMES, OTHER_DEFIS, fmt } from '@/data/content';
 import { useSteps } from '@/hooks/useSteps';
+import { challengeTarget as poseTarget, nextRaise } from '@/coach/challengeTarget';
 import { usePushupCamera } from '@/pose/usePushupCamera';
+import { PoseSkeleton } from '@/pose/PoseSkeleton';
 import { FitaiaPoseView } from '../../modules/fitaia-pose';
 import { useEconomy, useGame } from '@/store/useGame';
 import { useDailyCoins, useEco } from '@/store/useEco';
@@ -14,7 +16,9 @@ import { PROGRESSION_RULES } from '@/progression/progressionRules';
 
 const PF_CHALLENGE = PROGRESSION_RULES.challenge_completed.points;
 import { RULES, dayKey, isActiveDay, weekDays } from '@/store/economy';
-import { Screen, Card, Row } from '@/components/Screen';
+import { Screen, Card } from '@/components/Screen';
+import { FillBar, SectionTitle } from '@/ui/kit';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 import { Press } from '@/components/Press';
 import { Txt, Display } from '@/components/Txt';
 import { CheckIcon } from '@/components/Icons';
@@ -25,7 +29,7 @@ const PANEL_H = 236;
 export default function Defis() {
   const t = useTheme();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height: winH } = useWindowDimensions();
   const panelW = Math.max(0, width - 32 - 16); // carte 8px de padding de chaque côté
   const { reps, running, pushDone, feedback, fbKind, phase, startPush } = useGame();
   const eco = useEconomy();
@@ -35,30 +39,40 @@ export default function Defis() {
   const weeklyPoints = useEco((s) => s.account?.weeklyPoints ?? 0);
   const stepsState = useSteps();
   const completeExtra = useGame((s) => s.completeExtra);
-  const cam = usePushupCamera(5);
+  const history = useGame((x) => x.history);
+  // cible du jour : monte toute seule avec les jours réussis ; sans caméra (démonstration) elle reste à 5
+  const target = poseTarget(history);
+  const cam = usePushupCamera(target);
 
   const ph = phase === 1;
   const pose = { head: ph ? 176 : 132, shoulder: ph ? 178 : 140, hip: ph ? 190 : 172, elbowX: ph ? 106 : 146, elbowY: ph ? 192 : 172 };
   const fb = fbKind === 'bad' ? { bg: '#3A1714', ink: '#FFB8AF' } : fbKind === 'good' ? { bg: '#22300C', ink: '#D6F57A' } : { bg: '#26282C', ink: '#D4D6DA' };
-  const status = running ? (cam.ready ? 'Analyse en direct' : 'Simulation') : pushDone ? 'Terminé' : cam.ready ? 'Caméra prête' : 'Caméra : version App Store';
+  const live = cam.ready && running;
+  // caméra en direct : aperçu haut (proche du format de la caméra) pour que la personne se voie en entier de loin
+  const camH = live ? Math.round(Math.min(panelW / 0.5625, winH * 0.6)) : PANEL_H;
+  const placing = live && cam.placement !== 'ready';
+  const status = live ? (cam.placement === 'ready' ? 'Bien placé · je compte' : cam.placement === 'partial' ? 'Place-toi en entier' : 'Je te cherche…') : running ? 'Simulation' : pushDone ? 'Terminé' : cam.ready ? 'Caméra prête' : 'Caméra : version App Store';
   const dot = running ? RED : pushDone ? LIME : '#8A8E96';
   const btn = pushDone ? 'Retour à l’accueil' : running ? 'Analyse en cours' : 'Commencer';
   const ok = running || pushDone;
-  const bad = fbKind === 'bad';
+  const bad = fbKind === 'bad' && !placing;
   const checks: { label: string; state: 'ok' | 'bad' | 'idle' }[] = [
-    { label: 'Coudes à 90° en bas', state: bad ? 'bad' : ok ? 'ok' : 'idle' },
-    { label: 'Corps gainé et aligné', state: ok ? 'ok' : 'idle' },
-    { label: 'Bras tendus en haut', state: ok ? 'ok' : 'idle' },
+    { label: 'Coudes à 90° en bas', state: bad ? 'bad' : ok && !placing ? 'ok' : 'idle' },
+    { label: 'Corps gainé et aligné', state: ok && !placing ? 'ok' : 'idle' },
+    { label: 'Bras tendus en haut', state: ok && !placing ? 'ok' : 'idle' },
   ];
 
   return (
     <Screen name="defis">
       <View accessibilityLabel="Défi pompes" style={[styles.pushCard, shadow.lg]}>
-        <View style={styles.cam}>
-          {cam.ready && running && FitaiaPoseView ? (
-            <FitaiaPoseView active position="back" onPose={cam.onPose} onError={cam.onError} style={StyleSheet.absoluteFill} />
+        <View style={[styles.cam, { height: camH }]}>
+          {live && FitaiaPoseView ? (
+            <FitaiaPoseView active position="front" onPose={cam.onPose} onError={cam.onError} style={StyleSheet.absoluteFill} />
           ) : null}
-          {running || pushDone ? (
+          {live && cam.lastPose ? (
+            <PoseSkeleton pose={cam.lastPose} width={panelW} height={camH} mirrored good={cam.placement === 'ready'} />
+          ) : null}
+          {(running || pushDone) && !live ? (
           <Svg width={panelW} height={PANEL_H} viewBox={`0 0 ${PANEL_W} ${PANEL_H}`} preserveAspectRatio="xMidYMid meet" style={StyleSheet.absoluteFill}>
             <Line x1={30} y1={206} x2={312} y2={206} stroke="#34373C" strokeWidth={2} />
             <G stroke={LIME} strokeWidth={4} strokeLinecap="round" opacity={cam.ready && running ? 0 : 1}>
@@ -99,9 +113,10 @@ export default function Defis() {
 
         <View style={{ paddingHorizontal: 8, paddingTop: 4, gap: 10 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <Display size={22} color="#F5F4F1">5 pompes</Display>
+            <Display size={22} color="#F5F4F1">{(cam.ready ? target : 5) + ' pompes'}</Display>
             <Txt size={14} weight="bold" num color={LIME}>{dailyCoins ? '+' + dailyCoins + ' ' + CUR_NAMES[0] : '+' + PF_CHALLENGE + ' PF'}</Txt>
           </View>
+          {cam.ready && !running && !pushDone ? <Txt size={12} color="#9EA2AA">{nextRaise(history)}</Txt> : null}
           <View accessibilityRole="text" accessibilityLiveRegion="polite" style={[styles.fb, { backgroundColor: fb.bg }]}>
             <Txt size={13} weight="semibold" lineHeight={18} color={fb.ink}>{feedback}</Txt>
           </View>
@@ -131,10 +146,7 @@ export default function Defis() {
         </Press>
       </View>
 
-      <Row>
-        <Txt size={15} weight="bold">Autres défis</Txt>
-        <Txt size={12} color={t.ink2}>Remis à zéro dans {Math.max(1, 24 - new Date().getHours())} h</Txt>
-      </Row>
+      <SectionTitle title="Missions bonus" hint={eco.doneToday.length + ' / ' + OTHER_DEFIS.length + ' · nouvelles dans ' + Math.max(1, 24 - new Date().getHours()) + ' h'} />
       <Card style={{ paddingVertical: 4, paddingHorizontal: 14 }}>
         {OTHER_DEFIS.map((d, i) => {
           const done = eco.doneToday.indexOf(d.id) >= 0;
@@ -165,9 +177,7 @@ export default function Defis() {
                 <Txt size={15} weight="semibold">{d.name}</Txt>
                 <Txt size={12} color={done ? (t.dark ? LIME : '#3F5600') : t.ink2}>{subText}</Txt>
                 {d.kind !== 'camera' && !done ? (
-                  <View style={{ height: 4, borderRadius: 9, backgroundColor: t.track }}>
-                    <View style={{ width: `${Math.round(progress * 100)}%`, height: 4, borderRadius: 9, backgroundColor: progress >= 1 ? LIME : t.ink }} />
-                  </View>
+                  <FillBar pct={progress} height={4} color={progress >= 1 ? LIME : t.ink} />
                 ) : null}
               </View>
               {action ? (
@@ -175,9 +185,9 @@ export default function Defis() {
                   <Txt size={13} weight="bold" color={OBSIDIAN}>{actionLabel}</Txt>
                 </Press>
               ) : done ? (
-                <View style={[styles.check, { backgroundColor: LIME, width: 24, height: 24, borderRadius: 8 }]}>
+                <Animated.View entering={ZoomIn.springify().damping(12)} style={[styles.check, { backgroundColor: LIME, width: 26, height: 26, borderRadius: 13 }]}>
                   <CheckIcon size={13} color={OBSIDIAN} />
-                </View>
+                </Animated.View>
               ) : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Txt size={14} weight="bold" num>+{d.points} PF</Txt>
@@ -190,7 +200,7 @@ export default function Defis() {
 
       <Card style={{ gap: 10 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Txt size={14} weight="bold">Ta semaine</Txt>
+          <Txt size={16} weight="bold" color={screenAccent(t, 'defis')}>Régularité</Txt>
           <Txt size={14} num color={t.ink2}>{eco.activeDays} jour{eco.activeDays > 1 ? 's' : ''} sur 7</Txt>
         </View>
         <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -207,6 +217,9 @@ export default function Defis() {
         </View>
         <Txt size={13} color={t.ink2}>
           {fmt(weeklyPoints) + ' Points FITAIA cette semaine. Un défi rapporte ' + PF_CHALLENGE + ' PF, un repas enregistré ' + PROGRESSION_RULES.meal_logged.points + ' PF.'}
+        </Txt>
+        <Txt size={12} lineHeight={17} color={t.ink2}>
+          Un jour sans défi ne casse rien : la semaine compte tes jours actifs. Le repos et le sommeil comptent aussi pour ta forme.
         </Txt>
       </Card>
     </Screen>

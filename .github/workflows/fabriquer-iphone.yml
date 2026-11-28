@@ -1,0 +1,83 @@
+# Fabrique l'app iPhone sur une machine macOS de GitHub (gratuit sur un dépôt public), sans les serveurs de build
+# d'Expo, puis l'envoie à App Store Connect (TestFlight). Sert quand le quota de builds gratuits d'Expo est épuisé.
+#
+# Aucun secret dans le dépôt ni dans GitHub : la machine prouve son identité (jeton OIDC signé par GitHub) au service
+# hero3d/ci/cles_modal.py, qui ne rend les clés qu'à ce workflow, sur la branche testflight de ce dépôt.
+name: Fabriquer l'app iPhone
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [testflight]
+
+concurrency:
+  group: fabriquer-iphone
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  iphone:
+    runs-on: macos-26
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: app
+    env:
+      EXPO_APPLE_TEAM_ID: DDWD67FKMU
+      EXPO_APPLE_TEAM_TYPE: INDIVIDUAL
+      EAS_BUILD_NO_EXPO_GO_WARNING: 'true'
+      EAS_SKIP_AUTO_FINGERPRINT: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Tests avant de fabriquer
+        run: npm test
+      - name: Xcode le plus récent du runner
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+      - name: Clés de fabrication (remises par le service, sur preuve d'identité GitHub)
+        working-directory: .
+        run: |
+          set +x
+          JETON=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=fitaia-cles" | python3 -c "import sys,json;print(json.load(sys.stdin)['value'])")
+          echo "::add-mask::$JETON"
+          curl -sS --fail-with-body -X POST -H "Authorization: Bearer $JETON" https://leperecastorof-blip--fitaia-cles-cles.us-east.modal.run -o "$RUNNER_TEMP/cles.json" || { echo "::error::Le service de clés a refusé"; rm -f "$RUNNER_TEMP/cles.json"; exit 1; }
+          python3 - "$RUNNER_TEMP/cles.json" <<'PY'
+          import json, os, sys
+          j = json.load(open(sys.argv[1]))
+          noms = {'EXPO_TOKEN': 'EXPO_TOKEN', 'ASC_KEY_P8_BASE64': 'ASC_KEY_P8_BASE64', 'ASC_KEY_ID': 'EXPO_ASC_KEY_ID',
+                  'ASC_ISSUER_ID': 'EXPO_ASC_ISSUER_ID', 'CARICATURE_TOKEN': 'CARICATURE_TOKEN'}
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              for k, v in noms.items():
+                  print('::add-mask::' + j[k])
+                  f.write(v + '=' + j[k] + '\n')
+          PY
+          rm -f "$RUNNER_TEMP/cles.json"
+      - name: Clé App Store Connect et jeton du service de dessin
+        run: |
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/asc.p8"
+          echo "EXPO_ASC_API_KEY_PATH=$RUNNER_TEMP/asc.p8" >> "$GITHUB_ENV"
+          node -e "
+            const fs = require('fs');
+            const j = JSON.parse(fs.readFileSync('eas.json', 'utf8'));
+            j.build.production.env.EXPO_PUBLIC_CARICATURE_TOKEN = process.env.CARICATURE_TOKEN;
+            Object.assign(j.submit.production.ios, { ascApiKeyPath: process.env.RUNNER_TEMP + '/asc.p8', ascApiKeyId: process.env.EXPO_ASC_KEY_ID, ascApiKeyIssuerId: process.env.EXPO_ASC_ISSUER_ID });
+            fs.writeFileSync('eas.json', JSON.stringify(j, null, 2));
+          "
+      - name: Fabrication sur cette machine (eas build --local)
+        run: npx eas-cli@latest build -p ios --profile production --local --non-interactive --output "$RUNNER_TEMP/fitaia.ipa"
+      - name: Envoi à App Store Connect
+        run: npx eas-cli@latest submit -p ios --profile production --path "$RUNNER_TEMP/fitaia.ipa" --non-interactive --no-wait
+      - name: Nettoyage des secrets
+        if: always()
+        run: rm -f "$RUNNER_TEMP/asc.p8"; git checkout -- eas.json || true

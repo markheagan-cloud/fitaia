@@ -22,6 +22,7 @@ import { Figure, HeadStack, StatusPill, Studio, Tag, TopBar, ease, studio } from
 import { Icon, NEED_ICON } from '@/community/components/icons';
 import { CompatSheet } from '@/community/components/CompatSheet';
 import { CR } from '@/community/routes';
+import { MatchFilterPill, MatchFilterSheet } from '@/community/components/MatchFilter';
 
 export default function FitMatchScreen() {
   const t = useTheme();
@@ -39,6 +40,7 @@ export default function FitMatchScreen() {
   const refreshDemo = useCommunity((s) => s.refreshDemo);
   const [shownAt] = useState(() => Date.now());
   const [why, setWhy] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
   const leave = useSharedValue(0);
 
   useEffect(() => {
@@ -52,7 +54,17 @@ export default function FitMatchScreen() {
       return cd ? needAffinity(need, { displayName: cd.displayName, need: cd.need, status: cd.status }).rank : 0;
     });
   }
-  const [total] = useState(() => list.length);
+  const [total, setTotal] = useState(() => list.length);
+  const filterSheet = (
+    <MatchFilterSheet visible={filterOpen} onClose={() => setFilterOpen(false)} />
+  );
+  // le filtre « Me proposer » change la liste : le compteur repart de la nouvelle liste
+  const matchWith = me?.privacy.matchWith ?? 'tous';
+  const [countedFor, setCountedFor] = useState(matchWith);
+  if (countedFor !== matchWith) {
+    setCountedFor(matchWith);
+    setTotal(list.length);
+  } else if (list.length > total) setTotal(list.length);
   const cand = list[0];
   const card = cand ? engine.card(myId, cand.userId) : null;
   const other = cand ? engine.s.profiles[cand.userId] : undefined;
@@ -98,6 +110,7 @@ export default function FitMatchScreen() {
         </Studio>
         <TopBar overlay title="FitMatch" />
         <View style={{ padding: 22, gap: 10 }}>
+          <View style={{ alignSelf: 'flex-start' }}><MatchFilterPill onPress={() => setFilterOpen(true)} /></View>
           <Display size={26}>Tu as vu tout le monde pour aujourd’hui</Display>
           <Txt size={15} lineHeight={21} color={t.ink2}>
             On te présente seulement des personnes proches de ton étape, de ton âge et de ton objectif. De nouvelles personnes arrivent chaque jour.
@@ -106,6 +119,7 @@ export default function FitMatchScreen() {
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12, backgroundColor: t.bg }]}>
           <MainButton label="Revenir à la Communauté" onPress={() => router.replace(CR.home)} />
         </View>
+        {filterSheet}
       </View>
     );
   }
@@ -136,6 +150,9 @@ export default function FitMatchScreen() {
               <Figure key={id} avatarId={card.avatarId} size={fig} mode="buste" from={position > 1 ? 36 : 0} />
             </Press>
           </Animated.View>
+          <View style={{ position: 'absolute', top: insets.top + 60, right: 16, zIndex: 3 }}>
+            <MatchFilterPill onPress={() => setFilterOpen(true)} />
+          </View>
           <Animated.View style={[styles.onStage, { top: insets.top + 60 }, leaveText]}>
             {card.status ? <StatusPill status={card.status} glass /> : null}
             {card.demo ? <Tag kind="demo" label="Profil de démonstration" style={{ alignSelf: 'flex-start' }} /> : null}
@@ -209,6 +226,7 @@ export default function FitMatchScreen() {
       </View>
 
       <CompatSheet visible={why} onClose={() => setWhy(false)} breakdown={breakdown} name={card.displayName} />
+      {filterSheet}
     </View>
   );
 }

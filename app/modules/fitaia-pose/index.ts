@@ -7,7 +7,28 @@ import type { ComponentType } from 'react';
 import type { ViewProps } from 'react-native';
 
 export type PosePoint = { x: number; y: number; c: number };
-export type PoseEvent = { found: boolean; side?: 'left' | 'right'; ts?: number; points?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint> };
+/**
+ * `points` et `nose` : coordonnées normalisées de l'image caméra en portrait (0–1, origine en haut à gauche, image non inversée).
+ * `aspect` : largeur / hauteur de cette image (≈ 0,56), pour calculer des angles justes.
+ * `found: false` arrive aussi quand personne n'est vu, pour guider la personne.
+ */
+export type PoseEvent = {
+  found: boolean;
+  side?: 'left' | 'right';
+  ts?: number;
+  aspect?: number;
+  nose?: PosePoint;
+  points?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+  /** Les deux côtés du corps (`points` = le mieux vu sur cette image), pour garder le même côté pendant tout le défi. */
+  left?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+  right?: Record<'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle', PosePoint>;
+  /** Moteur qui a vu la personne : MediaPipe (principal) ou Apple Vision (secours). */
+  engine?: 'mediapipe' | 'vision';
+  /** MediaPipe seulement : position 3D des points (mètres, centrée sur les hanches), pour des angles vrais quel que soit l'angle de vue. */
+  world?: { left: Record<PoseJoint, PosePoint3>; right: Record<PoseJoint, PosePoint3> };
+};
+export type PoseJoint = 'shoulder' | 'elbow' | 'wrist' | 'hip' | 'knee' | 'ankle';
+export type PosePoint3 = { x: number; y: number; z: number };
 
 export type FitaiaPoseViewProps = ViewProps & {
   active?: boolean;

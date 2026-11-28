@@ -6,11 +6,13 @@
 import { create } from 'zustand';
 import { avatarBase, defaultSheetFor } from '@/avatar/identity';
 import { deleteAvatar3d, deleteAvatar3dPortrait, type Avatar3d } from '@/services/avatar3d';
-import { caricatureConfigured, createCaricature, deleteCaricature, type Caricature } from '@/services/caricature';
+import { addPerso, choosePerso } from '@/avatar/persoChoice';
+import { caricatureConfigured, completeOutfits, createCaricature, deleteCaricature, drawMix, type Caricature } from '@/services/caricature';
 import { findDeviceFile } from '@/services/localFiles';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CUR_NAMES, MEALS, Meal, MealEntry, OTHER_DEFIS, fmtKg } from '@/data/content';
+import { useCelebrate } from '@/fx/celebrate';
 import { DayStats, LedgerEntry, RULES, activeDaysThisWeek, dayKey, streak } from './economy';
 import { LegacyEconomy, useEco } from './useEco';
 import type { SelfActionType } from '@/progression/types';
@@ -40,6 +42,8 @@ type Persisted = {
   avatar: { uri: string; outfit: string; createdAt: number } | null; // perso dessiné depuis le selfie
   avatar3d: Avatar3d | null; // avatar 3D personnel (GLB construit depuis le selfie, enregistré sur le téléphone)
   caricature: Caricature | null; // perso caricature personnel (selfie → portrait + 3 bustes, enregistrés sur le téléphone)
+  /** Les autres persos au choix (deux au plus) : chaque nouvelle photo en ajoute un, la personne garde son préféré. */
+  caricatureAlts: Caricature[];
   character: CharacterSheet; // fiche du créateur (gratuit, illimité)
   characterReady: boolean; // le perso FITAIA Studio (vectoriel) remplace l'image par défaut
   profile: Profile; // sexe, âge, taille, poids de départ, objectif, activité, rythme
@@ -84,7 +88,8 @@ type Actions = {
   /** Mode caméra réel : démarrage, mise à jour, fin. */
   pushBeginReal: () => void;
   pushUpdate: (reps: number, feedback: string, kind: FbKind) => void;
-  pushFinish: (rejected: number) => void;
+  /** `target` : cible du jour réellement atteinte (5 par défaut, démonstration comprise). */
+  pushFinish: (rejected: number, target?: number) => void;
   pushAbort: () => void;
   resetScan: () => void;
   doScan: () => void;
@@ -92,7 +97,7 @@ type Actions = {
   setCustomMeal: (m: Meal | null) => void;
   addMeal: () => void;
   /** Modifie un repas du jour (nom, calories, macros) ; les totaux suivent. */
-  updateMeal: (id: string, patch: Partial<Pick<Meal, 'name' | 'kcal' | 'p' | 'g' | 'l' | 'score'>>) => void;
+  updateMeal: (id: string, patch: Partial<Pick<MealEntry, 'name' | 'kcal' | 'p' | 'g' | 'l' | 'score' | 'at'>>) => void;
   /** Retire un repas du jour (les points déjà accordés restent : ils sont plafonnés par jour côté serveur). */
   removeMeal: (id: string) => void;
   doSelfie: (onDone: () => void) => void;
@@ -108,10 +113,15 @@ type Actions = {
   /** Portrait pris sur le GLB personnel (null : à reprendre). */
   setAvatar3dPortrait: (uri: string | null, goalUri?: string | null) => void;
   setCaricature: (c: Caricature | null) => void;
+  chooseCaricature: (id: string) => void;
   /** Création du perso caricature en arrière-plan (non persisté) : l'app reste utilisable pendant les minutes de calcul. */
   caricatureJob: { state: 'idle' | 'queued' | 'running' | 'saving' | 'failed'; error: string };
   /** Lance la création depuis le selfie gardé ; sans effet si elle tourne déjà ou si le serveur n'est pas configuré. */
   createMyCaricature: () => Promise<void>;
+  /** Dessine en arrière-plan les tenues que le perso n'a pas encore ; sans effet si c'est déjà en cours. */
+  completeMyOutfits: () => Promise<void>;
+  /** Vestiaire : dessine un mélange de pièces sur le perso (service, mode « mix ») et rend la clé de l'image. */
+  drawMyMix: (mix: Record<string, string>, signal?: AbortSignal) => Promise<string>;
   stopTimers: () => void;
 };
 
@@ -121,6 +131,7 @@ let toastT: ReturnType<typeof setTimeout> | undefined;
 let typeT: ReturnType<typeof setTimeout> | undefined;
 let pushT: ReturnType<typeof setInterval> | undefined;
 let selfieT: ReturnType<typeof setTimeout> | undefined;
+let outfitsBusy = false;
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
@@ -163,6 +174,17 @@ function answer(S: GameState, q: string): string {
   );
 }
 
+/** Tenues du perso retrouvées sur le téléphone (celles dont le fichier a disparu sont oubliées). */
+function foundOutfits(o: Record<string, string> | undefined): Record<string, string> | undefined {
+  if (!o) return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, uri] of Object.entries(o)) {
+    const f = findDeviceFile(uri);
+    if (f) out[k] = f;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 export const useGame = create<GameState>()(
   persist(
     (set, get) => {
@@ -181,7 +203,11 @@ export const useGame = create<GameState>()(
           .award(action, sourceId)
           .then((r) => {
             const gains = [r.points ? '+' + r.points + ' PF' : '', r.coins ? '+' + r.coins + ' ' + CUR_NAMES[0] : ''].filter(Boolean).join(', ');
-            get().say(r.message ? label + ' · ' + r.message : label + (gains ? ' · ' + gains : ''), r.message ? 'bad' : 'ok');
+            // fin de défi réellement accordée : grand moment ; le reste (repas…) garde le message discret
+            if (action === 'challenge_completed' && !r.message && (r.points || r.coins)) {
+              const st = streak(get().history);
+              useCelebrate.getState().celebrate({ title: label, sub: st > 1 ? st + ' jours d’affilée. Continue.' : 'Ton perso avance avec toi.', coins: r.coins || undefined, points: r.points || undefined });
+            } else get().say(r.message ? label + ' · ' + r.message : label + (gains ? ' · ' + gains : ''), r.message ? 'bad' : 'ok');
           })
           .catch(() => get().say(label + ' · récompense non enregistrée, réessaie plus tard', 'bad'));
       };
@@ -203,6 +229,7 @@ export const useGame = create<GameState>()(
         avatar: null,
         avatar3d: null,
         caricature: null,
+        caricatureAlts: [],
         caricatureJob: { state: 'idle', error: '' },
         character: DEFAULT_SHEET,
         characterReady: false,
@@ -280,19 +307,19 @@ export const useGame = create<GameState>()(
         pushBeginReal: () => {
           const S = get();
           if (S.running || S.pushDone) return;
-          set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Place-toi de profil, corps entier visible.', fbKind: 'info' });
+          set({ running: true, reps: 0, attempt: 0, phase: 0, feedback: 'Pose le téléphone debout au sol, écran vers toi, à 2 m sur le côté. Mets-toi de profil : un bip et la voix te disent quand c’est bon.', fbKind: 'info' });
         },
         pushUpdate: (reps, feedback, kind) => set({ reps, feedback, fbKind: kind, phase: reps % 2 === 1 ? 1 : 0 }),
         pushAbort: () => {
           if (pushT) clearInterval(pushT);
           set({ running: false, reps: 0, attempt: 0, phase: 0, feedback: 'Défi arrêté. Rien n’est compté, tu peux recommencer quand tu veux.', fbKind: 'info' });
         },
-        pushFinish: (rejected) => {
+        pushFinish: (rejected, target = 5) => {
           const s = get();
           if (!s.running) return;
-          set({ phase: 0, reps: 5, running: false, pushDone: true, burned: s.burned + RULES.challengeBurn, feedback: 'Défi réussi. 5 pompes complètes' + (rejected ? ', ' + rejected + ' refusée' + (rejected > 1 ? 's' : '') : '') + '.', fbKind: 'good' });
+          set({ phase: 0, reps: target, running: false, pushDone: true, burned: s.burned + RULES.challengeBurn, feedback: 'Défi réussi. ' + target + ' pompes complètes' + (rejected ? ', ' + rejected + ' refusée' + (rejected > 1 ? 's' : '') : '') + '.', fbKind: 'good' });
           logDay({ challenges: 1 });
-          set({ pushTotal: get().pushTotal + 5, firstWinAt: get().firstWinAt || Date.now() });
+          set({ pushTotal: get().pushTotal + target, firstWinAt: get().firstWinAt || Date.now() });
           reward('challenge_completed', 'pushups:' + dayKey(), 'Défi du jour réussi');
         },
 
@@ -412,6 +439,12 @@ export const useGame = create<GameState>()(
           if (old && old.id !== c?.id) deleteCaricature(old);
           set({ caricature: c });
         },
+        chooseCaricature: (id) => {
+          const next = choosePerso(get().caricature, get().caricatureAlts, id);
+          if (next.current?.id !== id) return;
+          set({ caricature: next.current, caricatureAlts: next.alts });
+          void get().completeMyOutfits();
+        },
         createMyCaricature: async () => {
           const s = get();
           const selfie = s.selfieUri;
@@ -419,15 +452,47 @@ export const useGame = create<GameState>()(
           const base = avatarBase(s.profile.sex, { appearance: s.character.appearance }, s.characterReady);
           set({ caricatureJob: { state: 'queued', error: '' } });
           try {
-            const c = await createCaricature(selfie, base, s.character as unknown as Record<string, unknown>, (state) => set({ caricatureJob: { state, error: '' } }));
-            get().setCaricature(c);
-            set({ caricatureJob: { state: 'idle', error: '' } });
+            // taille et poids du profil : le corps « actuel » et les tenues suivent la silhouette de la personne
+            const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
+            const c = await createCaricature(selfie, base, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, (state) => set({ caricatureJob: { state, error: '' } }));
+            // l'ancien perso n'est pas effacé : il reste proposé, jusqu'à trois persos au choix
+            const next = addPerso(get().caricature, get().caricatureAlts, c);
+            next.dropped.forEach(deleteCaricature);
+            set({ caricature: next.current, caricatureAlts: next.alts, caricatureJob: { state: 'idle', error: '' } });
             get().say('Ton perso à ton image est prêt', 'ok');
+            void get().completeMyOutfits();
           } catch (e) {
             const error = e instanceof Error ? e.message : 'Création du perso impossible.';
             set({ caricatureJob: { state: 'failed', error } });
             get().say('Perso à ton image : ' + error, 'bad');
           }
+        },
+        completeMyOutfits: async () => {
+          const s = get();
+          const c = s.caricature;
+          if (!c || outfitsBusy || s.caricatureJob.state !== 'idle') return;
+          outfitsBusy = true;
+          try {
+            const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
+            await completeOutfits(c, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, (batch) => {
+              const cur = get().caricature;
+              if (cur && cur.id === c.id) set({ caricature: { ...cur, outfits: { ...(cur.outfits ?? {}), ...batch } } });
+            });
+          } catch {
+            // réessayé à la prochaine ouverture de la boutique
+          } finally {
+            outfitsBusy = false;
+          }
+        },
+        drawMyMix: async (mix, signal) => {
+          const s = get();
+          const c = s.caricature;
+          if (!c) throw new Error('Crée d’abord ton perso avec un selfie.');
+          const weightKg = s.weights.length ? s.weights[s.weights.length - 1].kg : s.profile.startKg;
+          const r = await drawMix(c, { ...(s.character as unknown as Record<string, unknown>), heightCm: s.profile.heightCm, weightKg, targetKg: s.profile.targetKg }, mix, signal);
+          const cur = get().caricature;
+          if (cur && cur.id === c.id) set({ caricature: { ...cur, outfits: { ...(cur.outfits ?? {}), [r.key]: r.uri } } });
+          return r.key;
         },
         setCharacter: (c) => set({ character: c, characterReady: true }),
         setProfile: (patch) => {
@@ -477,7 +542,7 @@ export const useGame = create<GameState>()(
     },
     {
       name: 'fitaia-v1',
-      version: 14,
+      version: 15,
       // v2 : FIT Crédits à l'échelle des centaines (×10) (ancienne échelle).
       migrate: (persisted, version) => {
         // champs des anciennes versions, lus seulement pour les convertir
@@ -535,6 +600,7 @@ export const useGame = create<GameState>()(
         }
         if (version < 13) s.avatar3d = s.avatar3d ?? null;
         if (version < 14) s.caricature = s.caricature ?? null;
+        if (version < 15) s.caricatureAlts = s.caricatureAlts ?? [];
         return s as Persisted;
       },
       storage: createJSONStorage(() => AsyncStorage),
@@ -554,6 +620,7 @@ export const useGame = create<GameState>()(
         avatar: s.avatar,
         avatar3d: s.avatar3d,
         caricature: s.caricature,
+        caricatureAlts: s.caricatureAlts,
         character: s.character,
         characterReady: s.characterReady,
         profile: s.profile,
@@ -575,17 +642,22 @@ export const useGame = create<GameState>()(
         const portrait = findDeviceFile(state.avatar3d?.portraitUri);
         const goalPortrait = findDeviceFile(state.avatar3d?.goalPortraitUri);
         // caricature : les quatre PNG doivent être là, sinon on oublie le perso (jamais un perso à moitié)
-        const c = state.caricature;
-        const cPortrait = findDeviceFile(c?.portraitUri);
-        const cBodies = c ? { surpoids: findDeviceFile(c.bodies.surpoids), actuel: findDeviceFile(c.bodies.actuel), athletique: findDeviceFile(c.bodies.athletique) } : null;
-        const caricature = c && cPortrait && cBodies && cBodies.surpoids && cBodies.actuel && cBodies.athletique
-          ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique } }
-          : null;
+        const found = (c: Caricature | null | undefined): Caricature | null => {
+          const cPortrait = findDeviceFile(c?.portraitUri);
+          const cBodies = c ? { surpoids: findDeviceFile(c.bodies.surpoids), actuel: findDeviceFile(c.bodies.actuel), athletique: findDeviceFile(c.bodies.athletique) } : null;
+          return c && cPortrait && cBodies && cBodies.surpoids && cBodies.actuel && cBodies.athletique
+            ? { ...c, portraitUri: cPortrait, bodies: { surpoids: cBodies.surpoids, actuel: cBodies.actuel, athletique: cBodies.athletique }, outfits: foundOutfits(c.outfits) }
+            : null;
+        };
+        const alts = (state.caricatureAlts ?? []).map(found).filter((x): x is Caricature => !!x);
+        // si le perso affiché a disparu mais qu'un autre reste, c'est lui qu'on affiche
+        const caricature = found(state.caricature) ?? alts.shift() ?? null;
         useGame.setState({
           hydrated: true,
           selfieUri: selfie,
           avatar3d: state.avatar3d && glb ? { ...state.avatar3d, uri: glb, portraitUri: portrait, goalPortraitUri: goalPortrait } : null,
           caricature,
+          caricatureAlts: alts,
         });
         // registre Phase 2 : amorçage (tenue de départ) et conversion unique de l'ancienne économie
         void useEco

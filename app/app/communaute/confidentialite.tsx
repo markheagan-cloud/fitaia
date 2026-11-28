@@ -55,6 +55,9 @@ export default function PrivacyScreen() {
   const update = useCommunity((s) => s.updatePrivacy);
   const unblock = useCommunity((s) => s.unblock);
   const leave = useCommunity((s) => s.leave);
+  const deleteAccount = useCommunity((s) => s.deleteAccount);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [more, setMore] = useState(false);
   const say = useGame.getState().say;
   if (!me) return null;
@@ -134,7 +137,7 @@ export default function PrivacyScreen() {
           <Txt size={12.5} lineHeight={17} color={t.ink2} style={{ flex: 1 }}>
             {COMMUNITY_MODE === 'local-demo'
               ? 'Version d’essai : tes réglages restent sur ce téléphone et les autres membres sont des profils de démonstration. Rien n’est encore envoyé sur Internet.'
-              : 'Tes réglages sont synchronisés avec ton compte.'}
+              : 'Tes réglages sont enregistrés sur le serveur FITAIA et appliqués par lui : ce que tu masques ici n’est envoyé à personne.'}
           </Txt>
         </View>
 
@@ -147,6 +150,31 @@ export default function PrivacyScreen() {
           style={styles.leave}
         >
           <Txt size={14.5} weight="bold" color={RED}>Quitter la Communauté</Txt>
+        </Press>
+
+        <Press
+          accessibilityLabel="Supprimer mon compte Communauté"
+          onPress={async () => {
+            if (deleting) return;
+            if (!confirmDelete) {
+              setConfirmDelete(true);
+              return;
+            }
+            setDeleting(true);
+            const r = await deleteAccount();
+            setDeleting(false);
+            if (!r.ok) {
+              say(r.reason ?? 'Suppression impossible pour l’instant', 'bad');
+              return;
+            }
+            say('Compte Communauté supprimé : profil, messages, photos et amis effacés.');
+            router.replace(CR.tabs);
+          }}
+          style={styles.leave}
+        >
+          <Txt size={13.5} weight="bold" color={RED} style={{ textAlign: 'center' }}>
+            {deleting ? 'Suppression…' : confirmDelete ? 'Appuie encore pour tout effacer définitivement' : 'Supprimer mon compte et mes données'}
+          </Txt>
         </Press>
       </ScrollView>
     </View>

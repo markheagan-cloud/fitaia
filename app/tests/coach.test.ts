@@ -13,7 +13,7 @@ ok(coachAnswer({ ...base, weights: w }, 'mon poids').includes('baisse de 0,7'), 
 ok(coachAnswer(base, 'protéines ?').includes('60 g'), 'protéines manquantes 60 g');
 ok(coachAnswer(base, 'combien de calories il me reste').includes('900'), 'budget restant');
 ok(coachAnswer(base, 'crédits').includes(fmt(12400)), 'crédits réels');
-ok(coachAnswer(base, 'défi').includes('5 pompes'), 'défi non fait');
+ok(coachAnswer(base, 'défi').includes('tes pompes comptées par la caméra'), 'défi non fait');
 ok(coachAnswer({ ...base, pushDone: true }, 'défi').includes('réussi'), 'défi fait');
 ok(coachAnswer(base, 'blabla').includes('900 kcal'), 'fallback avec vraies données');
 console.log(n + ' tests coach OK');

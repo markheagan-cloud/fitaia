@@ -16,14 +16,17 @@ import { runSuite } from '../../tests/helpers/check';
 
 // Chemin relatif à la racine du dépôt (lancer depuis la racine), valable en strip-types comme après esbuild.
 const sql = readFileSync('supabase/migrations/0002_progression_economy.sql', 'utf8');
+// 0007 : récompenses du rythme de déblocage de la boutique (ajoutées après la mise en ligne de 0002).
+const rythme = readFileSync('supabase/migrations/0007_rythme_deblocage.sql', 'utf8');
 
 /** Lignes « (…) » du VALUES qui suit `insert into public.<table>`. */
-function insertedRows(table: string): string[][] {
+function insertedRows(table: string, from = sql): string[][] {
+  const sql = from;
   const start = sql.indexOf(`insert into public.${table} (`);
   if (start < 0) throw new Error('insertion absente : ' + table);
   const valuesAt = sql.indexOf('values', start);
   const end = sql.indexOf(';', valuesAt);
-  const body = sql.slice(valuesAt + 'values'.length, end);
+  const body = sql.slice(valuesAt + 'values'.length, end).split(/\bon conflict\b/)[0];
   const rows: string[][] = [];
   for (const m of body.matchAll(/\(((?:'[^']*'|[^()'])*)\)/g)) {
     rows.push([...m[1].matchAll(/'((?:[^']|'')*)'|([^,\s][^,]*)/g)].map((x) => (x[1] !== undefined ? x[1].replace(/''/g, "'") : x[2].trim())));
@@ -80,11 +83,11 @@ runSuite('synchronisation TypeScript ↔ SQL', async (t) => {
     'emplacements incompatibles identiques',
   );
   t.equal(
-    insertedRows('reward_definitions').map(([id, type, amount, item, condition, repeatable, enabled]) => ({
+    [...insertedRows('reward_definitions'), ...insertedRows('reward_definitions', rythme)].sort((a, b) => (a[0] < b[0] ? -1 : 1)).map(([id, type, amount, item, condition, repeatable, enabled]) => ({
       id, type, amount: Number(amount), ...(nullable(item) === null ? {} : { cosmeticItemId: item }), unlockCondition: JSON.parse(condition) as unknown, repeatable: repeatable === 'true', enabled: enabled === 'true',
     })),
-    REWARD_DEFINITIONS.map((r) => ({ ...r })),
-    'récompenses identiques (paliers 900 / 1 000 / 1 150 / 1 300 et récompense quotidienne)',
+    [...REWARD_DEFINITIONS].sort((a, b) => (a.id < b.id ? -1 : 1)).map((r) => ({ ...r })),
+    'récompenses identiques (0002 + 0007 : paliers, étapes du Parcours, premier défi, récompenses quotidiennes)',
   );
   t.equal(sorted(checkList('type', 'economy_transactions')), sorted(TRANSACTION_TYPES), 'types de mouvement identiques');
   t.equal(sorted(checkList('reason', 'economy_transactions')), sorted(LEDGER_REASONS), 'motifs du registre identiques');

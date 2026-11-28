@@ -10,7 +10,7 @@ import type { GarmentSlot } from '../models/outfit';
 export type IconName =
   | 'back' | 'flame' | 'heart' | 'target' | 'lock' | 'chat' | 'spark' | 'shield' | 'chevron' | 'chevronDown' | 'plus' | 'info'
   | 'more' | 'userPlus' | 'users' | 'globe' | 'ban' | 'bolt' | 'fork' | 'dumbbell' | 'cloud' | 'repeat' | 'moon' | 'shirt'
-  | 'jacket' | 'pants' | 'shoe' | 'watch' | 'circles' | 'check' | 'close' | 'arrowUp' | 'user' | 'wave' | 'eye';
+  | 'jacket' | 'pants' | 'shoe' | 'watch' | 'circles' | 'check' | 'close' | 'arrowUp' | 'user' | 'wave' | 'eye' | 'image' | 'pin' | 'calendar';
 
 const PATHS: Record<IconName, React.ReactNode> = {
   flame: <Path d="M12 2.8c.7 3-.8 4.9-2.3 6.6C8.3 11 7 12.6 7 15a5 5 0 0 0 10 0c0-2.3-1.2-3.8-2.2-4.8-.2 1.4-.9 2.4-1.9 2.9.4-3.5-.2-6.6-.9-10.3z" strokeLinejoin="round" />,
@@ -98,6 +98,9 @@ const PATHS: Record<IconName, React.ReactNode> = {
     </>
   ),
   check: <Path d="M5 12.5l4.5 4.5L19 7.5" />,
+  image: <Path d="M5.5 4.5h13a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zM4.5 16l4.5-4.5 4 4 2.5-2.5 4 4M15.5 9.2a1.3 1.3 0 1 0 0-.01" strokeLinejoin="round" />,
+  pin: <Path d="M12 20.5s-6-5.4-6-10.5a6 6 0 0 1 12 0c0 5.1-6 10.5-6 10.5zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" strokeLinejoin="round" />,
+  calendar: <Path d="M5.5 6h13a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1zM4.5 10.5h15M8.5 3.8V7.5M15.5 3.8V7.5" strokeLinejoin="round" />,
   close: <Path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
   arrowUp: <Path d="M12 19V5.5M5.8 11.5L12 5.3l6.2 6.2" />,
   user: (

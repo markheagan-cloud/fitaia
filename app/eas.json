@@ -1,19 +1,35 @@
 {
-  "cli": { "version": ">= 12.0.0", "appVersionSource": "remote" },
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
   "build": {
-    "development": { "developmentClient": true, "distribution": "internal" },
-    "preview": { "distribution": "internal" },
-    "production": { "autoIncrement": true }
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_CARICATURE_URL": "https://leperecastorof-blip--fitaia-caricature-caricaturemodel-c-9f8ff6.us-east.modal.run",
+        "EXPO_PUBLIC_CARICATURE_TOKEN": "",
+        "EXPO_PUBLIC_MEAL_URL": "https://leperecastorof-blip--fitaia-caricature-mealvision-repas.us-east.modal.run",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://mbklplftzcptrsyarjlx.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ia2xwbGZ0emNwdHJzeWFyamx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU2NDcwODYsImV4cCI6MjExMTIyMzA4Nn0.j2X3u3-eAGpcj9enzX6pI1LT3XXdfZe5W7wK_nOYhkY"
+      },
+      "channel": "production"
+    }
   },
   "submit": {
     "production": {
       "ios": {
-        "_comment": "À REMPLIR après création de l'app dans App Store Connect (jamais inventé)",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "appleTeamId": "DDWD67FKMU",
+        "ascAppId": "6839087372"
       },
       "android": {
-        "_comment": "Clé de service Google Play à fournir — chemin hors du repo",
         "serviceAccountKeyPath": "../secrets/google-play-service-account.json",
         "track": "internal"
       }

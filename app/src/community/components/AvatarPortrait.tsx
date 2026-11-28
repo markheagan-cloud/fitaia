@@ -8,6 +8,7 @@
  */
 import React from 'react';
 import { Image, View, StyleProp, ViewStyle } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { useAvatarBase, useHeroSource } from '@/avatar/HeroAvatar';
 import { useGame } from '@/store/useGame';
 import { useEquippedSkin } from '@/avatar/outfits';
@@ -16,6 +17,7 @@ import { portraitSource, PortraitKind } from '../avatars/portraits';
 import { VectorAvatar, AVATAR_VB } from '@/avatar/VectorAvatar';
 import { demoAvatar } from '../services/devData';
 import { useTheme } from '@/theme/ThemeProvider';
+import { Icon } from './icons';
 
 export type PortraitMode = 'tete' | 'buste' | 'corps' | 'carte';
 
@@ -36,9 +38,11 @@ const DEFAULT_HEAD = { cx: 0.5, cy: 0.12, h: 0.12 };
 /** Part du cadre occupée par la tête selon le mode. */
 const HEAD_FILL: Record<PortraitMode, number> = { tete: 0.55, buste: 0.3, corps: 0, carte: 0.24 };
 
-function MyPortrait({ size, mode, box }: { size: number; mode: PortraitMode; box: StyleProp<ViewStyle> }) {
-  const { source, label } = useHeroSource();
-  const head = HEADS.find(([img]) => img === source)?.[1] ?? DEFAULT_HEAD;
+function MyPortrait({ size, mode, box, sourceOverride, headOverride }: { size: number; mode: PortraitMode; box: StyleProp<ViewStyle>; sourceOverride?: ImageSourcePropType; headOverride?: { cx: number; cy: number; h: number } }) {
+  const hero = useHeroSource();
+  const source = sourceOverride ?? hero.source;
+  const label = sourceOverride ? 'Perso de ce membre' : hero.label;
+  const head = headOverride ?? HEADS.find(([img]) => img === source)?.[1] ?? DEFAULT_HEAD;
   const frameH = mode === 'corps' ? size * 1.6 : mode === 'carte' ? size * 1.25 : size;
   let H: number;
   let left: number;
@@ -56,6 +60,56 @@ function MyPortrait({ size, mode, box }: { size: number; mode: PortraitMode; box
   return (
     <View style={box} accessibilityLabel={label}>
       <Image source={source} resizeMode="cover" style={{ position: 'absolute', width: H * HEAD_RATIO, height: H, left, top }} />
+    </View>
+  );
+}
+
+/**
+ * Ce que les autres membres voient de moi : UNE image et son cadrage, calculés comme `Me` (même perso partout).
+ *  c = caricature carrée ; g = portrait 3D 4:5 ; r = rendu de l'usine (tête) ; h = illustration corps entier + tête.
+ */
+export type SharedPortrait = { frame: 'c' | 'g' | 'r' | 'h'; source: ImageSourcePropType; head?: { cx: number; cy: number; h: number } };
+
+export function useMySharedPortrait(): SharedPortrait {
+  const skin = useEquippedSkin();
+  const avatar = useGame((s) => s.avatar);
+  const ready = useGame((s) => s.characterReady);
+  const mine = useGame((s) => s.avatar3d);
+  const caricature = useGame((s) => s.caricature);
+  const base = useAvatarBase();
+  const hero = useHeroSource();
+  if (caricature && caricature.base === base) return { frame: 'c', source: { uri: caricature.portraitUri } };
+  if (mine?.portraitUri && mine.base === base) return { frame: 'g', source: { uri: mine.portraitUri } };
+  const personal = (!!avatar && avatar.outfit === skin.id) || ready;
+  const rendered = personal ? null : portraitSource('moi', 'head');
+  if (rendered) return { frame: 'r', source: rendered };
+  return { frame: 'h', source: hero.source, head: HEADS.find(([img]) => img === hero.source)?.[1] ?? DEFAULT_HEAD };
+}
+
+/** Portrait partagé d'un autre membre (avatarId « url:<cadrage>:<cx>,<cy>,<h>|<adresse signée> »). */
+function SharedImage({ avatarId, size, mode, box }: { avatarId: string; size: number; mode: PortraitMode; box: StyleProp<ViewStyle> }) {
+  const bar = avatarId.indexOf('|');
+  const [, frame, headStr] = avatarId.slice(0, bar).split(':');
+  const uri = avatarId.slice(bar + 1);
+  if (frame === 'c' || frame === 'g') {
+    const f = PORTRAIT_FRAME[mode];
+    const w = size * f.zoom;
+    const hh = frame === 'c' ? w : w * 1.3;
+    const top = frame === 'c' ? Math.min(0, (size - w) / 2) : -hh * f.top;
+    return (
+      <View style={box}>
+        <Image source={{ uri }} resizeMode="cover" style={{ position: 'absolute', left: (size - w) / 2, top, width: w, height: hh }} accessibilityLabel="Perso de ce membre" />
+      </View>
+    );
+  }
+  if (frame === 'h') {
+    const [cx, cy, h] = (headStr ?? '').split(',').map(Number);
+    const head = Number.isFinite(cx) && Number.isFinite(cy) && h > 0 ? { cx, cy, h } : DEFAULT_HEAD;
+    return <MyPortrait size={size} mode={mode} box={box} sourceOverride={{ uri }} headOverride={head} />;
+  }
+  return (
+    <View style={box}>
+      <Image source={{ uri }} resizeMode="cover" style={{ width: '100%', height: '100%' }} accessibilityLabel="Perso de ce membre" />
     </View>
   );
 }
@@ -126,6 +180,7 @@ export function AvatarPortrait({ avatarId, size, mode = 'tete', radius, style }:
   const box: StyleProp<ViewStyle> = [{ width: size, height: h, borderRadius: radius ?? (mode === 'tete' ? 999 : 20), overflow: 'hidden', backgroundColor: t.track }, style];
 
   if (avatarId === 'moi') return <Me size={size} mode={mode} box={box} />;
+  if (avatarId.startsWith('url:')) return <SharedImage avatarId={avatarId} size={size} mode={mode} box={box} />;
   // 1) rendu de l'usine d'avatars (avatar maître), s'il existe
   const rendered = portraitSource(avatarId, KIND[mode]);
   if (rendered) {
@@ -145,6 +200,14 @@ export function AvatarPortrait({ avatarId, size, mode = 'tete', radius, style }:
         <View style={{ position: 'absolute', left: (size - w) / 2, top: -hh * f.top }}>
           <VectorAvatar sheet={demo.sheet} outfit={demo.outfit} width={w} background={false} />
         </View>
+      </View>
+    );
+  }
+  // membre réel : pas encore de portrait partagé par le serveur, silhouette neutre (jamais le visage de quelqu'un d'autre)
+  if (avatarId.startsWith('membre')) {
+    return (
+      <View style={[box, { alignItems: 'center', justifyContent: 'center' }]}>
+        <Icon name="user" size={Math.round(size * 0.5)} color={t.ink2} />
       </View>
     );
   }

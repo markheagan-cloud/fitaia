@@ -132,13 +132,16 @@ export function Tag({ kind, label, style }: { kind: TagKind; label?: string; sty
 }
 
 /** Titre de section : Archivo, phrase normale (pas de majuscules décoratives). */
-export function SectionHead({ title, right, tag, sub }: { title: string; right?: React.ReactNode; tag?: React.ReactNode; sub?: string }) {
+export { vivid } from '@/theme/tokens';
+
+export function SectionHead({ title, right, tag, sub, accent }: { title: string; right?: React.ReactNode; tag?: React.ReactNode; sub?: string; accent?: string }) {
   const t = useTheme();
   return (
     <View style={{ gap: 2, paddingHorizontal: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
-          <Display size={19} numberOfLines={2} style={{ flexShrink: 1 }}>{title}</Display>
+          {accent ? <View style={{ width: 6, height: 22, borderRadius: 3, backgroundColor: accent }} /> : null}
+          <Display size={accent ? 22 : 19} color={accent} numberOfLines={2} style={{ flexShrink: 1 }}>{title}</Display>
           {tag}
         </View>
         {right}
@@ -302,10 +305,10 @@ export function Choice<T extends string>({ value, options, onChange }: { value: 
             accessibilityLabel={o.label}
             onPress={() => onChange(o.id)}
             pressScale={0.97}
-            style={[styles.choice, { backgroundColor: on ? t.strong : t.surf, borderColor: on ? t.strong : t.line }, on && shadow.md]}
+            style={[styles.choice, { backgroundColor: on ? LIME : t.surf, borderColor: on ? LIME : t.line, borderWidth: on ? 2 : 1 }, on && shadow.md]}
           >
-            <Icon name={o.icon} size={20} color={on ? LIME : t.ink2} />
-            <Txt size={13} weight={on ? 'bold' : 'semibold'} color={on ? t.strongInk : t.ink} style={{ textAlign: 'center' }} numberOfLines={2}>{o.label}</Txt>
+            <Icon name={o.icon} size={20} color={on ? OBSIDIAN : t.ink2} />
+            <Txt size={13} weight={on ? 'bold' : 'semibold'} color={on ? OBSIDIAN : t.ink} style={{ textAlign: 'center' }} numberOfLines={2}>{o.label}</Txt>
           </Press>
         );
       })}

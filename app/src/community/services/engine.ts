@@ -4,7 +4,7 @@
  * en développement, ce moteur tourne sur le téléphone avec des profils de démonstration signalés comme tels.
  */
 import type {
-  Block, CommunityProfile, Conversation, Friendship, Message, MessageType, Report, ReportReason, RelationshipType,
+  Block, CommunityProfile, Conversation, FitMatchCandidate, Friendship, Message, MessageType, Report, ReportReason, RelationshipType,
 } from '../models/types';
 import { suggest } from '../../social/fitmatch/matching';
 import { checkMessage } from '../../social/messages/safety';
@@ -21,6 +21,8 @@ export type SocialState = {
   reports: Report[];
   passed: Record<string, string[]>;          // FitMatch : personnes « passées » par utilisateur
   encouragements: { from: string; to: string; createdAt: number }[];
+  /** Serveur réel : propositions FitMatch calculées par le serveur (fitmatch_candidates, filtre réciproque compris). */
+  suggested?: FitMatchCandidate[];
 };
 
 export const emptyState = (): SocialState => ({
@@ -76,6 +78,7 @@ export class SocialEngine {
       if (f.userA === me && f.status !== 'refuse') exclude.add(f.userB);
       if (f.userB === me && f.status === 'accepte') exclude.add(f.userA);
     }
+    if (this.s.suggested) return this.s.suggested.filter((c) => !exclude.has(c.userId) && this.s.profiles[c.userId]).slice(0, limit);
     return suggest(meP, Object.values(this.s.profiles), exclude, now, limit);
   }
 

@@ -57,3 +57,46 @@ def caricature_dict(selfie_b64, sex, sheet_json, generate_all, stub=False):
                 'report': {'limites': limites, 'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}}
     except Exception as e:  # message lisible pour l'app, jamais de trace
         return {'ok': False, 'error': str(e)[:200]}
+
+
+def tenues_dict(portrait_b64, sex, generate_tenues, sheet=None, only=None):
+    """Portrait du perso (PNG/JPEG base64) → {"ok", "tenues": {id: png base64}} : chaque tenue portée par ce perso."""
+    t = time.time()
+    try:
+        if sex not in ('m', 'f'):
+            raise ValueError('sex doit valoir "m" ou "f"')
+        raw = base64.b64decode(portrait_b64 or '', validate=True)
+        if not raw or len(raw) > MAX_PHOTO:
+            raise ValueError('portrait absent ou trop lourd')
+        portrait = Image.open(io.BytesIO(raw)).convert('RGB')
+        portrait.thumbnail((768, 768))
+        only = [k for k in only if isinstance(k, str)] if isinstance(only, list) else None
+        attendu = set(recette.prompts_tenues(sex, sheet, only))
+        if not attendu:
+            raise ValueError('aucune tenue connue demandée')
+        tenues = generate_tenues(portrait, sex, sheet, only)
+        if set(tenues) != attendu:
+            raise ValueError('tenues incomplètes')
+        return {'ok': True, 'tenues': {k: to_b64(v) for k, v in tenues.items()},
+                'report': {'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}}
+    except Exception as e:
+        return {'ok': False, 'error': str(e)[:200]}
+
+
+def melange_dict(portrait_b64, sex, generate_melange, mix, sheet=None):
+    """Portrait + mélange {haut, bas, chaussures, accessoire, fond: identifiants de tenue} → {"ok", "cle", "image"}."""
+    t = time.time()
+    try:
+        if sex not in ('m', 'f'):
+            raise ValueError('sex doit valoir "m" ou "f"')
+        raw = base64.b64decode(portrait_b64 or '', validate=True)
+        if not raw or len(raw) > MAX_PHOTO:
+            raise ValueError('portrait absent ou trop lourd')
+        portrait = Image.open(io.BytesIO(raw)).convert('RGB')
+        portrait.thumbnail((768, 768))
+        prompt = recette.prompt_melange(sex, mix, sheet)
+        image = generate_melange(portrait, prompt)
+        return {'ok': True, 'cle': recette.cle_melange(mix), 'image': to_b64(image),
+                'report': {'duree_s': round(time.time() - t), 'modele': recette.MODELE, 'graine': recette.SEED}}
+    except Exception as e:
+        return {'ok': False, 'error': str(e)[:200]}

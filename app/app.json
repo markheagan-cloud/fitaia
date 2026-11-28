@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "FITAIA",
-    "slug": "fitaia",
+    "slug": "fitaia-",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,8 +13,14 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie. Aucune image n’est conservée.",
-        "NSPhotoLibraryUsageDescription": "FITAIA accède à tes photos uniquement si tu choisis un selfie existant pour dessiner ton perso.",
-        "NSMotionUsageDescription": "FITAIA lit tes pas pour valider le défi « Marcher 6 000 pas »."
+        "NSPhotoLibraryUsageDescription": "FITAIA accède à tes photos seulement quand tu en choisis une : un selfie pour dessiner ton perso, un repas à analyser ou une photo à partager dans un forum.",
+        "NSMotionUsageDescription": "FITAIA lit tes pas pour valider le défi « Marcher 6 000 pas ».",
+        "NSHealthShareUsageDescription": "FITAIA lit dans Santé tes pas, tes calories actives, ton rythme cardiaque et tes séances (mesurés par ton Apple Watch) pour les afficher dans l’app. Ces données restent sur ton iPhone.",
+        "NSHealthUpdateUsageDescription": "FITAIA n’enregistre rien dans Santé."
+      },
+      "entitlements": {
+        "com.apple.developer.healthkit": true,
+        "com.apple.developer.healthkit.access": []
       }
     },
     "android": {
@@ -43,8 +49,9 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso.",
-          "photosPermission": "FITAIA accède à tes photos uniquement pour choisir un selfie."
+          "cameraPermission": "FITAIA utilise la caméra pour prendre le selfie qui sert à dessiner ton perso et pour photographier tes repas.",
+          "photosPermission": "FITAIA accède à tes photos seulement quand tu en choisis une : un selfie pour dessiner ton perso, un repas à analyser ou une photo à partager dans un forum.",
+          "microphonePermission": false
         }
       ],
       [
@@ -56,9 +63,22 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres de tes aliments, compter tes pompes et prendre ton selfie."
+          "cameraPermission": "FITAIA utilise la caméra pour scanner les codes-barres, photographier tes repas, compter tes pompes et prendre ton selfie.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
         }
-      ]
+      ],
+      "./plugins/sans-push-distant",
+      "expo-notifications",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "enableBackgroundPlayback": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true
@@ -72,6 +92,20 @@
       "lang": "fr",
       "themeColor": "#121315",
       "backgroundColor": "#121315"
+    },
+    "owner": "fitaias-team",
+    "extra": {
+      "eas": {
+        "projectId": "265e2380-a09f-4abe-b8b8-6bd12049ff2c"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/265e2380-a09f-4abe-b8b8-6bd12049ff2c",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }
